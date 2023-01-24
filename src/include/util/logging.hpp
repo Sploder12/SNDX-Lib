@@ -16,7 +16,7 @@ namespace sndx {
 	using Formatter = std::function<std::basic_string<CharT>(std::basic_string_view<CharT>)>;
 
 	template <typename CharT = char>
-	std::basic_string<CharT> formatterNone(std::basic_string_view<CharT> str) { return str };
+	std::basic_string<CharT> formatterNone(std::basic_string_view<CharT> str) { return str; }
 
 	template <typename CharT = char>
 	class Logger {
@@ -42,6 +42,7 @@ namespace sndx {
 		}
 	};
 
+	// non-owning container
 	template <typename CharT = char>
 	class LoggingContext {
 	protected:

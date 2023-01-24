@@ -18,5 +18,22 @@
     <ClInclude Include="src\include\util\logging.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\include\util\window.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\util\datafile.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\util\stringmanip.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dumb.json" />
   </ItemGroup>
 </Project>
