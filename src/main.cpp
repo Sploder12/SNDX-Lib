@@ -24,7 +24,9 @@ int main() {
 	std::vector<std::pair<int, int>> data1{ {1,2}, {3,5} };
 	std::vector<peoeple> data2{ {1,2}, {3,5} };
 
-	a.setData(data1, data2);
+	std::vector<std::vector<peoeple>> bbb{ { {1, 2}, { 2,2 }, {3,3}}};
+
+	a.setData(bbb.begin(), bbb.end());
 
 	return 0;
 }

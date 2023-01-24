@@ -125,7 +125,7 @@ namespace sndx {
 
 			static_assert(sizeof(vtype) == sizeof(DataT));
 
-			//glBufferSubData(target, sizeof(vtype) * offset, data.size() * sizeof(vtype), data.data());
+			glBufferSubData(target, sizeof(vtype) * offset, data.size() * sizeof(vtype), data.data());
 
 			if constexpr (sizeof...(LinearContainers) > 0) {
 				subData(offset + sizeof(vtype) * data.size(), others...);
@@ -168,10 +168,33 @@ namespace sndx {
 			subData<LinearContainers...>(0, datas...);
 		}
 
+		// for containers that contain containers (ex. std::list<std::vector<...>>)
+		// useful for batching
+		template <std::forward_iterator It>
+		void setData(It begin, It end) {
+			using vtype = typename std::iterator_traits<It>::value_type::value_type;
+			static_assert(sizeof(vtype) == sizeof(DataT));
+
+			size_t totalSize = 0;
+			for (It sizeIt = begin; sizeIt != end; ++sizeIt) {
+				totalSize += sizeIt->size();
+			}
+
+			if (totalSize <= 0) [[unlikely]] return;
+
+			bind();
+			glBufferData(target, totalSize * sizeof(DataT), nullptr, GL_DYNAMIC_DRAW);
+
+			long long offset = 0;
+			for (It dataIt = begin; dataIt != end; ++dataIt) {
+				glBufferSubData(target, sizeof(vtype) * offset, dataIt->size() * sizeof(vtype), dataIt->data());
+				offset += dataIt->size();
+			}
+		}
+
 		template <class LinearContainer>
 		void setData(const LinearContainer& data) {
 			using vtype = LinearContainer::value_type;
-
 			static_assert(sizeof(vtype) == sizeof(DataT));
 
 			bind();
