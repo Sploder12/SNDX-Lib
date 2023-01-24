@@ -11,25 +11,21 @@ namespace sndx {
 
 	template <>
 	constexpr GLenum typeToGLenum<char>() { return GL_BYTE; }
-
 	template <>
 	constexpr GLenum typeToGLenum<unsigned char>() { return GL_UNSIGNED_BYTE; }
 
 	template <>
 	constexpr GLenum typeToGLenum<short>() { return GL_SHORT; }
-
 	template <>
 	constexpr GLenum typeToGLenum<unsigned short>() { return GL_UNSIGNED_SHORT; }
 
 	template <>
 	constexpr GLenum typeToGLenum<int>() { return GL_INT; }
-
 	template <>
 	constexpr GLenum typeToGLenum<unsigned int>() { return GL_UNSIGNED_INT; }
 
 	template <>
 	constexpr GLenum typeToGLenum<float>() { return GL_FLOAT; }
-
 	template <>
 	constexpr GLenum typeToGLenum<double>() { return GL_DOUBLE; }
 
@@ -100,8 +96,8 @@ namespace sndx {
 
 		using DataT = std::tuple<Layout...>;
 
+		[[nodiscard]]
 		static constexpr int stride() {
-			// this layout doesn't actually hold any data, but a tuple would
 			return sizeof(DataT);
 		}
 
@@ -111,7 +107,31 @@ namespace sndx {
 	};
 
 	template <class Layout>
-	struct VBO {
+	class VBO {
+	protected:
+		template <class Cur, class... LinearContainers>
+		static size_t size(const Cur& data, const LinearContainers&... others) {
+			if constexpr (sizeof...(LinearContainers) > 0) {
+				return data.size() + size<LinearContainers...>(others...);
+			}
+			else {
+				return data.size();
+			}
+		}
+
+		template <class Cur, class... LinearContainers>
+		void subData(long long offset, const Cur& data, const LinearContainers&... others) const {
+			using vtype = Cur::value_type;
+
+			static_assert(sizeof(vtype) == sizeof(DataT));
+
+			//glBufferSubData(target, sizeof(vtype) * offset, data.size() * sizeof(vtype), data.data());
+
+			if constexpr (sizeof...(LinearContainers) > 0) {
+				subData(offset + sizeof(vtype) * data.size(), others...);
+			}
+		}
+	public:
 	
 		using DataT = Layout::DataT;
 
@@ -128,12 +148,28 @@ namespace sndx {
 		explicit VBO(GLenum target) :
 			id(0), target(target) {}
 
-		void bind() const {
+		void bind() {
+			if (id == 0) gen();
+
 			glBindBuffer(target, id);
 		}
 
+		template <class... LinearContainers>
+		void setData(const LinearContainers&... datas) {
+			static_assert(sizeof...(LinearContainers) > 1);
+
+			size_t totalSize = size(datas...);
+
+			if (totalSize <= 0) [[unlikely]] return;
+
+			bind();
+			glBufferData(target, totalSize * sizeof(DataT), nullptr, GL_DYNAMIC_DRAW);
+
+			subData<LinearContainers...>(0, datas...);
+		}
+
 		template <class LinearContainer>
-		void setData(const LinearContainer& data) const {
+		void setData(const LinearContainer& data) {
 			using vtype = LinearContainer::value_type;
 
 			static_assert(sizeof(vtype) == sizeof(DataT));

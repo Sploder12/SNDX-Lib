@@ -10,12 +10,13 @@ namespace sndx {
 	public:
 		GLuint id = 0;
 
-		void bind() const {
+		void bind() {
+			if (id == 0) gen();
 			glBindVertexArray(id);
 		}
 
 		template <class Layout>
-		void bindVBO(const VBO<Layout>& vbo, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
+		void bindVBO(VBO<Layout>& vbo, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
 			if (id == 0) return;
 
 			bind();
