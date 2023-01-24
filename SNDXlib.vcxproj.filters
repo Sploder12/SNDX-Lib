@@ -15,16 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\include\util\logging.hpp">
+    <ClInclude Include="src\include\sndx\util\logging.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\util\window.hpp">
+    <ClInclude Include="src\include\sndx\util\window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\util\datafile.hpp">
+    <ClInclude Include="src\include\sndx\util\datafile.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\util\stringmanip.hpp">
+    <ClInclude Include="src\include\sndx\util\stringmanip.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\render\vbo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\render\vao.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -32,8 +38,5 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="dumb.json" />
   </ItemGroup>
 </Project>

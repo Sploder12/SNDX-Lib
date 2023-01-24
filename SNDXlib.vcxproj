@@ -70,6 +70,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
@@ -143,16 +155,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\include\util\datafile.hpp" />
-    <ClInclude Include="src\include\util\logging.hpp" />
-    <ClInclude Include="src\include\util\stringmanip.hpp" />
-    <ClInclude Include="src\include\util\window.hpp" />
+    <ClInclude Include="src\include\sndx\render\vao.hpp" />
+    <ClInclude Include="src\include\sndx\render\vbo.hpp" />
+    <ClInclude Include="src\include\sndx\util\datafile.hpp" />
+    <ClInclude Include="src\include\sndx\util\logging.hpp" />
+    <ClInclude Include="src\include\sndx\util\stringmanip.hpp" />
+    <ClInclude Include="src\include\sndx\util\window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="dumb.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

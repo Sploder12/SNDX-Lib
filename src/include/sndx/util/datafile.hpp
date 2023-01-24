@@ -5,6 +5,7 @@
 #include <variant>
 #include <unordered_map>
 #include <sstream>
+#include <functional>
 
 #include "stringmanip.hpp"
 
@@ -33,6 +34,9 @@ namespace sndx {
 	// note this does NOT support sections (because they're stupid)
 	template <typename CharT = char>
 	constexpr TreeFileLayout<CharT> LayoutINI{ "=", "\n", "[", "]", " \t\n\"", " []\n\t\"'", "", "", "", false, false };
+
+	template <typename CharT = char>
+	constexpr TreeFileLayout<CharT> LayoutSNDX{ "=", ",", "{", "}", " {}\t\n\"", " {}\n\t\"'", "\n", "\t", "", false, false };
 
 	template <class dataT = std::string>
 	struct DataNode {
@@ -146,12 +150,24 @@ namespace sndx {
 
 		[[nodiscard]]
 		dataT getOrElse(std::basic_string_view<CharT> idStr, CharT delim, const dataT& onElse, std::basic_string_view<CharT> strip = " \t") {
+		
 			auto out = getData(idStr, delim, strip);
 			if (out == nullptr) {
 				return onElse;
 			}
 			else {
 				return *out;
+			}
+		}
+
+		template <class T> [[nodiscard]]
+		T getOrElse(std::basic_string_view<CharT> idStr, CharT delim, const T& onElse, std::function<T(const dataT&)> conversion, std::basic_string_view<CharT> strip = " \t") {
+			auto out = getData(idStr, delim, strip);
+			if (out == nullptr) {
+				return onElse;
+			}
+			else {
+				return conversion(*out);
 			}
 		}
 
@@ -165,7 +181,7 @@ namespace sndx {
 			}
 		}
 
-		void save(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutJSON<CharT>) const {
+		void save(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) const {
 			std::basic_ofstream<CharT> ofile(path);
 
 			if (ofile.is_open()) {
@@ -230,7 +246,7 @@ namespace sndx {
 	}
 
 	template <class dataT = std::string, typename CharT = char> [[nodiscard]]
-	DataTree<dataT, CharT> loadDataTree(std::basic_istream<CharT>& in, const TreeFileLayout<CharT>& layout = LayoutJSON<CharT>) {
+	DataTree<dataT, CharT> loadDataTree(std::basic_istream<CharT>& in, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
 		DataTree<dataT, CharT> out{};
 		out.root = DataNode<dataT>{};
 
@@ -263,7 +279,7 @@ namespace sndx {
 	}
 
 	template <class dataT = std::string, typename CharT = char> [[nodiscard]]
-	DataTree<dataT, CharT> loadDataTree(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutJSON<CharT>) {
+	DataTree<dataT, CharT> loadDataTree(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
 		std::basic_ifstream<CharT> ifile{ path };
 
 		if (ifile.is_open()) {
