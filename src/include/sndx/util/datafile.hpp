@@ -40,6 +40,7 @@ namespace sndx {
 
 	template <class dataT = std::string>
 	struct DataNode {
+
 		dataT data;
 
 		[[nodiscard]] dataT& get() { return data; }
@@ -54,7 +55,7 @@ namespace sndx {
 
 	template <class dataT = std::string, typename CharT = char>
 	struct DirectoryNode {
-		using Node = std::variant<DataNode<dataT>, DirectoryNode<dataT>>;
+		using Node = std::variant<DataNode<dataT>, DirectoryNode<dataT, CharT>>;
 		using StrT = std::basic_string<CharT>;
 
 		std::unordered_map<StrT, Node> data;
@@ -67,6 +68,90 @@ namespace sndx {
 			}
 
 			return &it->second;
+		}
+
+		[[nodiscard]]
+		Node* get(sv<CharT> idStr, CharT delim, sv<CharT> strips = " \t") {
+
+			auto [path, rest] = splitFirst(idStr, delim, strips);
+
+			Node* got = get(StrT(path));
+			if (got == nullptr) return nullptr;
+
+			if (rest == "") {
+				return got;
+			}
+
+			if (!std::holds_alternative<DirectoryNode<dataT>>(*got)) {
+				return nullptr;
+			}
+			else {
+				return std::get<DirectoryNode<dataT>>(*got).get(rest, delim, strips);
+			}
+		}
+
+		DataNode<dataT>* add(const dataT& val, sv<CharT> idStr, CharT delim, sv<CharT> strips = " \t") {
+			auto [path, rest] = splitFirst(idStr, delim, strips);
+
+			Node* got = get(StrT(path));
+			if (got == nullptr) {
+				if (rest == "") {
+					auto it = data.emplace(StrT(path), DataNode{val});
+					if (it.second) {
+						return &std::get<DataNode<dataT>>(it.first->second);
+					}
+
+					return nullptr; //insertion failed!
+				}
+				
+				auto it = data.emplace(StrT(path), DirectoryNode<dataT, CharT>{});
+				if (it.second) {
+					return std::get<DirectoryNode<dataT, CharT>>(it.first->second).add(val, rest, delim, strips);
+				}
+
+				return nullptr; //insertion failed!
+			}
+			
+			if (rest == "") {
+				if (!std::holds_alternative<DataNode<dataT>>(*got)) [[unlikely]] {
+					return nullptr;
+				}
+
+				std::get<DataNode<dataT>>(*got).data = val;
+				return &std::get<DataNode<dataT>>(*got);
+			}
+
+			if (!std::holds_alternative<DirectoryNode<dataT, CharT>>(*got)) [[unlikely]] {
+				return nullptr;
+			}
+
+			return std::get<DirectoryNode<dataT, CharT>>(*got).add(val, rest, delim, strips);
+		}
+
+		// returns removed data if the removed was a dataNode, returns empty otherwise
+		std::optional<dataT> remove(sv<CharT> idStr, CharT delim, sv<CharT> strips = " \t") {
+			auto [path, rest] = splitFirst(idStr, delim, strips);
+
+			Node* got = get(StrT(path));
+			if (got == nullptr) return {};
+
+			if (rest == "") {
+				if (std::holds_alternative<DataNode<dataT>>(*got)) {
+					auto out = std::move(std::get<DataNode<dataT>>(*got).data);
+					data.erase(StrT(path));
+					return out;
+				}
+				else {
+					data.erase(StrT(path));
+					return {};
+				}
+			}
+
+			if (std::holds_alternative<DirectoryNode<dataT, CharT>>(*got)) {
+				return std::get<DirectoryNode<dataT, CharT>>(*got).remove(rest, delim, strips);
+			}
+
+			return {};
 		}
 
 		template <typename T = char>
@@ -111,33 +196,18 @@ namespace sndx {
 		Node root;
 
 		[[nodiscard]]
-		Node* get(std::basic_string_view<CharT> idStr, CharT delim, std::basic_string_view<CharT> strip = " \t") {
-			auto path = splitStrip(idStr, delim, strip);
+		Node* get(sv<CharT> idStr, CharT delim, sv<CharT> strips = " \t") {
+			if (idStr == "") [[unlikely]] return &root;
 
-			if (path.empty()) [[unlikely]] return nullptr;
-
-			Node* cur = &root;
-
-			for (const auto& id : path) {
-				if (!std::holds_alternative<DirNodeT>(*cur)) {
-					return nullptr;
-				}
-				else {
-					auto dat = std::get<DirNodeT>(*cur).get(std::basic_string<CharT>(id));
-					if (dat != nullptr) {
-						cur = dat;
-					}
-					else {
-						return nullptr;
-					}
-				}
+			if (!std::holds_alternative<DirNodeT>(root)) [[unlikely]] {
+				return nullptr;
 			}
 
-			return cur;
+			return std::get<DirNodeT>(root).get(idStr, delim, strips);
 		}
 
 		[[nodiscard]]
-		dataT* getData(std::basic_string_view<CharT> idStr, CharT delim, std::basic_string_view<CharT> strip = " \t") {
+		dataT* getData(sv<CharT> idStr, CharT delim, sv<CharT> strip = " \t") {
 			auto dataNode = get(idStr, delim, strip);
 			if (dataNode == nullptr) return nullptr;
 
@@ -149,26 +219,47 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		dataT getOrElse(std::basic_string_view<CharT> idStr, CharT delim, const dataT& onElse, std::basic_string_view<CharT> strip = " \t") {
-		
+		dataT getOrElse(sv<CharT> idStr, CharT delim, const dataT& onElse, sv<CharT> strip = " \t") const {
 			auto out = getData(idStr, delim, strip);
 			if (out == nullptr) {
 				return onElse;
 			}
-			else {
-				return *out;
-			}
+
+			return *out;
 		}
 
 		template <class T> [[nodiscard]]
-		T getOrElse(std::basic_string_view<CharT> idStr, CharT delim, const T& onElse, std::function<T(const dataT&)> conversion, std::basic_string_view<CharT> strip = " \t") {
+		T getOrElse(sv<CharT> idStr, CharT delim, const T& onElse, std::function<T(const dataT&)> conversion, sv<CharT> strip = " \t") const {
 			auto out = getData(idStr, delim, strip);
 			if (out == nullptr) {
 				return onElse;
 			}
-			else {
-				return conversion(*out);
+
+			return conversion(*out);
+		}
+
+		// adds a dataNode to the structure along with all directories needed to support it
+		// returns nullptr on error
+		DataNodeT* add(const dataT& data, sv<CharT> idStr, CharT delim, sv<CharT> strips = " \t") {
+			if (!std::holds_alternative<DirNodeT>(root)) [[unlikely]] {
+				return nullptr;
 			}
+
+			return std::get<DirNodeT>(root).add(data, idStr, delim, strips);
+		}
+
+		// returns removed data if the removed was a dataNode, returns empty otherwise
+		std::optional<dataT> remove(sv<CharT> idStr, CharT delim, sv<CharT> strips = " \t") {
+			if (idStr == "") {
+				root = DirNodeT{};
+				return {};
+			}
+
+			if (!std::holds_alternative<DirNodeT>(root)) [[unlikely]] {
+				return {};
+			}
+
+			return std::get<DirNodeT>(root).remove(idStr, delim, strips);
 		}
 
 		void save(std::basic_ostream<CharT>& ostream, const TreeFileLayout<CharT>& layout) const {
@@ -194,11 +285,10 @@ namespace sndx {
 	};
 
 	template <class dataT = std::string, typename CharT = char> [[nodiscard]]
-	DirectoryNode<dataT, CharT> parseBranch(std::basic_string_view<CharT> branch, TreeFileLayout<CharT> layout) {
+	DirectoryNode<dataT, CharT> parseBranch(sv<CharT> branch, TreeFileLayout<CharT> layout) {
 		DirectoryNode<dataT, CharT> out{};
 
-		using sv = std::basic_string_view<CharT>;
-		auto npos = std::basic_string_view<CharT>::npos;
+		constexpr auto npos = sv<CharT>::npos;
 
 		size_t cur = 0;
 
@@ -254,17 +344,17 @@ namespace sndx {
 		strm << in.rdbuf();
 		auto str = strm.str();
 
-		auto inpt = std::basic_string_view<CharT>(str);
+		auto inpt = sv<CharT>(str);
 
 		auto firstData = inpt.find_first_of(layout.dataDelim);
 		auto firstDir = inpt.find_first_of(layout.beginDirDelim);
 
-		if (firstData == std::basic_string_view<CharT>::npos) [[unlikely]] return out;
+		if (firstData == sv<CharT>::npos) [[unlikely]] return out;
 
-		if (firstDir != std::basic_string_view<CharT>::npos && firstDir < firstData) {
+		if (firstDir != sv<CharT>::npos && firstDir < firstData) {
 			auto lastDir = inpt.find_last_of(layout.endDirDelim);
 
-			if (lastDir == std::basic_string_view<CharT>::npos) {
+			if (lastDir == sv<CharT>::npos) {
 				inpt = inpt.substr(firstDir + 1);
 			}
 			else {
@@ -273,7 +363,7 @@ namespace sndx {
 		}
 
 
-		out.root = parseBranch(strip(inpt, std::basic_string_view<CharT>(layout.strip)), layout);
+		out.root = parseBranch(strip(inpt, sv<CharT>(layout.strip)), layout);
 
 		return out;
 	}
@@ -285,8 +375,7 @@ namespace sndx {
 		if (ifile.is_open()) {
 			return loadDataTree<dataT, CharT>(ifile, layout);
 		}
-		else {
-			throw std::runtime_error("Could not open file " + path.filename().string());
-		}
+
+		throw std::runtime_error("Could not open file " + path.filename().string());
 	}
 }

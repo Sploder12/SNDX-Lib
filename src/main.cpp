@@ -3,30 +3,20 @@
 #include "util/stringmanip.hpp"
 #include "util/window.hpp"
 
-#include "render/vbo.hpp"
-#include "render/vao.hpp"
-#include "render/shader.hpp"
-
 using namespace sndx;
-
-struct peoeple {
-	int i;
-	int y;
-};
-
 int main() {
 
-	VBO<VboLayout<int, int>> a{};
+	
 
-	VAO b;
-	b.bindVBO(a);
+	auto data = loadDataTree("in.json", LayoutJSON<char>);
 
-	std::vector<std::pair<int, int>> data1{ {1,2}, {3,5} };
-	std::vector<peoeple> data2{ {1,2}, {3,5} };
+	std::cout << *data.getData("pizza.cheese", '.') << '\n';
 
-	std::vector<std::vector<peoeple>> bbb{ { {1, 2}, { 2,2 }, {3,3}}};
+	auto sauceNode = data.add("NONE", "pizza.toppings.0", '.');
 
-	a.setData(bbb.begin(), bbb.end());
+	std::cout << *data.getData("pizza.toppings.0", '.') << '\n';
+
+	data.save("out.sndx");
 
 	return 0;
 }

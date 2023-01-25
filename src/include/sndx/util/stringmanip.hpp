@@ -5,12 +5,15 @@
 #include <vector>
 
 namespace sndx {
+	template <typename CharT = char>
+	using sv = std::basic_string_view<CharT>;
+
 	template <typename CharT = char> [[nodiscard]]
-	std::basic_string_view<CharT> strip(std::basic_string_view<CharT> str, std::basic_string_view<CharT> strips = " \t") {
+	sv<CharT> strip(sv<CharT> str, sv<CharT> strips = " \t") {
 		auto first = str.find_first_not_of(strips);
 		auto last = str.find_last_not_of(strips);
 
-		if (first == std::basic_string_view<CharT>::npos) [[unlikely]] {
+		if (first == sv<CharT>::npos) [[unlikely]] {
 			return str.substr(0, 0);
 		}
 
@@ -18,8 +21,8 @@ namespace sndx {
 	}
 
 	template <typename CharT = char> [[nodiscard]]
-	std::vector<std::basic_string_view<CharT>> splitStrip(std::basic_string_view<CharT> str, CharT delim, std::basic_string_view<CharT> strips = " \t") {
-		std::vector<std::basic_string_view<CharT>> out{};
+	std::vector<sv<CharT>> splitStrip(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
+		std::vector<sv<CharT>> out{};
 		if (str == "") return out;
 
 		out.reserve(str.size() / 2);
@@ -27,10 +30,10 @@ namespace sndx {
 		auto in = strip(str, strips);
 
 		size_t split = 0;
-		while (split != std::basic_string_view<CharT>::npos) {
+		while (split != sv<CharT>::npos) {
 			auto next = in.find_first_of(delim, split);
 
-			if (next != std::basic_string_view<CharT>::npos) {
+			if (next != sv::npos) {
 				out.emplace_back(strip(in.substr(split, next - split), strips));
 			}
 			else {
@@ -41,5 +44,24 @@ namespace sndx {
 		}
 
 		return out;
+	}
+
+	template <typename CharT = char> [[nodiscard]]
+	std::pair<sv<CharT>, sv<CharT>> splitFirst(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
+		auto end = str.find_first_of(delim);
+		sv<CharT> first;
+		sv<CharT> second;
+		if (end == sv<CharT>::npos) {
+			first = str;
+			second = "";
+		}
+		else {
+			first = str.substr(0, end);
+			second = str.substr(end + 1);
+		}
+		first = strip(first, strips);
+		second = strip(second, strips);
+
+		return { first, second };
 	}
 }
