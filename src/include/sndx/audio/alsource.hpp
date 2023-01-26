@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include <span>
+#include <chrono>
 
 #include "abo.hpp"
 
@@ -48,28 +49,32 @@ namespace sndx {
 			alSourcei(id, param, val);
 		}
 
-		template <typename T>
+		template <typename T> [[nodiscard]]
 		T getParam(ALenum) const;
 
-		template <>
+		template <> [[nodiscard]]
 		float getParam(ALenum param) const {
 			float out;
 			alGetSourcef(id, param, &out);
 			return out;
 		}
 
-		template <>
+		template <> [[nodiscard]]
 		glm::vec3 getParam(ALenum param) const {
 			glm::vec3 out;
 			alGetSource3f(id, param, &out.x, &out.y, &out.z);
 			return out;
 		}
 
-		template <>
+		template <> [[nodiscard]]
 		int getParam(ALenum param) const {
 			int out;
 			alGetSourcei(id, param, &out);
 			return out;
+		}
+
+		void setPos(glm::vec3 pos) const {
+			setParam(AL_POSITION, pos);
 		}
 
 		void setVel(glm::vec3 velocity) const {
@@ -85,6 +90,10 @@ namespace sndx {
 			setParam(AL_GAIN, gain);
 		}
 
+		void setSpeed(float speed) const {
+			setParam(AL_PITCH, speed);
+		}
+
 		void setBuffer(const ABO& buffer) const {
 			setParam(AL_BUFFER, int(buffer.id));
 		}
@@ -95,6 +104,37 @@ namespace sndx {
 
 		void dequeueBuffers(std::span<ABO> buffers) const {
 			alSourceUnqueueBuffers(id, (ALsizei)buffers.size(), (ALuint*)buffers.data());
+		}
+
+		// does account for speed up/slowdown
+		void seekSec(std::chrono::duration<float> seconds) const {
+			if (seconds.count() >= 0) {
+				float pitch = getParam<float>(AL_PITCH);
+				setParam(AL_SEC_OFFSET, seconds.count() / pitch);
+			}
+		}
+
+		// doesn't account for speed up/slowdown
+		void seekSecRaw(std::chrono::duration<float> seconds) const {
+			if (seconds.count() >= 0) {
+				setParam(AL_SEC_OFFSET, seconds.count());
+			}
+		}
+
+		[[nodiscard]]
+		std::chrono::duration<float> tell() const {
+			float pitch = getParam<float>(AL_PITCH);
+			return std::chrono::duration<float>(getParam<float>(AL_SEC_OFFSET) * pitch);
+		}
+
+		[[nodiscard]]
+		std::chrono::duration<float> tellRaw() const {
+			return std::chrono::duration<float>(getParam<float>(AL_SEC_OFFSET));
+		}
+
+		[[nodiscard]]
+		bool playing() const {
+			return getParam<ALenum>(AL_SOURCE_STATE) == AL_PLAYING;
 		}
 
 		void gen() {

@@ -4,6 +4,7 @@
 #include <AL/alc.h>
 
 #include <span>
+#include <chrono>
 
 namespace sndx {
 
@@ -18,7 +19,7 @@ namespace sndx {
 		void setData(ALenum format, std::span<T> data, ALsizei freq) {
 			static_assert(std::is_integral_v<T>);
 
-			ALsizei size = data.size() * sizeof(T);
+			ALsizei size = ALsizei(data.size() * sizeof(T));
 			if (size > 0) {
 				if (id == 0) gen();
 
@@ -33,5 +34,22 @@ namespace sndx {
 			id = 0;
 		}
 
+		size_t lengthSamples() const {
+			ALint byteSize, channels, bits;
+
+			alGetBufferi(id, AL_SIZE, &byteSize);
+			alGetBufferi(id, AL_CHANNELS, &channels);
+			alGetBufferi(id, AL_BITS, &bits);
+
+			return byteSize * 8 / (channels * bits);
+		}
+
+		std::chrono::duration<float> lengthSeconds() const {
+			ALint frequency;
+
+			alGetBufferi(id, AL_FREQUENCY, &frequency);
+
+			return std::chrono::duration<float>(float(lengthSamples()) / float(frequency));
+		}
 	};
 }

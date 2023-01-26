@@ -9,6 +9,7 @@
 
 #include "alsource.hpp"
 #include "abo.hpp"
+#include "audiodata.hpp"
 
 // note because of lgpl OpenAL itself must be dynamically linked
 // I have modified my vcpkg triplet for this, you do too
@@ -18,14 +19,33 @@
 
 namespace sndx {
 
+	static std::vector<std::string> getAlDevices() {
+		if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") != AL_TRUE) {
+			return {};
+		}
+
+		auto devices = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+		if (devices == nullptr || *devices == '\0') return {};
+
+		std::vector<std::string> out{};
+
+		do {
+			out.emplace_back(devices);
+			devices += out.back().size() + 1;
+		} while (*devices != '\0');
+
+		return out;
+	}
+
+	template <typename IdT = std::string>
 	struct ALContext {
 		ALCdevice* device;
 		ALCcontext* context;
 
 		// buffers and sources are context specific, which sucks
 		// also despite being based on OpenGL there is no "bindBuffer" etc.
-		std::unordered_map<std::string, ABO> buffers;
-		std::unordered_map<std::string, ALSource> sources;
+		std::unordered_map<IdT, ABO> buffers;
+		std::unordered_map<IdT, ALSource> sources;
 
 		explicit ALContext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
 			device(alcOpenDevice(deviceName)), buffers({}), sources({}) {
@@ -69,6 +89,34 @@ namespace sndx {
 			if (device != nullptr) alcCloseDevice(device);
 		}
 
+		void bind() const {
+			alcMakeContextCurrent(context);
+		}
+
+		[[nodiscard]]
+		std::string currentDevice() {
+			if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") != AL_TRUE) {
+				return "";
+			}
+
+			return std::string(alcGetString(device, ALC_DEVICE_SPECIFIER));
+		}
+
+		template <typename T>
+		ABO createBuffer(const IdT& id, const AudioData<T>& data) {
+			ABO out{};
+			out.setData(data.format, std::span(data.buffer), data.freq);
+			buffers.emplace(id, out);
+			return out;
+		}
+
+		ALSource createSource(const IdT& id) {
+			ALSource out{};
+			out.gen();
+			sources.emplace(id, out);
+			return out;
+		}
+
 		void setVolume(float gain) const {
 			alListenerf(AL_GAIN, gain);
 		}
@@ -86,6 +134,7 @@ namespace sndx {
 			alListenerfv(AL_ORIENTATION, (ALfloat*)dat.data());
 		}
 
+		[[nodiscard]]
 		float getVolume() const {
 			float out;
 			alGetListenerf(AL_GAIN, &out);

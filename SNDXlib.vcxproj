@@ -72,15 +72,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)src\include\sndx;$(IncludePath)</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);</ExternalIncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
@@ -177,6 +181,7 @@
     <ClInclude Include="src\include\sndx\audio\abo.hpp" />
     <ClInclude Include="src\include\sndx\audio\alcontext.hpp" />
     <ClInclude Include="src\include\sndx\audio\alsource.hpp" />
+    <ClInclude Include="src\include\sndx\audio\audiodata.hpp" />
     <ClInclude Include="src\include\sndx\render\shader.hpp" />
     <ClInclude Include="src\include\sndx\render\vao.hpp" />
     <ClInclude Include="src\include\sndx\render\vbo.hpp" />
