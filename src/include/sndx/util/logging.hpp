@@ -52,22 +52,20 @@ namespace sndx {
 	public:
 		using LoggerT = Logger<CharT>;
 
-		void addLogger(LoggerT* logger) {
-			if (logger == nullptr) throw std::runtime_error("Attempted to add null logger");
+		void addLogger(LoggerT& logger) {
 			std::unique_lock lock(contextMtx);
-			loggers.emplace_back(logger);
+			loggers.emplace_back(&logger);
 		}
 
-		void activateLogger(LoggerT* logger) {
-			if (logger == nullptr) throw std::runtime_error("Attempted to activate null logger");
+		void activateLogger(LoggerT& logger) {
 			std::unique_lock lock(contextMtx);
 			logger->active = true;
-			loggers.emplace_back(logger);
+			loggers.emplace_back(&logger);
 		}
 
-		void removeLogger(LoggerT* logger) {
+		void removeLogger(LoggerT& logger) {
 			std::unique_lock lock(contextMtx);
-			loggers.erase(std::remove(loggers.begin(), loggers.end(), logger));
+			loggers.erase(std::remove(loggers.begin(), loggers.end(), &logger));
 		}
 
 		void log(std::basic_string_view<CharT> msg) {

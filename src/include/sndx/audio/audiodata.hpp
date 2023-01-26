@@ -10,39 +10,139 @@
 #include <filesystem>
 #include <fstream>
 #include <vector>
+#include <optional>
+#include <bit>
 
 namespace sndx {
 
+	enum class ChannelFormat : ALenum {
+		mono8 = AL_FORMAT_MONO8,
+		mono16 = AL_FORMAT_MONO16,
+		stereo8 = AL_FORMAT_STEREO8,
+		stereo16 = AL_FORMAT_STEREO16,
+	};
+
 	[[nodiscard]]
-	constexpr ALenum determineFormat(short bitsPerSample, short channels) {
+	constexpr ChannelFormat determineFormat(short bitsPerSample, short channels) {
+		using enum ChannelFormat;
 		if (channels == 1) {
 			if (bitsPerSample == 8) {
-				return AL_FORMAT_MONO8;
+				return mono8;
 			}
 			
-			return AL_FORMAT_MONO16;
+			return mono16;
 		}
 
 		if (bitsPerSample == 8) {
-			return AL_FORMAT_STEREO8;
+			return stereo8;
 		}
 
-		return AL_FORMAT_STEREO16;
+		return stereo16;
 	}
 
 	template <typename T>
 	struct AudioData {
-		ALenum format;
+		static_assert(std::is_integral_v<T>);
+
+		ChannelFormat format;
 		ALsizei freq;
 		std::vector<T> buffer;
+
+		bool isMono() const {
+			return format == ChannelFormat::mono8 || format == ChannelFormat::mono16;
+		}
 
 		void destroy() {
 			buffer.clear();
 		}
+
+		void makeMono() {
+			using enum ChannelFormat;
+			if (format == mono8 || format == mono16) return;
+
+			std::vector<long long> tmp{};
+			tmp.resize(buffer.size() / 2);
+
+			for (int i = 0; i < buffer.size() / 2; i += 2) {
+				// average the stereo
+				tmp[i] = (buffer[i * 2] + buffer[i * 2 + 1]) / 2;
+			}
+			
+			buffer.clear();
+			for (auto data : tmp) {
+				buffer.emplace_back(T(data));
+			}
+
+			if (format == stereo8) format = mono8;
+			else if (format == stereo16) format = mono16;
+		}
+
+		void makeStereo() {
+			using enum ChannelFormat;
+			if (format == stereo8 || format == stereo16) return;
+
+			std::vector<T> tmp{};
+			tmp.resize(buffer.size() * 2);
+
+			for (int i = 0; i < buffer.size(); ++i) {
+				tmp[i * 2] = buffer[i];
+				tmp[i * 2 + 1] = buffer[i];
+			}
+
+			buffer = std::move(tmp);
+
+			if (format == mono8) format = stereo8;
+			else if (format == mono16) format = stereo16;
+		}
+
+		template <typename F = unsigned char> [[nodiscard]]
+		AudioData<F> asType() {
+			static_assert(!std::is_same_v<F, char> || !std::is_signed_v<F>, "8-bit audio is unsigned I guess, sorry!");
+
+			if constexpr (sizeof(T) == sizeof(F) && std::is_signed_v<F> == std::is_signed_v<T>) {
+				return *this;
+			}
+
+			static constexpr size_t oldMax = (1 << (sizeof(T) * 8 - std::is_signed_v<T>)) - 1;
+			static constexpr size_t newMax = (1 << (sizeof(F) * 8 - std::is_signed_v<F>)) - 1;
+			
+			static constexpr long double conversion = (long double)(newMax) / (long double)(oldMax);
+
+			AudioData<F> out;
+
+			out.freq = freq;
+			out.buffer.reserve(buffer.size());
+
+			for (long long val : buffer) {
+				if constexpr (std::is_unsigned_v<F> && !std::is_unsigned_v<T>) {
+					val += oldMax;
+					out.buffer.emplace_back(F(val * conversion / 2.0));
+				}
+				else if constexpr (std::is_unsigned_v<T> && !std::is_unsigned_v<F>) {
+					val -= oldMax;
+					out.buffer.emplace_back(F(val * conversion / 2.0));
+				}
+				else {
+					out.buffer.emplace_back(F(val * conversion));
+				}
+			}
+
+			if constexpr (sizeof(F) == 1) {
+				out.format = (isMono()) ? ChannelFormat::mono8 : ChannelFormat::stereo8;
+			}
+			else if constexpr (sizeof(F) == 2) {
+				out.format = (isMono()) ? ChannelFormat::mono16 : ChannelFormat::stereo16;
+			}
+			else {
+				out.format = format;
+			}
+			
+			return out;
+		}
 	};
 
 	[[nodiscard]]
-	static AudioData<mp3d_sample_t> loadMP3(std::istream& in) {
+	static AudioData<short> loadMP3(std::istream& in) {
 		in.seekg(0, std::ios::end);
 		size_t size = in.tellg();
 		in.seekg(0);
@@ -71,18 +171,18 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	static AudioData<mp3d_sample_t> loadMP3(const std::filesystem::path& path) {
+	std::optional<AudioData<short>> loadMP3(const std::filesystem::path& path) {
 		std::ifstream file(path, std::ifstream::in | std::ifstream::binary);
 
 		if (file.is_open()) {
 			return loadMP3(file);
 		}
 
-		throw std::runtime_error("Could not open file " + path.filename().string());
+		return {};
 	}
 
 	[[nodiscard]]
-	static AudioData<char> loadWAV(std::istream& in) {
+	static AudioData<short> loadWAV(std::istream& in) {
 	
 		char type[4];
 		unsigned long size, chunkSize;
@@ -124,24 +224,56 @@ namespace sndx {
 		//get that data
 		in.read((char*)&dataSize, sizeof(dataSize));
 
-		AudioData<char> out{};
-		out.format = determineFormat(bitsPerSample, channels);
-		out.freq = sampleRate;
-		out.buffer.resize(dataSize);
+		AudioData<char> tmp{};
+		tmp.buffer.resize(dataSize);
+		tmp.format = determineFormat(bitsPerSample, channels);
+		tmp.freq = sampleRate;
 
-		in.read(out.buffer.data(), dataSize);
+		in.read(tmp.buffer.data(), dataSize);
 
-		return out;
+		if (tmp.format == ChannelFormat::mono8 || tmp.format == ChannelFormat::stereo8) {
+			return tmp.asType<short>();
+		}
+		else {
+			static constexpr auto endianess = int(std::endian::native);
+
+			AudioData<short> out{};
+			out.freq = tmp.freq;
+			out.format = tmp.format;
+
+			out.buffer.reserve(tmp.buffer.size() / 2);
+
+			for (int i = 0; i < tmp.buffer.size() / 2; ++i) {
+				char* cur = (char*)(&out.buffer[i]);
+				*(cur + endianess) = tmp.buffer[i * 2];
+				*(cur + 1 - endianess) = tmp.buffer[i * 2 + 1];
+			}
+			return out;
+		}
 	}
 
 	[[nodiscard]]
-	static AudioData<char> loadWAV(const std::filesystem::path& path) {
+	std::optional<AudioData<short>> loadWAV(const std::filesystem::path& path) {
 		std::ifstream file(path, std::ifstream::in | std::ifstream::binary);
 
 		if (file.is_open()) {
 			return loadWAV(file);
 		}
 
-		throw std::runtime_error("Could not open file " + path.filename().string());
+		return {};
+	}
+
+	[[nodiscard]]
+	std::optional<AudioData<short>> loadAudioFile(const std::filesystem::path& path) {
+		auto&& extension = path.extension().string();
+
+		if (extension == ".wav") {
+			return loadWAV(path);
+		}
+		if (extension == ".mp3") {
+			return loadMP3(path);
+		}
+		
+		return {};
 	}
 }

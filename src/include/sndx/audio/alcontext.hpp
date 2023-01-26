@@ -12,7 +12,7 @@
 #include "audiodata.hpp"
 
 // note because of lgpl OpenAL itself must be dynamically linked
-// I have modified my vcpkg triplet for this, you do too
+// I have modified my vcpkg triplet for this, you must too
 
 // https://openal.org/documentation/OpenAL_Programmers_Guide.pdf
 // https://openal.org/documentation/openal-1.1-specification.pdf
@@ -70,15 +70,8 @@ namespace sndx {
 		ALContext(const ALContext&) = delete;
 
 		~ALContext() {
-			for (auto& [id, source] : sources) {
-				source.destroy();
-			}
-			sources = {};
-
-			for (auto& [id, buffer] : buffers) {
-				buffer.destroy();
-			}
-			buffers = {};
+			sources.clear();
+			buffers.clear();
 
 			if (alcGetCurrentContext() == context) {
 				alcMakeContextCurrent(nullptr);
@@ -105,7 +98,7 @@ namespace sndx {
 		template <typename T>
 		ABO createBuffer(const IdT& id, const AudioData<T>& data) {
 			ABO out{};
-			out.setData(data.format, std::span(data.buffer), data.freq);
+			out.setData(ALenum(data.format), std::span(data.buffer), data.freq);
 			buffers.emplace(id, out);
 			return out;
 		}

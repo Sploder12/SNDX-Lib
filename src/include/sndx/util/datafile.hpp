@@ -272,15 +272,15 @@ namespace sndx {
 			}
 		}
 
-		void save(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) const {
+		bool save(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) const {
 			std::basic_ofstream<CharT> ofile(path);
 
 			if (ofile.is_open()) {
 				save(ofile, layout);
+				return true;
 			}
-			else {
-				throw std::runtime_error("Could not open file " + path.filename().string());
-			}
+			
+			return false;
 		}
 	};
 
@@ -369,13 +369,13 @@ namespace sndx {
 	}
 
 	template <class dataT = std::string, typename CharT = char> [[nodiscard]]
-	DataTree<dataT, CharT> loadDataTree(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
+	std::optional<DataTree<dataT, CharT>> loadDataTree(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
 		std::basic_ifstream<CharT> ifile{ path };
 
 		if (ifile.is_open()) {
 			return loadDataTree<dataT, CharT>(ifile, layout);
 		}
 
-		throw std::runtime_error("Could not open file " + path.filename().string());
+		return {};
 	}
 }

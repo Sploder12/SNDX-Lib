@@ -18,9 +18,10 @@ namespace sndx {
 		template <typename T>
 		void setData(ALenum format, std::span<T> data, ALsizei freq) {
 			static_assert(std::is_integral_v<T>);
+			static_assert(decltype(data)::extent != 0);
 
 			ALsizei size = ALsizei(data.size() * sizeof(T));
-			if (size > 0) {
+			if (size > 0) [[likely]] {
 				if (id == 0) gen();
 
 				alBufferData(id, format, data.data(), size, freq);
@@ -34,6 +35,7 @@ namespace sndx {
 			id = 0;
 		}
 
+		[[nodiscard]]
 		size_t lengthSamples() const {
 			ALint byteSize, channels, bits;
 
@@ -44,6 +46,7 @@ namespace sndx {
 			return byteSize * 8 / (channels * bits);
 		}
 
+		[[nodiscard]]
 		std::chrono::duration<float> lengthSeconds() const {
 			ALint frequency;
 
