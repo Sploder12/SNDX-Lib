@@ -77,7 +77,7 @@ namespace sndx {
 
 			Node* got = get(StrT(path));
 			if (got == nullptr) return nullptr;
-
+			
 			if (rest == "") {
 				return got;
 			}

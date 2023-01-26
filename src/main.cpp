@@ -3,6 +3,8 @@
 #include "util/stringmanip.hpp"
 #include "util/window.hpp"
 
+#include "audio/alcontext.hpp"
+
 using namespace sndx;
 int main() {
 

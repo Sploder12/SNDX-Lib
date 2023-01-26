@@ -202,9 +202,8 @@ namespace sndx {
 		}
 
 		void gen() {
-			if (id != 0) {
-				destroy();
-			}
+			if (id != 0) destroy();
+			
 			glGenBuffers(1, &id);
 		}
 
