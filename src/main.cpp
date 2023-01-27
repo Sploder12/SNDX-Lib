@@ -2,15 +2,16 @@
 #include "util/logging.hpp"
 #include "util/stringmanip.hpp"
 #include "util/window.hpp"
+#include "util/lines.hpp"
 
 #include "audio/alcontext.hpp"
+
 
 using namespace sndx;
 int main() {
 
-	
 
-	auto data = loadDataTree("in.json", LayoutJSON<char>).value();;
+	auto data = loadDataTree("in.json", LayoutJSON<char>).value();
 
 	std::cout << *data.getData("pizza.cheese", '.') << '\n';
 
@@ -25,7 +26,8 @@ int main() {
 	ALContext alcontext{};
 	alcontext.bind();
 
-	auto testmp3 = loadAudioFile("test.mp3").value().asType<unsigned char>().asType<short>();
+	auto testmp3 = loadAudioFile("test.mp3").value();
+	testmp3.normalize();
 
 	auto testbuf = alcontext.createBuffer("test", testmp3);
 
@@ -37,8 +39,8 @@ int main() {
 
 	testsrc.setPos(glm::vec3(0.0));
 	testsrc.setParam(AL_ROLLOFF_FACTOR, 0.0f);
-	testsrc.setParam(AL_SOURCE_RELATIVE, (int)AL_TRUE);
-	testsrc.setParam(AL_LOOPING, (int)AL_TRUE);
+	testsrc.setParam(AL_SOURCE_RELATIVE, AL_TRUE);
+	testsrc.setParam(AL_LOOPING, AL_TRUE);
 	testsrc.setSpeed(1.0f);
 
 	testsrc.setBuffer(testbuf);

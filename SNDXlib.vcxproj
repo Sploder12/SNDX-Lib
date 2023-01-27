@@ -190,6 +190,7 @@
     <ClInclude Include="src\include\sndx\render\vao.hpp" />
     <ClInclude Include="src\include\sndx\render\vbo.hpp" />
     <ClInclude Include="src\include\sndx\util\datafile.hpp" />
+    <ClInclude Include="src\include\sndx\util\lines.hpp" />
     <ClInclude Include="src\include\sndx\util\logging.hpp" />
     <ClInclude Include="src\include\sndx\util\stringmanip.hpp" />
     <ClInclude Include="src\include\sndx\util\window.hpp" />

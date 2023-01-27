@@ -13,6 +13,9 @@
 #include <optional>
 #include <bit>
 
+#include <algorithm>
+#include <execution>
+
 namespace sndx {
 
 	enum class ChannelFormat : ALenum {
@@ -95,13 +98,35 @@ namespace sndx {
 			else if (format == mono16) format = stereo16;
 		}
 
+		void normalize() {
+			static constexpr size_t tmax = (1 << (sizeof(T) * 8 - std::is_signed_v<T>)) - 1;
+
+			T maxVal = *std::max_element(buffer.begin(), buffer.end());
+
+			if constexpr (std::is_signed_v<T>) {
+				T minVal = *std::min_element(buffer.begin(), buffer.end());
+
+				T best = max(abs(minVal), abs(maxVal));
+
+				long double scalar = (long double)(tmax) / (long double)(best);
+				for (auto& val : buffer) {
+					val = T((long double)(val) * scalar);
+				}
+			}
+			else {
+
+				long double scalar = (long double)(tmax) / (long double)(maxVal);
+
+				for (auto& val : buffer) {
+					val = T((long double)(val)*scalar);
+				}
+			}
+		}
+
 		template <typename F = unsigned char> [[nodiscard]]
 		AudioData<F> asType() {
-			static_assert(!std::is_same_v<F, char> || !std::is_signed_v<F>, "8-bit audio is unsigned I guess, sorry!");
-
-			if constexpr (sizeof(T) == sizeof(F) && std::is_signed_v<F> == std::is_signed_v<T>) {
-				return *this;
-			}
+			static_assert(!std::is_same_v<F, char> || !std::is_signed_v<F>, "I know what you're thinking, but you don't want signed char.");
+			static_assert(sizeof(T) != sizeof(F) || std::is_signed_v<T> != std::is_signed_v<F>);
 
 			static constexpr size_t oldMax = (1 << (sizeof(T) * 8 - std::is_signed_v<T>)) - 1;
 			static constexpr size_t newMax = (1 << (sizeof(F) * 8 - std::is_signed_v<F>)) - 1;
@@ -111,21 +136,22 @@ namespace sndx {
 			AudioData<F> out;
 
 			out.freq = freq;
-			out.buffer.reserve(buffer.size());
+			out.buffer.resize(buffer.size());
 
-			for (long long val : buffer) {
+			std::transform(buffer.begin(), buffer.end(), out.buffer.begin(), [](long long val) {
 				if constexpr (std::is_unsigned_v<F> && !std::is_unsigned_v<T>) {
-					val += oldMax;
-					out.buffer.emplace_back(F(val * conversion / 2.0));
+					long double tmp = (long double)(val + oldMax) * conversion / 2.0;
+
+					return F(tmp);
 				}
 				else if constexpr (std::is_unsigned_v<T> && !std::is_unsigned_v<F>) {
-					val -= oldMax;
-					out.buffer.emplace_back(F(val * conversion / 2.0));
+					val -= oldMax / 2;
+					return F((long double)(val) * conversion * 1.9);
 				}
 				else {
-					out.buffer.emplace_back(F(val * conversion));
+					return F((long double)(val) * conversion);
 				}
-			}
+			});
 
 			if constexpr (sizeof(F) == 1) {
 				out.format = (isMono()) ? ChannelFormat::mono8 : ChannelFormat::stereo8;
