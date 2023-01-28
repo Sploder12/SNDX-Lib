@@ -20,7 +20,29 @@ namespace sndx {
 		void save(const char* path, int quality = 100) {
 
 			stbi_flip_vertically_on_write(true);
-			stbi_write_jpg(path, width, height, channels , data.data(), quality);
+			stbi_write_jpg(path, width, height, channels, data.data(), quality);
+		}
+
+		[[nodiscard]]
+		ImageData asGrayScale() {
+			ImageData out{};
+			out.width = width;
+			out.height = height;
+			out.channels = 1;
+			out.data.reserve(data.size() / channels);
+
+			for (int i = 0; i < data.size() / channels; ++i) {
+				int index = i * channels;
+				
+				int sum = 0;
+				for (int c = 0; c < channels; ++c) {
+					sum += data[index + c];
+				}
+
+				out.data.emplace_back(sum / channels);
+			}
+
+			return out;
 		}
 	};
 

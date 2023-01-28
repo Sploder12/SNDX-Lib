@@ -1,20 +1,27 @@
 #pragma once
 
+#include <array>
+
 namespace sndx {
 
 	template <size_t n> [[nodiscard]]
-	constexpr size_t factorial() {
-		size_t out = 1;
-		for (int i = 2; i <= n; ++i) {
-			out *= i;
+	consteval std::array<size_t, n+1> factorials() {
+		std::array<size_t, n + 1> out;
+		out[0] = 1;
+
+		for (int i = 1; i <= n; ++i) {
+			out[i] = out[i - 1] * i;
 		}
+
 		return out;
 	}
 
 	[[nodiscard]]
 	constexpr size_t factorial(size_t n) {
-		size_t out = 1;
-		for (int i = 2; i <= n; ++i) {
+		if (n == 0) return 1;
+
+		size_t out = n;
+		for (int i = 2; i < n; ++i) {
 			out *= i;
 		}
 		return out;
@@ -58,7 +65,6 @@ namespace sndx {
 		return t * t * (T(3.0) - 2.0 * t);
 	}
 
-	// I have 0 clue if it works beyond cubic
 	template <class Container> [[nodiscard]]
 		constexpr auto bezier(float t, const Container& container) {
 
@@ -72,7 +78,29 @@ namespace sndx {
 		for (auto point : container) {
 			size_t binomCoef = factN / (factorial(i) * factorial(container.size() - 1 - i));
 
-			out += point * pow(1.0f - t, container.size() - 1 - i) * pow(t, i) * T(binomCoef);
+			out += point * pow(1.0f - t, container.size() - 1 - i) * pow(t, i) * (float)(binomCoef);
+
+			++i;
+		}
+
+		return out;
+	}
+
+	template <size_t n, class Container> [[nodiscard]]
+	constexpr auto bezier(float t, const Container& container) {
+		assert(n == container.size());
+
+		using T = typename Container::value_type;
+
+		static constexpr auto facts = factorials<n>();
+
+		T out = T(0.0);
+
+		size_t i = 0;
+		for (auto point : container) {
+			size_t binomCoef = facts[n - 1] / (facts[i] * facts[container.size() - 1 - i]);
+
+			out += point * pow(1.0f - t, container.size() - 1 - i) * pow(t, i) * (float)(binomCoef);
 
 			++i;
 		}
@@ -82,22 +110,8 @@ namespace sndx {
 
 	template <typename T, typename... Ts> [[nodiscard]]
 	constexpr auto bezier(float t, T a, Ts... points) {
+		auto loci = { a, points... };
 
-		static constexpr auto factN = factorial<sizeof...(Ts)>();
-
-		auto loci = { points... };
-
-		T out = a * pow(1.0f - t, sizeof...(Ts));
-
-		size_t i = 1;
-		for (auto point : loci) {
-			size_t binomCoef = factN / (factorial(i) * factorial(sizeof...(Ts) - i));
-
-			out += point * pow(1.0f - t, sizeof...(Ts) - i) * pow(t, i) * T(binomCoef);
-
-			++i;
-		}
-
-		return out;
+		return bezier<sizeof...(Ts) + 1>(t, loci);
 	}
 }

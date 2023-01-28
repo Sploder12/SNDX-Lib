@@ -81,7 +81,6 @@ void doThing() {
 
 
 			for (float t = 0.0f; t <= 1.0f; t += 0.0005f) {
-
 				glm::vec2 res = bezier(t, points);
 
 				for (int y = -1; y <= 1; ++y) {
@@ -114,7 +113,7 @@ void doThing() {
 				}
 			}
 
-			tmp.save("out.jpg");
+			tmp.asGrayScale().save("out.jpg");
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 	}
