@@ -29,7 +29,7 @@ namespace sndx {
 
 	// note this does NOT support JSON arrays (because they're stupid)
 	template <typename CharT = char>
-	constexpr TreeFileLayout<CharT> LayoutJSON{ ":", ",", "{", "}", " {}\t\n\"", " {}\n\t\"'", "\n", "\t", "\"", false, true };
+	constexpr TreeFileLayout<CharT> LayoutJSON{ ":", ",", "{", "}", " \t\n\"", " {}\n\t\"'", "\n", "\t", "\"", false, true };
 
 	// note this does NOT support sections (because they're stupid)
 	template <typename CharT = char>
@@ -219,7 +219,7 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		dataT getOrElse(sv<CharT> idStr, CharT delim, const dataT& onElse, sv<CharT> strip = " \t") const {
+		dataT getOrElse(sv<CharT> idStr, CharT delim, const dataT& onElse, sv<CharT> strip = " \t") {
 			auto out = getData(idStr, delim, strip);
 			if (out == nullptr) {
 				return onElse;
@@ -229,7 +229,7 @@ namespace sndx {
 		}
 
 		template <class T> [[nodiscard]]
-		T getOrElse(sv<CharT> idStr, CharT delim, const T& onElse, std::function<T(const dataT&)> conversion, sv<CharT> strip = " \t") const {
+		T getOrElse(sv<CharT> idStr, CharT delim, const T& onElse, std::function<T(const dataT&)> conversion, sv<CharT> strip = " \t") {
 			auto out = getData(idStr, delim, strip);
 			if (out == nullptr) {
 				return onElse;
@@ -295,6 +295,9 @@ namespace sndx {
 		size_t next = 0;
 		while (next != npos) {
 			next = branch.find_first_of(layout.dataDelim, cur);
+
+			if (next == npos) return out;
+
 			auto id = strip(branch.substr(cur, next - cur), sv(layout.idStrip));
 
 			cur = next;
@@ -305,10 +308,27 @@ namespace sndx {
 			if (pDataEnd != npos) {
 				if (pDirBegin != npos && pDirBegin < pDataEnd) {
 
-					auto pDirEnd = branch.find_last_of(layout.endDirDelim, pDirBegin);
-					if (pDirEnd != npos) {
-						out.data.emplace(id, parseBranch(branch.substr(pDirBegin + 1, pDirEnd - pDirBegin - 1), layout));
-						cur = pDirEnd + 1;
+					int count = 1;
+					auto dirEnd = pDirBegin;
+					const auto endDirStr = std::basic_string<CharT>(layout.endDirDelim);
+					while (count > 0) {
+						dirEnd = branch.find_first_of(endDirStr + layout.beginDirDelim, dirEnd + 1);
+
+						if (dirEnd == npos) break;
+
+						if (std::find(endDirStr.begin(), endDirStr.end(), branch[dirEnd]) != endDirStr.end()) {
+							--count;
+						}
+						else {
+							++count;
+						}
+					}
+
+					if (pDirBegin > dirEnd) return out;
+
+					if (dirEnd != npos) {
+						out.data.emplace(id, parseBranch(branch.substr(pDirBegin + 1, dirEnd - pDirBegin - 1), layout));
+						cur = dirEnd + 2;
 					}
 					else {
 						if (id != "") out.data.emplace(id, parseBranch(branch.substr(pDirBegin + 1), layout));
