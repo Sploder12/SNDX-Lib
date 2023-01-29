@@ -106,7 +106,7 @@ namespace sndx {
 			if constexpr (std::is_signed_v<T>) {
 				T minVal = *std::min_element(buffer.begin(), buffer.end());
 
-				T best = max(abs(minVal), abs(maxVal));
+				T best = std::max(abs(minVal), abs(maxVal));
 
 				long double scalar = (long double)(tmax) / (long double)(best);
 				for (auto& val : buffer) {

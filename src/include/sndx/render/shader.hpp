@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOMINMAX
 #include <gl/glew.h>
 
 #include <glm/glm.hpp>

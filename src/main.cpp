@@ -8,6 +8,8 @@
 
 #include "render/texture.hpp"
 
+#include "3d/model.hpp"
+
 using namespace sndx;
 
 void doThing() {
@@ -93,7 +95,7 @@ void doThing() {
 						int index = (floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels;
 
 						unsigned char color = 255u - abs(x) * 100u - abs(y) * 100u;
-						tmp.data[index + 2] = max(color, tmp.data[index + 2]);
+						tmp.data[index + 2] = std::max(color, tmp.data[index + 2]);
 					}
 				}
 			}

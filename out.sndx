@@ -1,6 +1,0 @@
-pizza={
-	cheese=left,
-	toppings={
-		0=NONE
-	}
-}

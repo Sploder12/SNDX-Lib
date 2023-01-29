@@ -17,7 +17,10 @@ namespace sndx {
 
 		template <class Layout>
 		void bindVBO(VBO<Layout>& vbo, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
-			if (id == 0) return;
+			if (id == 0) {
+				gen();
+				curIdx = 0;
+			}
 
 			bind();
 			vbo.bind();

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 #include <array>
 
 namespace sndx {
@@ -66,7 +68,7 @@ namespace sndx {
 	}
 
 	template <class Container> [[nodiscard]]
-		constexpr auto bezier(float t, const Container& container) {
+	constexpr auto bezier(float t, const Container& container) {
 
 		using T = typename Container::value_type;
 
@@ -113,5 +115,12 @@ namespace sndx {
 		auto loci = { a, points... };
 
 		return bezier<sizeof...(Ts) + 1>(t, loci);
+	}
+
+	glm::vec3 surfaceNormal(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {
+		auto u = p1 - p0;
+		auto v = p2 - p0;
+
+		return glm::cross(u, v);
 	}
 }

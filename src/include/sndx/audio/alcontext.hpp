@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOMINMAX
 #include <AL/al.h>
 #include <AL/alc.h>
 
