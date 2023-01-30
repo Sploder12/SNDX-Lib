@@ -13,10 +13,12 @@
 
 using namespace sndx;
 
+ALContext alcontext{};
+
 void makeNoise() {
 	auto d = getAlDevices();
 
-	ALContext alcontext{};
+	
 	alcontext.bind();
 
 	auto testmp3 = loadAudioFile("tmp/test.mp3").value();
@@ -200,18 +202,18 @@ int main() {
 		shdr.uniform("model", mdl);
 		
 
-		for (auto& mesh : model.meshes) {
+
+		model.onEachMesh([](Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2>& mesh) {
 			mesh.bind();
 			glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-		}
+		});
 
 		glfwSwapBuffers(win.window);
 		glfwPollEvents();
 
 	}
 
-	
-	
+	model.destroy();
 	glfwTerminate();
 	return 0;
 }

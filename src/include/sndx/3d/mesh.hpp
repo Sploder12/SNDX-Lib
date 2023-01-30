@@ -29,9 +29,9 @@ namespace sndx {
 		
 
 	public:
-		std::vector<VertexT> vertices;
-		std::vector<unsigned int> indices;
-		std::vector<Texture> textures;
+		std::vector<VertexT> vertices{};
+		std::vector<unsigned int> indices{};
+		std::vector<Texture> textures{};
 
 		void updateBuffers() {
 			vbo.setData(vertices);

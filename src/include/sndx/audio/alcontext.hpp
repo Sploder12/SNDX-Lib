@@ -71,7 +71,16 @@ namespace sndx {
 		ALContext(const ALContext&) = delete;
 
 		~ALContext() {
+			for (auto& src : sources) {
+				src.second.destroy();
+			}
+
 			sources.clear();
+
+			for (auto& buf : buffers) {
+				buf.second.destroy();
+			}
+
 			buffers.clear();
 
 			if (alcGetCurrentContext() == context) {
