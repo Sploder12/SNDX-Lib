@@ -74,6 +74,8 @@ namespace sndx {
 		for (unsigned int i = 0; i < cur->mNumMeshes; ++i) {
 			aiMesh* mesh = scene->mMeshes[cur->mMeshes[i]];
 			target.meshes.emplace_back(processMesh(mesh, scene));
+
+			target.meshes.back().gen();
 		}
 
 		for (unsigned int i = 0; i < cur->mNumChildren; ++i) {

@@ -203,7 +203,9 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="in.json" />
+    <None Include="tmp\in.json" />
+    <None Include="tmp\model.fs" />
+    <None Include="tmp\model.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

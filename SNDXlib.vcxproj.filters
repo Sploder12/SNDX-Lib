@@ -70,6 +70,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="in.json" />
+    <None Include="tmp\in.json" />
+    <None Include="tmp\model.vs" />
+    <None Include="tmp\model.fs" />
   </ItemGroup>
 </Project>

@@ -61,7 +61,7 @@ namespace sndx {
 		GLFWwindow* win = glfwCreateWindow(width, height, name, monitor, share);
 		if (win == nullptr) throw std::runtime_error("Creating window resulted in nullptr.");
 
-		Window out{ win, glm::vec2(0.0f), glm::vec2(0.0f) };
+		Window<aspectRatio> out{ win, glm::vec2(0.0f), glm::vec2(0.0f) };
 		out.resize(width, height);
 		return out;
 	}
