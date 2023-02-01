@@ -71,9 +71,12 @@ namespace sndx {
 	using ModelNodeT = ModelNode<Vertex, glm::vec3, glm::vec3, glm::vec2>;
 	
 	[[nodiscard]]
-	std::vector<Texture> loadMaterialTextures(aiMaterial* material, aiTextureType type, Model<Vertex, glm::vec3, glm::vec3, glm::vec2>& target, const std::string path = "") {
-		std::vector<Texture> textures;
-		for (unsigned int i = 0; i < material->GetTextureCount(type); i++)
+	std::vector<Texture> loadMaterialTextures(aiMaterial* material, aiTextureType type, ModelT& target, const std::string path = "") {
+		std::vector<Texture> textures{};
+		auto texSize = material->GetTextureCount(type);
+		textures.reserve(texSize);
+
+		for (unsigned int i = 0; i < texSize; i++)
 		{
 			aiString str;
 			material->GetTexture(type, i, &str);
@@ -84,7 +87,7 @@ namespace sndx {
 				textures.emplace_back(target.textures[it->second]);
 			}
 			else {
-				target.textures.emplace_back(textureFromFile(tmp.c_str()));
+				target.textures.emplace_back(textureFromFile(tmp.c_str(), 0));
 				textures.emplace_back(target.textures.back());
 				target.loadedTextures.insert({tmp, target.textures.size() - 1 });
 			}
@@ -94,7 +97,7 @@ namespace sndx {
 
 	// https://learnopengl.com/Model-Loading/Model
 	[[nodiscard]]
-	Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2> processMesh(aiMesh* src, const aiScene* scene, Model<Vertex, glm::vec3, glm::vec3, glm::vec2>& target, const std::string path = "") {
+	Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2> processMesh(aiMesh* src, const aiScene* scene, ModelT& target, const std::string path = "") {
 		Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2> out{};
 
 		out.vertices.reserve(src->mNumVertices);
@@ -149,7 +152,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	std::optional<ModelT> loadModelFromFile(std::filesystem::path path) {
+	std::optional<ModelT> loadModelFromFile(const std::filesystem::path& path) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
 

@@ -272,7 +272,7 @@ namespace sndx {
 			}
 		}
 
-		bool save(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) const {
+		bool save(const std::filesystem::path& path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) const {
 			std::basic_ofstream<CharT> ofile(path);
 
 			if (ofile.is_open()) {
@@ -389,7 +389,7 @@ namespace sndx {
 	}
 
 	template <class dataT = std::string, typename CharT = char> [[nodiscard]]
-	std::optional<DataTree<dataT, CharT>> loadDataTree(std::filesystem::path path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
+	std::optional<DataTree<dataT, CharT>> loadDataTree(const std::filesystem::path& path, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
 		std::basic_ifstream<CharT> ifile{ path };
 
 		if (ifile.is_open()) {

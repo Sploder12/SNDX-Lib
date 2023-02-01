@@ -182,6 +182,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\include\sndx\3d\camera.hpp" />
     <ClInclude Include="src\include\sndx\3d\mesh.hpp" />
     <ClInclude Include="src\include\sndx\3d\model.hpp" />
     <ClInclude Include="src\include\sndx\audio\abo.hpp" />
