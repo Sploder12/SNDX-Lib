@@ -5,11 +5,13 @@
 #include "util/lines.hpp"
 
 #include "audio/alcontext.hpp"
+#include "audio/signal.hpp"
 
 #include "render/texture.hpp"
 #include "render/shader.hpp"
 
 #include "3d/model.hpp"
+#include "3d/camera.hpp"
 
 using namespace sndx;
 
@@ -18,7 +20,7 @@ ALContext alcontext{};
 void makeNoise() {
 	auto d = getAlDevices();
 
-	
+
 	alcontext.bind();
 
 	auto testmp3 = loadAudioFile("tmp/test.mp3").value();

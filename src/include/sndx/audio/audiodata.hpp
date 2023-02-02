@@ -125,6 +125,7 @@ namespace sndx {
 
 		template <typename F = unsigned char> [[nodiscard]]
 		AudioData<F> asType() {
+			static_assert(std::is_integral_v<F>);
 			static_assert(!std::is_same_v<F, char> || !std::is_signed_v<F>, "I know what you're thinking, but you don't want signed char.");
 			static_assert(sizeof(T) != sizeof(F) || std::is_signed_v<T> != std::is_signed_v<F>);
 

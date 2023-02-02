@@ -189,6 +189,7 @@
     <ClInclude Include="src\include\sndx\audio\alcontext.hpp" />
     <ClInclude Include="src\include\sndx\audio\alsource.hpp" />
     <ClInclude Include="src\include\sndx\audio\audiodata.hpp" />
+    <ClInclude Include="src\include\sndx\audio\signal.hpp" />
     <ClInclude Include="src\include\sndx\render\imagedata.hpp" />
     <ClInclude Include="src\include\sndx\render\shader.hpp" />
     <ClInclude Include="src\include\sndx\render\texture.hpp" />
