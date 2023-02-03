@@ -7,12 +7,14 @@
 
 namespace sndx {
 
+
+	// see https://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
 	template <class T> [[nodiscard]]
 	std::vector<std::complex<T>> fft(std::span<std::complex<T>> data, int effectiveSize = -1, int offset = 0, int stride = 1) {
 		if (effectiveSize == 1) return { data[offset] };
 		if (effectiveSize == 0) return {};
 
-		if (effectiveSize == -1) effectiveSize = data.size();
+		if (effectiveSize == -1) effectiveSize = int(data.size());
 		
 		std::vector<std::complex<T>> out{};
 		out.resize(effectiveSize);
@@ -24,7 +26,7 @@ namespace sndx {
 		for (int i = 0; i < effectiveSize / 2; ++i) {
 			using namespace std::complex_literals;
 
-			auto twiddle = std::exp(-2.0 * i * std::numbers::pi * 1i / double(effectiveSize));
+			auto twiddle = std::exp(T(-2.0) * T(i) * std::numbers::pi_v<T> * std::complex<T>(1i) / T(effectiveSize));
 			auto q = twiddle * odd[i];
 			
 			out[i] = even[i] + q;
@@ -46,7 +48,7 @@ namespace sndx {
 		out = fft(std::span(out));
 
 		for (auto& val : out) {
-			val = std::conj(val) / double(out.size());
+			val = std::conj(val) / T(out.size());
 
 		}
 

@@ -20,7 +20,6 @@ ALContext alcontext{};
 void makeNoise() {
 	auto d = getAlDevices();
 
-
 	alcontext.bind();
 
 	auto testmp3 = loadAudioFile("tmp/test.mp3").value();
@@ -35,6 +34,7 @@ void makeNoise() {
 	alcontext.setVolume(0.3f);
 
 	testsrc.setPos(glm::vec3(0.0));
+	testsrc.setGain(0.1f);
 	testsrc.setParam(AL_ROLLOFF_FACTOR, 0.0f);
 	testsrc.setParam(AL_SOURCE_RELATIVE, AL_TRUE);
 	testsrc.setParam(AL_LOOPING, AL_TRUE);
@@ -96,7 +96,7 @@ void doThing() {
 					if (pos.x >= tmp.width || pos.x < 0.0f) continue;
 					if (pos.y >= tmp.height || pos.y < 0.0f) continue;
 
-					int index = (floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels;
+					int index = int((floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels);
 
 					unsigned char color = 255u - abs(x) * 100u - abs(y) * 100u;
 					tmp.data[index + 2] = std::max(color, tmp.data[index + 2]);
@@ -111,7 +111,7 @@ void doThing() {
 
 					if (pos.x < tmp.width && pos.x >= 0.0f) {
 						if (pos.y < tmp.height && pos.y >= 0.0f) {
-							int index = (floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels;
+							int index = int((floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels);
 							tmp.data[index + 1] = 255;
 						}
 					}
@@ -207,7 +207,7 @@ int main() {
 
 		model.onEachMesh([](Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2>& mesh) {
 			mesh.bind();
-			glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+			glDrawElements(GL_TRIANGLES, GLsizei(mesh.indices.size()), GL_UNSIGNED_INT, 0);
 		});
 
 		glfwSwapBuffers(win.window);
