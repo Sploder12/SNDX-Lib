@@ -2,6 +2,8 @@
 
 #include "texture.hpp"
 
+#include <unordered_map>
+
 namespace sndx {
 
 	// A texture atlas that consists of equally sized and spaced elements
@@ -79,8 +81,20 @@ namespace sndx {
 			offsets.clear();
 		}
 	};
-
+	
+	template <class IdT = std::string>
 	struct Atlas {
+		Texture tex;
 
+		std::unordered_map<IdT, std::pair<glm::vec2, glm::vec2>> entries;
+
+		auto getCell(const IdT& id) {
+			return entries.at(id);
+		}
+
+		void destroy() {
+			tex.destroy();
+			entries.clear();
+		}
 	};
 }
