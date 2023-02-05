@@ -88,7 +88,7 @@ namespace sndx {
 
 		std::unordered_map<IdT, std::pair<glm::vec2, glm::vec2>> entries;
 
-		auto getCell(const IdT& id) {
+		auto& getCell(const IdT& id) {
 			return entries.at(id);
 		}
 

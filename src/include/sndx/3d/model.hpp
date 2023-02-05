@@ -19,6 +19,25 @@ namespace sndx {
 		std::vector<MeshT> meshes{};
 		std::vector<ModelNode<VertexT, VertexLayout...>> children{};
 
+		[[nodiscard]]
+		AABB getBounds() const {
+			if (meshes.empty()) return AABB{ glm::vec3(0.0f), glm::vec3(0.0f) };
+
+			AABB out = meshes.front().getBounds();
+
+			for (const auto& mesh : meshes) {
+				auto tmp = mesh.getBounds();
+				if (tmp.surfaceArea() != 0.0) out = out.merge(tmp);
+			}
+
+			for (const auto& child : children) {
+				auto tmp = child.getBounds();
+				if (tmp.surfaceArea() != 0.0) out = out.merge(tmp);
+			}
+
+			return out;
+		}
+
 		void destroy() {
 			for (auto& mesh : meshes) {
 				mesh.destroy();
@@ -49,6 +68,11 @@ namespace sndx {
 
 		std::vector<Texture> textures{};
 		std::unordered_map<std::string, size_t> loadedTextures{};
+
+		[[nodiscard]]
+		AABB getBounds() const {
+			return root.getBounds();
+		}
 
 		void destroy() {
 			loadedTextures.clear();
