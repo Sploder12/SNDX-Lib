@@ -3,8 +3,41 @@
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <array>
+#include <optional>
+#include <functional>
 
 namespace sndx {
+
+	template <size_t n>
+	struct Intersections {
+		std::array<std::optional<glm::vec3>, n> hits;
+
+		[[nodiscard]]
+		int hitCount() const {
+			int count = 0;
+
+			for (const auto& hit : hits) {
+				count += int(hit.has_value());
+			}
+
+			return count;
+		}
+		
+		[[nodiscard]]
+		std::vector<glm::vec3> asVector() const {
+			std::vector<glm::vec3> out{};
+			out.reserve(n);
+
+			for (const auto& hit : hits) {
+				if (hit.has_value()) {
+					out.emplace_back(hit.value());
+				}
+			}
+
+			return out;
+		}
+	};
 
 	struct AABB {
 
@@ -36,21 +69,32 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		constexpr double area() const {
-			float w = rub.x - ldf.x;
-			float l = rub.z - ldf.z;
-			float h = rub.y - ldf.y;
+		constexpr bool contains(glm::vec3 p) const {
+			if (p.x <= rub.x && p.x >= ldf.x) {
+				if (p.y <= rub.y && p.y >= ldf.y) {
+					return (p.z <= rub.z && p.z >= ldf.z);
+				}
+			}
+			return false;
+		}
 
-			return l * w * h;
+		[[nodiscard]]
+		constexpr glm::vec3 dims() const {
+			return rub - ldf;
+		}
+
+		[[nodiscard]]
+		constexpr double area() const {
+			auto dim = dims();
+
+			return dim.x * dim.y * dim.z;
 		}
 
 		[[nodiscard]]
 		constexpr double surfaceArea() const {
-			float w = rub.x - ldf.x;
-			float l = rub.z - ldf.z;
-			float h = rub.y - ldf.y;
+			auto dim = dims();
 
-			return 2.0 * (w * l + h * l + w * h);
+			return 2.0 * (dim.x * dim.z + dim.y * dim.z + dim.x * dim.y);
 		}
 
 		[[nodiscard]]
@@ -66,6 +110,45 @@ namespace sndx {
 			// same as sdf article from here
 			glm::vec3 q = glm::abs(p) - b;
 			return glm::length(glm::max(q, 0.0f)) + glm::min(std::max(q.x, std::max(q.y, q.z)), 0.0f);
+		}
+
+		
+		// Liang-Barsky algorithm
+		template <float epsilon = 0.00001f> [[nodiscard]]
+		Intersections<2> lineIntersections(glm::vec3 p0, glm::vec3 p1) const {
+
+			glm::vec3 d = p1 - p0;
+
+			glm::vec3 upBound = rub - p0;
+			glm::vec3 lowBound = ldf - p0;
+
+			float intersect0 = -INFINITY;
+			float intersect1 = INFINITY;
+
+			for (int i = 0; i < 3; ++i) {
+				if (std::abs(d[i]) <= epsilon) {
+					if (upBound[i] < 0 || lowBound[i] > 0) return {};
+				}
+				else {
+					float plow = lowBound[i] / d[i];
+					float phigh = upBound[i] / d[i];
+
+					if (d[i] < 0) {
+						intersect0 = std::max(intersect0, phigh);
+						intersect1 = std::min(intersect1, plow);
+					}
+					else {
+						intersect0 = std::max(intersect0, plow);
+						intersect1 = std::min(intersect1, phigh);
+					}
+
+					if (intersect1 < intersect0) return {};
+				}
+			}
+
+			if (intersect0 == intersect1) return { {p0 + intersect0 * d, {}} };
+
+			return { {p0 + intersect0 * d, p0 + intersect1 * d} };
 		}
 	};
 }
