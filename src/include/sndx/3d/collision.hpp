@@ -52,5 +52,20 @@ namespace sndx {
 
 			return 2.0 * (w * l + h * l + w * h);
 		}
+
+		[[nodiscard]]
+		constexpr glm::vec3 center() const {
+			return (ldf + rub) * 0.5f;
+		}
+
+		// adapted from https://iquilezles.org/articles/distfunctions/
+		[[nodiscard]]
+		float distance(glm::vec3 p) const {
+			glm::vec3 b = rub - center();
+
+			// same as sdf article from here
+			glm::vec3 q = glm::abs(p) - b;
+			return glm::length(glm::max(q, 0.0f)) + glm::min(std::max(q.x, std::max(q.y, q.z)), 0.0f);
+		}
 	};
 }

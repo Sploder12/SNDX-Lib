@@ -17,7 +17,7 @@ namespace sndx {
 		glm::vec2 offset;
 
 		[[nodiscard]]
-		constexpr float getAspectRatio() const {
+		static constexpr float getAspectRatio() {
 			return aspectRatio;
 		}
 		
