@@ -44,17 +44,14 @@ namespace sndx {
 		glm::vec3 ldf;
 		glm::vec3 rub;
 
-		[[nodiscard]]
-		constexpr AABB merge(const AABB& other) const {
+		AABB& merge(const AABB& other) {
 			using std::min;
 			using std::max;
 
-			AABB newBB;
+			ldf = glm::vec3(min(ldf.x, other.ldf.x), min(ldf.y, other.ldf.y), min(ldf.z, other.ldf.z));
+			rub = glm::vec3(max(rub.x, other.rub.x), max(rub.y, other.rub.y), max(rub.z, other.rub.z));
 
-			newBB.ldf = glm::vec3(min(ldf.x, other.ldf.x), min(ldf.y, other.ldf.y), min(ldf.z, other.ldf.z));
-			newBB.rub = glm::vec3(max(rub.x, other.rub.x), max(rub.y, other.rub.y), max(rub.z, other.rub.z));
-
-			return newBB;
+			return *this;
 		}
 
 		[[nodiscard]]
@@ -112,7 +109,6 @@ namespace sndx {
 			return glm::length(glm::max(q, 0.0f)) + glm::min(std::max(q.x, std::max(q.y, q.z)), 0.0f);
 		}
 
-		
 		// Liang-Barsky algorithm
 		template <float epsilon = 0.00001f> [[nodiscard]]
 		Intersections<2> lineIntersections(glm::vec3 p0, glm::vec3 p1) const {
@@ -151,4 +147,91 @@ namespace sndx {
 			return { {p0 + intersect0 * d, p0 + intersect1 * d} };
 		}
 	};
+
+	struct SphereBB {
+		glm::vec3 pos;
+		float radius;
+
+		// produces new sphere that tightly bounds the original 2
+		SphereBB& merge(const SphereBB& other) {
+			auto deltaRad = std::abs(radius - other.radius);
+			auto centerDist = glm::distance(pos, other.pos);
+
+			if (centerDist < deltaRad) { // edge-case where my algorithm fails
+				if (radius > other.radius) {
+					return *this;
+				}
+				
+				radius = other.radius;
+				pos = other.pos;
+			}
+			else {
+				// pretty proud of this even if it fails when one sphere contains the entirety of the other
+				auto dir = glm::normalize(pos - other.pos);
+				pos = ((pos - other.radius * dir) + (other.pos + radius * dir)) / 2.0f;
+				radius = (centerDist + radius + other.radius) / 2.0;
+			}
+
+			return *this;
+		}
+
+		[[nodiscard]] // these area functions actually describe volume, i just like the word area more
+		constexpr double area() const {
+			return 4.0 / 3.0 * std::numbers::pi * radius * radius * radius;
+		}
+
+		[[nodiscard]]
+		constexpr double surfaceArea() const {
+			// everyone loves 4 pi r^2
+			return 4.0 * std::numbers::pi * radius * radius;
+		}
+
+		// adapted from https://iquilezles.org/articles/distfunctions/
+		[[nodiscard]]
+		float distance(glm::vec3 p) const {
+			glm::length(pos - p) - radius;
+		}
+
+		[[nodiscard]] // distance <= 0.0f when intersecting. The negative value doesn't make sense in the context of SDFs
+		float distance(const SphereBB& other) const {
+			glm::distance(pos, other.pos) - radius - other.radius;
+		}
+
+		[[nodiscard]]
+		float distance(const AABB& aabb) const {
+			return aabb.distance(pos) - radius;
+		}
+
+		[[nodiscard]]
+		bool contains(glm::vec3 p) const {
+			return distance(p) <= 0.0f;
+		}
+
+		[[nodiscard]]
+		bool intersects(const SphereBB& other) const {
+			return distance(other) <= 0.0f;
+		}
+
+		[[nodiscard]]
+		bool intersects(const AABB& aabb) const {
+			return distance(aabb) <= 0.0f;
+		}
+		
+	};
+
+	// THIS WILL INCREASE THE VOLUME OF THE BB
+	AABB toAABB(const SphereBB& bb) {
+		AABB out{};
+		out.ldf = bb.pos - bb.radius;
+		out.rub = bb.pos + bb.radius;
+		return out;
+	}
+
+	// THIS WILL INCREASE THE VOLUME OF THE BB
+	SphereBB toSphere(const AABB& bb) {
+		SphereBB out{};
+		out.pos = bb.center();
+		out.radius = glm::distance(out.pos, bb.rub);
+		return out;
+	}
 }
