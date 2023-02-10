@@ -45,11 +45,8 @@ namespace sndx {
 		glm::vec3 rub;
 
 		AABB& merge(const AABB& other) {
-			using std::min;
-			using std::max;
-
-			ldf = glm::vec3(min(ldf.x, other.ldf.x), min(ldf.y, other.ldf.y), min(ldf.z, other.ldf.z));
-			rub = glm::vec3(max(rub.x, other.rub.x), max(rub.y, other.rub.y), max(rub.z, other.rub.z));
+			ldf = glm::min(ldf, other.ldf);
+			rub = glm::max(rub, other.rub);
 
 			return *this;
 		}
@@ -157,7 +154,7 @@ namespace sndx {
 			auto deltaRad = std::abs(radius - other.radius);
 			auto centerDist = glm::distance(pos, other.pos);
 
-			if (centerDist < deltaRad) { // edge-case where my algorithm fails
+			if (centerDist < deltaRad || centerDist == 0.0f) { // edge-case where my algorithm fails
 				if (radius > other.radius) {
 					return *this;
 				}
@@ -167,9 +164,9 @@ namespace sndx {
 			}
 			else {
 				// pretty proud of this even if it fails when one sphere contains the entirety of the other
-				auto dir = glm::normalize(pos - other.pos);
-				pos = ((pos - other.radius * dir) + (other.pos + radius * dir)) / 2.0f;
-				radius = (centerDist + radius + other.radius) / 2.0;
+				auto dir = (pos - other.pos) / centerDist; // normalized direction
+				pos = ((pos + radius * dir) + (other.pos - other.radius * dir)) / 2.0f;
+				radius = (centerDist + radius + other.radius) / 2.0f;
 			}
 
 			return *this;
@@ -189,12 +186,12 @@ namespace sndx {
 		// adapted from https://iquilezles.org/articles/distfunctions/
 		[[nodiscard]]
 		float distance(glm::vec3 p) const {
-			glm::length(pos - p) - radius;
+			return glm::length(pos - p) - radius;
 		}
 
 		[[nodiscard]] // distance <= 0.0f when intersecting. The negative value doesn't make sense in the context of SDFs
 		float distance(const SphereBB& other) const {
-			glm::distance(pos, other.pos) - radius - other.radius;
+			return glm::distance(pos, other.pos) - radius - other.radius;
 		}
 
 		[[nodiscard]]
@@ -220,7 +217,8 @@ namespace sndx {
 	};
 
 	// THIS WILL INCREASE THE VOLUME OF THE BB
-	AABB toAABB(const SphereBB& bb) {
+	[[nodiscard]]
+	constexpr AABB toAABB(const SphereBB& bb) {
 		AABB out{};
 		out.ldf = bb.pos - bb.radius;
 		out.rub = bb.pos + bb.radius;
@@ -228,7 +226,8 @@ namespace sndx {
 	}
 
 	// THIS WILL INCREASE THE VOLUME OF THE BB
-	SphereBB toSphere(const AABB& bb) {
+	[[nodiscard]]
+	SphereBB toSphereBB(const AABB& bb) {
 		SphereBB out{};
 		out.pos = bb.center();
 		out.radius = glm::distance(out.pos, bb.rub);
