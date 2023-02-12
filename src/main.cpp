@@ -34,14 +34,9 @@ void makeNoise() {
 	alcontext.setVolume(0.3f);
 
 	testsrc.setPos(glm::vec3(0.0));
-	testsrc.setGain(0.1f);
-	testsrc.setParam(AL_ROLLOFF_FACTOR, 0.0f);
-	testsrc.setParam(AL_SOURCE_RELATIVE, AL_TRUE);
-	testsrc.setParam(AL_LOOPING, AL_TRUE);
-	testsrc.setSpeed(1.0f);
-
-	testsrc.setBuffer(testbuf);
-	testsrc.play();
+	testsrc.setGain(0.1f).setParam(AL_ROLLOFF_FACTOR, 0.0f).setParam(AL_SOURCE_RELATIVE, AL_TRUE)
+		.setParam(AL_LOOPING, AL_TRUE).setSpeed(1.0f)
+		.setBuffer(testbuf).play();
 }
 
 void doThing() {

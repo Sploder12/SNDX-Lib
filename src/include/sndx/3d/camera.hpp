@@ -34,25 +34,27 @@ namespace sndx {
 			return orientation * glm::vec3(-1.0, 0.0, 0.0);
 		}
 
-		void rotate(float angleDeg, glm::vec3 axis) {
+		Camera& rotate(float angleDeg, glm::vec3 axis) {
 			glm::rotate(orientation, glm::radians(angleDeg), axis);
+			return *this;
 		}
 
-		void rotatePitch(float angleDeg) {
-			rotate(angleDeg, glm::vec3(1.0, 0.0, 0.0));
+		Camera& rotatePitch(float angleDeg) {
+			return rotate(angleDeg, glm::vec3(1.0, 0.0, 0.0));
 		}
 
-		void rotateRoll(float angleDeg) {
-			rotate(angleDeg, glm::vec3(0.0, 0.0, 1.0));
+		Camera& rotateRoll(float angleDeg) {
+			return rotate(angleDeg, glm::vec3(0.0, 0.0, 1.0));
 		}
 
-		void rotateYaw(float angleDeg) {
-			rotate(angleDeg, glm::vec3(0.0, 1.0, 0.0));
+		Camera& rotateYaw(float angleDeg) {
+			return rotate(angleDeg, glm::vec3(0.0, 1.0, 0.0));
 		}
 
 		// negative values move backwards
-		void moveForward(float dist) {
+		Camera& moveForward(float dist) {
 			pos += getForward() * dist;
+			return *this;
 		}
 	};
 }

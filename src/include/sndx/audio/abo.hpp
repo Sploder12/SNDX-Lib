@@ -12,12 +12,13 @@ namespace sndx {
 	struct ABO {
 		ALuint id;
 
-		void gen() {
+		ABO& gen() {
 			alGenBuffers(1, &id);
+			return *this;
 		}
 
 		template <typename T>
-		void setData(ALenum format, std::span<T> data, ALsizei freq) {
+		ABO& setData(ALenum format, std::span<T> data, ALsizei freq) {
 			static_assert(std::is_integral_v<T>);
 			static_assert(decltype(data)::extent != 0);
 
@@ -27,13 +28,15 @@ namespace sndx {
 
 				alBufferData(id, format, data.data(), size, freq);
 			}
+			return *this;
 		}
 
 		// get rid of the sources first please.
-		void destroy() {
+		ABO& destroy() {
 			if (id != 0) alDeleteBuffers(1, &id);
 
 			id = 0;
+			return *this;
 		}
 
 		[[nodiscard]]

@@ -59,38 +59,43 @@ namespace sndx {
 			return out;
 		}
 
-		void updateBuffers() {
+		auto& updateBuffers() {
 			vbo.setData(vertices);
 			ebo.setData(indices);
+			return *this;
 		}
 
-		void gen() {
+		auto& gen() {
 			vao.bind();
 			ebo.bind();
 			vao.bindVBO(vbo);
 			updateBuffers();
+			return *this;
 		}
 
 		template <class Layout>
-		void bindAuxiliaryVBO(VBO<Layout>& vbo, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
+		auto& bindAuxiliaryVBO(VBO<Layout>& vbo, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
 			vao.bindVBO(vbo, divisor, normalized);
+			return *this;
 		}
 
-		void destroy() {
+		auto& destroy() {
 			vao.destroy();
 			vbo.destroy();
 			ebo.destroy();
 			vertices.clear();
 			indices.clear();
 			textures.clear();
+			return *this;
 		}
 
-		void bind() {
+		auto& bind() {
 			for (int i = 0; i < textures.size(); ++i) {
 				textures[i].bind(i);
 			}
 
 			vao.bind();
+			return *this;
 		}
 	};
 }

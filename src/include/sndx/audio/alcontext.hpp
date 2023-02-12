@@ -92,8 +92,9 @@ namespace sndx {
 			if (device != nullptr) alcCloseDevice(device);
 		}
 
-		void bind() const {
+		const auto& bind() const {
 			alcMakeContextCurrent(context);
+			return *this;
 		}
 
 		[[nodiscard]]
@@ -120,21 +121,25 @@ namespace sndx {
 			return out;
 		}
 
-		void setVolume(float gain) const {
+		const auto& setVolume(float gain) const {
 			alListenerf(AL_GAIN, gain);
+			return *this;
 		}
 
-		void setListenerPos(glm::vec3 pos) const {
+		const auto& setListenerPos(glm::vec3 pos) const {
 			alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+			return *this;
 		}
 
-		void setListenerVel(glm::vec3 vel) const {
+		const auto& setListenerVel(glm::vec3 vel) const {
 			alListener3f(AL_POSITION, vel.x, vel.y, vel.z);
+			return *this;
 		}
 
-		void setListenerOrientation(glm::vec3 at, glm::vec3 up) const {
+		const auto& setListenerOrientation(glm::vec3 at, glm::vec3 up) const {
 			std::array<glm::vec3, 2> dat{ at, up };
 			alListenerfv(AL_ORIENTATION, (ALfloat*)dat.data());
+			return *this;
 		}
 
 		[[nodiscard]]
