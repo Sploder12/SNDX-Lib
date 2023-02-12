@@ -33,21 +33,24 @@ namespace sndx {
 		}
 
 		template <typename T>
-		void setParam(ALenum, T) const;
+		const ALSource& setParam(ALenum, T) const;
 
 		template <>
-		void setParam(ALenum param, ALfloat val) const {
+		const ALSource& setParam(ALenum param, ALfloat val) const {
 			alSourcef(id, param, val);
+			return *this;
 		}
 
 		template <>
-		void setParam(ALenum param, glm::vec3 val) const {
+		const ALSource& setParam(ALenum param, glm::vec3 val) const {
 			alSource3f(id, param, val.x, val.y, val.z);
+			return *this;
 		}
 
 		template <>
-		void setParam(ALenum param, ALint val) const {
+		const ALSource& setParam(ALenum param, ALint val) const {
 			alSourcei(id, param, val);
+			return *this;
 		}
 
 		template <typename T> [[nodiscard]]
@@ -74,52 +77,62 @@ namespace sndx {
 			return out;
 		}
 
-		void setPos(glm::vec3 pos) const {
+		const ALSource& setPos(glm::vec3 pos) const {
 			setParam(AL_POSITION, pos);
+			return *this;
 		}
 
-		void setVel(glm::vec3 velocity) const {
+		const ALSource& setVel(glm::vec3 velocity) const {
 			setParam(AL_VELOCITY, velocity);
+			return *this;
 		}
 
-		void setOrientation(glm::vec3 at, glm::vec3 up) const {
+		const ALSource& setOrientation(glm::vec3 at, glm::vec3 up) const {
 			std::array<glm::vec3, 2> dat{ at, up };
 			alSourcefv(id, AL_ORIENTATION, (ALfloat*)dat.data());
+			return *this;
 		}
 
-		void setGain(float gain) const {
+		const ALSource& setGain(float gain) const {
 			setParam(AL_GAIN, gain);
+			return *this;
 		}
 
-		void setSpeed(float speed) const {
+		const ALSource& setSpeed(float speed) const {
 			setParam(AL_PITCH, speed);
+			return *this;
 		}
 
-		void setBuffer(const ABO& buffer) const {
+		const ALSource& setBuffer(const ABO& buffer) const {
 			setParam(AL_BUFFER, int(buffer.id));
+			return *this;
 		}
 
-		void queueBuffers(std::span<ABO> buffers) const {
+		const ALSource& queueBuffers(std::span<ABO> buffers) const {
 			alSourceQueueBuffers(id, (ALsizei)buffers.size(), (ALuint*)buffers.data());
+			return *this;
 		}
 
-		void dequeueBuffers(std::span<ABO> buffers) const {
+		const ALSource& dequeueBuffers(std::span<ABO> buffers) const {
 			alSourceUnqueueBuffers(id, (ALsizei)buffers.size(), (ALuint*)buffers.data());
+			return *this;
 		}
 
 		// does account for speed up/slowdown
-		void seekSec(std::chrono::duration<float> seconds) const {
+		const ALSource& seekSec(std::chrono::duration<float> seconds) const {
 			if (seconds.count() >= 0) {
 				float pitch = getParam<float>(AL_PITCH);
 				setParam(AL_SEC_OFFSET, seconds.count() / pitch);
 			}
+			return *this;
 		}
 
 		// doesn't account for speed up/slowdown
-		void seekSecRaw(std::chrono::duration<float> seconds) const {
+		const ALSource& seekSecRaw(std::chrono::duration<float> seconds) const {
 			if (seconds.count() >= 0) {
 				setParam(AL_SEC_OFFSET, seconds.count());
 			}
+			return *this;
 		}
 
 		[[nodiscard]]
@@ -138,16 +151,18 @@ namespace sndx {
 			return getParam<ALenum>(AL_SOURCE_STATE) == AL_PLAYING;
 		}
 
-		void gen() {
+		const ALSource& gen() {
 			if (id != 0) destroy();
 		
 			alGenSources(1, &id);
+			return *this;
 		}
 
-		void destroy() {
+		const ALSource& destroy() {
 			if (id != 0) alDeleteSources(1, &id);
 
 			id = 0;
+			return *this;
 		}
 	};
 }
