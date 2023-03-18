@@ -9,6 +9,7 @@
 
 #include "render/texture.hpp"
 #include "render/shader.hpp"
+#include "render/text.hpp"
 
 #include "3d/model.hpp"
 #include "3d/camera.hpp"
@@ -160,6 +161,10 @@ int main() {
 	glfwSetCursorPosCallback(win.window, mouse_callback);
 
 	glewInit();
+
+	FreetypeContext FT_context{};
+	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", true).value();
+	font.atlas.tex.asImage().save("img.jpg");
 
 	glEnable(GL_DEPTH_TEST);
 
