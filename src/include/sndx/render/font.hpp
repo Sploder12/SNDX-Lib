@@ -2,6 +2,8 @@
 
 #include "atlas.hpp"
 
+#include "../util/atlasbuild.hpp"
+
 #include <unordered_map>
 #include <optional>
 
@@ -58,6 +60,7 @@ namespace sndx {
 		Atlas<FT_ULong> atlas;
 
 		int maxBearingY = 0; // Needed for hang calculation
+		bool sdf = false;
 
 		// returns charcode if it exists, the charcode "white square" otherwise
 		inline FT_ULong getChar(FT_ULong charcode) const {
@@ -112,6 +115,7 @@ namespace sndx {
 
 		Font out;
 		out.metrics.reserve(count);
+		out.sdf = sdf;
 
 		AtlasBuilder<FT_ULong> builder{};
 
@@ -134,11 +138,9 @@ namespace sndx {
 			img.width = bitmap.width;
 			img.height = bitmap.rows;
 			img.channels = 1;
-			img.data.resize(img.width * img.height * img.channels, 0);
+			img.data.resize((long long)(img.width) * img.height * img.channels, 0);
 
-			for (unsigned int i = 0; i < img.data.size(); ++i) {
-				img.data[i] = bitmap.buffer[i];
-			}
+			std::copy(bitmap.buffer, bitmap.buffer + img.data.size(), img.data.begin());
 
 			builder.insert(chr, std::move(img));
 
@@ -152,7 +154,6 @@ namespace sndx {
 		}
 		FT_Done_Face(face);
 	
-		// 2^2 is 4, this kinda assumes glyphs are typically square
 		out.atlas = builder.buildAtlas(columns / 4);
 	
 		return out;

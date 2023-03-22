@@ -9,7 +9,7 @@
 
 #include "render/texture.hpp"
 #include "render/shader.hpp"
-#include "render/text.hpp"
+#include "render/font.hpp"
 
 #include "3d/model.hpp"
 #include "3d/camera.hpp"
@@ -154,7 +154,7 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	Window win = createWindow<1.0f>(600, 600, "window");
+	Window win = createWindow(600, 600, "window", 1.0f);
 	
 	glfwMakeContextCurrent(win.window);
 
@@ -162,11 +162,11 @@ int main() {
 
 	glewInit();
 
+	glEnable(GL_DEPTH_TEST);
+
 	FreetypeContext FT_context{};
 	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", true).value();
-	font.atlas.tex.asImage().save("img.jpg");
-
-	glEnable(GL_DEPTH_TEST);
+	font.atlas.save("notoSans");
 
 	ShaderProgram shdr = programFromFiles("tmp/model.vs", "tmp/model.fs");
 

@@ -11,7 +11,7 @@ namespace sndx {
 	constexpr GLenum formatFromChannels(int channels) {
 		switch (channels) {
 		case 1:
-			return GL_R;
+			return GL_RED;
 		case 2:
 			return GL_RG;
 		case 3:
@@ -26,7 +26,7 @@ namespace sndx {
 
 	constexpr int channelsFromFormat(GLenum format) {
 		switch (format) {
-		case GL_R:
+		case GL_RED:
 			return 1;
 		case GL_RG:
 			return 2;
@@ -92,7 +92,7 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		ImageData asImage() {
+		ImageData asImage() const {
 			ImageData out;
 			bind();
 
@@ -107,7 +107,7 @@ namespace sndx {
 			return out;
 		}
 
-		void save(const char* path, int quality = 100) {
+		void save(const char* path, int quality = 100)  const{
 			asImage().save(path, quality);
 		}
 	};

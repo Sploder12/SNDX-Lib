@@ -9,15 +9,15 @@
 
 namespace sndx {
 
-	template <float aspectRatio = 16.0f / 9.0f>
 	struct Window {
 
 		GLFWwindow* window;
 		glm::vec2 dims;
 		glm::vec2 offset;
+		float aspectRatio;
 
 		[[nodiscard]]
-		static constexpr float getAspectRatio() {
+		float getAspectRatio() {
 			return aspectRatio;
 		}
 		
@@ -41,27 +41,32 @@ namespace sndx {
 				return;
 			}
 
-				if (width > asWidth) {
-					int padding = (width - asWidth) / 2;
-					dims = glm::vec2(asWidth, height);
-					offset = glm::vec2(padding, 0);
-					return;
-				}
+			if (width > asWidth) {
+				int padding = (width - asWidth) / 2;
+				dims = glm::vec2(asWidth, height);
+				offset = glm::vec2(padding, 0);
+				return;
+			}
 
 			int asHeight = int(width / aspectRatio);
 			int padding = (height - asHeight) / 2;
 			dims = glm::vec2(width, asHeight);
 			offset = glm::vec2(0, padding);
 		}
+
+		constexpr void setAspectRatio(float AR) {
+			aspectRatio = AR;
+			resize((int)dims.x, (int)dims.y);
+		}
 	};
 
 
-	template <float aspectRatio = 16.0f / 9.0f> [[nodiscard]]
-	Window<aspectRatio> createWindow(int width, int height, const char* name, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
+	[[nodiscard]]
+	Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
 		GLFWwindow* win = glfwCreateWindow(width, height, name, monitor, share);
 		if (win == nullptr) throw std::runtime_error("Creating window resulted in nullptr.");
 
-		Window<aspectRatio> out{ win, glm::vec2(0.0f), glm::vec2(0.0f) };
+		Window out{ win, glm::vec2(0.0f), glm::vec2(0.0f), aspectRatio };
 		out.resize(width, height);
 		return out;
 	}
