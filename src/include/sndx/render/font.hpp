@@ -28,7 +28,7 @@ namespace sndx {
 		}
 
 		FreetypeContext& operator=(const FreetypeContext&) = delete;
-		FreetypeContext& operator=(FreetypeContext&& other) {
+		FreetypeContext& operator=(FreetypeContext&& other) noexcept {
 			std::swap(ft, other.ft);
 			return *this;
 		}
@@ -103,6 +103,7 @@ namespace sndx {
 
 		unsigned int padding = size / FONT_PADDING;
 
+		// using face->num_glyphs causes strange issues.
 		FT_ULong count = 0;
 		FT_UInt idx;
 		FT_ULong chr = FT_Get_First_Char(face, &idx);

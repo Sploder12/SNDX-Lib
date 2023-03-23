@@ -126,13 +126,13 @@ namespace sndx {
 				entryData.add(std::to_string(entry.second.x), "wid", delim);
 				entryData.add(std::to_string(entry.second.y), "hig", delim);
 				
-				offsets.data.emplace(std::to_string(id), entryData);
+				offsets.data.emplace(std::to_string(id), std::move(entryData));
 			}
 
-			root.data.emplace("offsets", offsets);
+			root.data.emplace("offsets", std::move(offsets));
 
 			DataTree out;
-			out.root = root;
+			out.root = std::move(root);
 
 			if (out.save(atlasname + ".atlas")) {
 				tex.save(imgPath.c_str());

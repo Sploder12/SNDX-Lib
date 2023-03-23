@@ -115,7 +115,7 @@ namespace sndx {
 							int idxOut = (x + j) * outImg.channels + outY;
 							int idxIn = j * entry->data.channels + inY;
 
-							if (idxOut >= outImg.data.size() || idxIn >= entry->data.data.size()) {
+							if (idxOut + outImg.channels > outImg.data.size() || idxIn + entry->data.channels > entry->data.data.size()) {
 								break;
 							}
 
@@ -135,7 +135,8 @@ namespace sndx {
 				x = padding;
 			}
 
-			outAtlas.tex = textureFromImage(outImg, formatFromChannels(outImg.channels), GL_LINEAR);
+			auto format = formatFromChannels(outImg.channels);
+			outAtlas.tex = textureFromImage(std::move(outImg), format, GL_LINEAR);
 
 			return outAtlas;
 		}
