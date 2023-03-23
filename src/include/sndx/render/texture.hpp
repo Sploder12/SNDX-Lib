@@ -55,6 +55,8 @@ namespace sndx {
 				throw std::runtime_error("Texture has dimension of 0");
 			}
 
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glGenTextures(1, &id);
 			glBindTexture(type, id);
 			glTexImage2D(type, 0, iformat, (GLsizei)width, (GLsizei)height, 0, iformat, GL_UNSIGNED_BYTE, NULL);
@@ -70,6 +72,8 @@ namespace sndx {
 				throw std::runtime_error("Texture has dimension of 0");
 			}
 
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glGenTextures(1, &id);
 			glBindTexture(type, id);
 			glTexImage2D(type, 0, iformat, (GLsizei)width, (GLsizei)height, 0, format, GL_UNSIGNED_BYTE, data);

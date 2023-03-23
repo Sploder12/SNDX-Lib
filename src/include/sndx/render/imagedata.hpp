@@ -13,9 +13,9 @@
 namespace sndx {
 
 	struct ImageData {
-		int width, height;
-		int channels;
-		std::vector<unsigned char> data;
+		int width = 0, height = 0;
+		int channels = 0;
+		std::vector<unsigned char> data{};
 
 		void save(const char* path, int quality = 100) {
 
