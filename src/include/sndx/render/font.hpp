@@ -91,8 +91,8 @@ namespace sndx {
 		}
 	};
 
+	template <size_t font_padding = 2>
 	std::optional<Font> loadFont(FreetypeContext& context, const char* filepath, bool sdf = false, unsigned int size = 32) {
-		static constexpr int FONT_PADDING = 4;
 		FT_Face face;
 		if (FT_New_Face(context.ft, filepath, 0, &face)) return {};
 
@@ -101,17 +101,7 @@ namespace sndx {
 
 		//if (sdf) size *= 2;
 
-		unsigned int padding = size / FONT_PADDING;
-
-		// using face->num_glyphs causes strange issues.
-		FT_ULong count = 0;
-		FT_UInt idx;
-		FT_ULong chr = FT_Get_First_Char(face, &idx);
-		while (idx != 0) {
-			++count;
-			chr = FT_Get_Next_Char(face, chr, &idx);
-		}
-
+		FT_ULong count = face->num_glyphs;
 		unsigned int columns = (unsigned int)(ceil(sqrt(count)));
 
 		Font out;
@@ -121,7 +111,8 @@ namespace sndx {
 		AtlasBuilder<FT_ULong> builder{};
 
 		// Iterate over each character
-		chr = FT_Get_First_Char(face, &idx);
+		FT_UInt idx;
+		FT_ULong chr = FT_Get_First_Char(face, &idx);
 		while (idx != 0) {
 			FT_Load_Glyph(face, idx, FT_LOAD_DEFAULT);
 
@@ -155,7 +146,7 @@ namespace sndx {
 		}
 		FT_Done_Face(face);
 	
-		out.atlas = builder.buildAtlas(columns / 4);
+		out.atlas = builder.buildAtlas<font_padding>(columns / 4);
 	
 		return out;
 	}
