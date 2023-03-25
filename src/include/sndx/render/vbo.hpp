@@ -60,7 +60,7 @@ namespace sndx {
 
 			if constexpr (std::is_integral_v<Cur>) { // integral types
 				glEnableVertexAttribArray(index);
-				glVertexAttribIPointer(index, 1, type, stride(), (void*)(pointer));
+				glVertexAttribPointer(index, 1, type, normalized, stride(), (void*)(pointer));
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
@@ -69,7 +69,7 @@ namespace sndx {
 				static_assert(packSize >= 1 && packSize <= 4);
 
 				glEnableVertexAttribArray(index);
-				glVertexAttribPointer(index, packSize, type, GL_TRUE, stride(), (void*)(pointer));
+				glVertexAttribPointer(index, packSize, type, normalized, stride(), (void*)(pointer));
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
