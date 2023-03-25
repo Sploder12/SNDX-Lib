@@ -21,6 +21,10 @@ namespace sndx {
 			FT_Init_FreeType(&ft);
 		}
 
+		operator FT_Library&() {
+			return ft;
+		}
+
 		FreetypeContext(const FreetypeContext&) = delete;
 		FreetypeContext(FreetypeContext&& other) noexcept:
 			ft(std::move(other.ft)) {
@@ -94,7 +98,7 @@ namespace sndx {
 	template <size_t font_padding = 2>
 	std::optional<Font> loadFont(FreetypeContext& context, const char* filepath, bool sdf = false, unsigned int size = 32) {
 		FT_Face face;
-		if (FT_New_Face(context.ft, filepath, 0, &face)) return {};
+		if (FT_New_Face(context, filepath, 0, &face)) return {};
 
 		// Set the pixel height to the size, the width is derived
 		FT_Set_Pixel_Sizes(face, 0, size);

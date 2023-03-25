@@ -37,6 +37,13 @@ namespace sndx {
 	constexpr GLenum typeToGLenum<glm::vec4>() { return GL_FLOAT; }
 
 	template <>
+	constexpr GLenum typeToGLenum<glm::vec<2, unsigned char>>() { return GL_UNSIGNED_BYTE; }
+	template <>
+	constexpr GLenum typeToGLenum<glm::vec<3, unsigned char>>() { return GL_UNSIGNED_BYTE; }
+	template <>
+	constexpr GLenum typeToGLenum<glm::vec<4, unsigned char>>() { return GL_UNSIGNED_BYTE; }
+
+	template <>
 	constexpr GLenum typeToGLenum<glm::mat2>() { return GL_FLOAT; }
 	template <>
 	constexpr GLenum typeToGLenum<glm::mat3>() { return GL_FLOAT; }
@@ -54,6 +61,15 @@ namespace sndx {
 			if constexpr (std::is_integral_v<Cur>) { // integral types
 				glEnableVertexAttribArray(index);
 				glVertexAttribIPointer(index, 1, type, stride(), (void*)(pointer));
+				glVertexAttribDivisor(index, divisor);
+				++index;
+			}
+			else if constexpr (type == GL_UNSIGNED_BYTE) { // multiple bytes
+				static constexpr size_t packSize = size / sizeof(unsigned char);
+				static_assert(packSize >= 1 && packSize <= 4);
+
+				glEnableVertexAttribArray(index);
+				glVertexAttribIPointer(index, packSize, type, stride(), (void*)(pointer));
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
