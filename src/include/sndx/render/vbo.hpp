@@ -64,12 +64,12 @@ namespace sndx {
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
-			else if constexpr (type == GL_UNSIGNED_BYTE) { // multiple bytes
+			else if constexpr (type == GL_UNSIGNED_BYTE) { // multiple bytes (meant for color data)
 				static constexpr size_t packSize = size / sizeof(unsigned char);
 				static_assert(packSize >= 1 && packSize <= 4);
 
 				glEnableVertexAttribArray(index);
-				glVertexAttribIPointer(index, packSize, type, stride(), (void*)(pointer));
+				glVertexAttribPointer(index, packSize, type, GL_TRUE, stride(), (void*)(pointer));
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
