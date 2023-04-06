@@ -31,7 +31,7 @@ namespace sndx {
 	protected:
 		VAO vao{};
 		VBO<VboLayout<VertexLayout...>> vbo{};
-		VBO<VboLayout<unsigned int>> ebo = VBO<VboLayout<unsigned int>>(GL_ELEMENT_ARRAY_BUFFER);
+		VBO<VboLayout<unsigned int>> ebo{ GL_ELEMENT_ARRAY_BUFFER };
 		
 
 	public:

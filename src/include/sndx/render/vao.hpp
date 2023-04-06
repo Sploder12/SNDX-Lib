@@ -16,7 +16,7 @@ namespace sndx {
 		}
 
 		template <class Layout>
-		void bindVBO(VBO<Layout>& vbo, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
+		void bindVBO(VBO<Layout>& vbo, GLuint divisor = 0) {
 			if (id == 0) {
 				gen();
 				curIdx = 0;
@@ -24,7 +24,7 @@ namespace sndx {
 
 			bind();
 			vbo.bind();
-			curIdx += Layout::vertexAttribPointer(curIdx, divisor, normalized);
+			curIdx += Layout::vertexAttribPointer(curIdx, divisor);
 		}
 
 		void gen() {

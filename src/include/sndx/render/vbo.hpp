@@ -50,13 +50,32 @@ namespace sndx {
 	template <>
 	constexpr GLenum typeToGLenum<glm::mat4>() { return GL_FLOAT; }
 
+	template <typename T>
+	struct GLnormalized {
+		using value_type = T;
+		using normalized = std::bool_constant<true>;
+
+		static constexpr GLenum glType = typeToGLenum<T>();
+		T value;
+	};
+
+	template <typename T>
+	constexpr GLenum typeToGLenum<GLnormalized<T>>() { return GLnormalized<T>::glType; };
+
+	template <typename T>
+	struct is_GLnormalized : std::bool_constant<
+		requires (T) {
+			std::same_as<T::normalized, std::bool_constant<true>>;
+	}> {};
+
 	template <class... Layout>
 	class VboLayout {
 	protected:
 		template <class Cur, class... Rest>
-		static GLuint vertexAttribPointer(GLuint index, GLuint divisor, GLboolean normalized, size_t pointer) {
+		static GLuint vertexAttribPointer(GLuint index, GLuint divisor, size_t pointer) {
 			static constexpr GLenum type = typeToGLenum<Cur>();
 			static constexpr size_t size = sizeof(Cur);
+			static constexpr GLboolean normalized = is_GLnormalized<Cur>::value;
 
 			if constexpr (std::is_integral_v<Cur>) { // integral types
 				glEnableVertexAttribArray(index);
@@ -101,7 +120,7 @@ namespace sndx {
 			}
 
 			if constexpr (sizeof...(Rest) > 0) {
-				return vertexAttribPointer<Rest...>(index, divisor, normalized, pointer + size);
+				return vertexAttribPointer<Rest...>(index, divisor, pointer + size);
 			}
 			else {
 				return index;
@@ -117,8 +136,8 @@ namespace sndx {
 			return sizeof(DataT);
 		}
 
-		static auto vertexAttribPointer(GLuint index = 0, GLuint divisor = 0, GLboolean normalized = GL_FALSE) {
-			return vertexAttribPointer<Layout...>(index, divisor, normalized, 0);
+		static auto vertexAttribPointer(GLuint index = 0, GLuint divisor = 0) {
+			return vertexAttribPointer<Layout...>(index, divisor, 0);
 		}
 	};
 
