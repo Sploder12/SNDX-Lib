@@ -6,67 +6,76 @@
 
 namespace sndx {
 
-	template <class T>
-	constexpr GLenum typeToGLenum();
-
-	template <>
-	constexpr GLenum typeToGLenum<char>() { return GL_BYTE; }
-	template <>
-	constexpr GLenum typeToGLenum<unsigned char>() { return GL_UNSIGNED_BYTE; }
-
-	template <>
-	constexpr GLenum typeToGLenum<short>() { return GL_SHORT; }
-	template <>
-	constexpr GLenum typeToGLenum<unsigned short>() { return GL_UNSIGNED_SHORT; }
-
-	template <>
-	constexpr GLenum typeToGLenum<int>() { return GL_INT; }
-	template <>
-	constexpr GLenum typeToGLenum<unsigned int>() { return GL_UNSIGNED_INT; }
-
-	template <>
-	constexpr GLenum typeToGLenum<float>() { return GL_FLOAT; }
-	template <>
-	constexpr GLenum typeToGLenum<double>() { return GL_DOUBLE; }
-
-	template <>
-	constexpr GLenum typeToGLenum<glm::vec2>() { return GL_FLOAT; }
-	template <>
-	constexpr GLenum typeToGLenum<glm::vec3>() { return GL_FLOAT; }
-	template <>
-	constexpr GLenum typeToGLenum<glm::vec4>() { return GL_FLOAT; }
-
-	template <>
-	constexpr GLenum typeToGLenum<glm::vec<2, unsigned char>>() { return GL_UNSIGNED_BYTE; }
-	template <>
-	constexpr GLenum typeToGLenum<glm::vec<3, unsigned char>>() { return GL_UNSIGNED_BYTE; }
-	template <>
-	constexpr GLenum typeToGLenum<glm::vec<4, unsigned char>>() { return GL_UNSIGNED_BYTE; }
-
-	template <>
-	constexpr GLenum typeToGLenum<glm::mat2>() { return GL_FLOAT; }
-	template <>
-	constexpr GLenum typeToGLenum<glm::mat3>() { return GL_FLOAT; }
-	template <>
-	constexpr GLenum typeToGLenum<glm::mat4>() { return GL_FLOAT; }
 
 	template <typename T>
 	struct GLnormalized {
 		using value_type = T;
 		using normalized = std::bool_constant<true>;
 
-		static constexpr GLenum glType = typeToGLenum<T>();
 		T value;
 	};
 
 	template <typename T>
-	constexpr GLenum typeToGLenum<GLnormalized<T>>() { return GLnormalized<T>::glType; };
+	struct is_GLnormalized : std::bool_constant <
+		requires (T) {
+		std::same_as<T::normalized, std::bool_constant<true>>;
+	} > {};
 
 	template <typename T>
-	struct is_GLnormalized : std::bool_constant<
-		requires (T) {
-			std::same_as<T::normalized, std::bool_constant<true>>;
-	}> {};
+	struct is_vec : std::bool_constant <
+		requires (T v) {
+		T::length();
+		T::x;
+		v[0];
+	} > {};
+
+	template <typename T>
+	struct is_mat : std::bool_constant <
+		requires (T m) {
+		T::length();
+		T::x0;
+		m[0][0];
+	} > {};
+
+	template <class T>
+	constexpr GLenum typeToGLenum() {
+		if constexpr (is_GLnormalized<T>::value) { //normalized types
+			return typeToGLenum<T::value_type>();
+		}
+		else if constexpr (is_mat<T>::value) { //mat types
+			return typeToGLenum<std::remove_cvref_t<decltype(T::x0)>>();
+		}
+		else if constexpr (is_vec<T>::value) { //vec types
+			return typeToGLenum<std::remove_cvref_t<decltype(T::x)>>();
+		}
+		else if constexpr (std::is_same_v<T, char>) {
+			return GL_BYTE;
+		}
+		else if constexpr (std::is_same_v<T, unsigned char>) {
+			return GL_UNSIGNED_BYTE;
+		}
+		else if constexpr (std::is_same_v<T, short>) {
+			return GL_SHORT;
+		}
+		else if constexpr (std::is_same_v<T, unsigned short>) {
+			return GL_UNSIGNED_SHORT;
+		}
+		else if constexpr (std::is_same_v<T, int>) {
+			return GL_INT;
+		}
+		else if constexpr (std::is_same_v<T, unsigned int>) {
+			return GL_UNSIGNED_INT;
+		}
+		else if constexpr (std::is_same_v<T, float>) {
+			return GL_FLOAT;
+		}
+		else if constexpr (std::is_same_v<T, double>) {
+			return GL_DOUBLE;
+		}
+		else {
+			return -1;
+		}
+	}
 
 	template <class... Layout>
 	class VboLayout {
@@ -74,49 +83,35 @@ namespace sndx {
 		template <class Cur, class... Rest>
 		static GLuint vertexAttribPointer(GLuint index, GLuint divisor, size_t pointer) {
 			static constexpr GLenum type = typeToGLenum<Cur>();
+			static_assert(type != -1);
+
 			static constexpr size_t size = sizeof(Cur);
 			static constexpr GLboolean normalized = is_GLnormalized<Cur>::value;
 
-			if constexpr (std::is_integral_v<Cur>) { // integral types
+			if constexpr (is_mat<Cur>::value) {
+				static constexpr glm::length_t vecs = Cur::length();
+				using value_type = std::remove_cvref_t<decltype(Cur::x0)>;
+
+				for (int i = 0; i < vecs; ++i) {
+					glEnableVertexAttribArray(index + i);
+					glVertexAttribPointer(index + i, value_type::length(), type, normalized, stride(), (void*)(pointer + i * sizeof(value_type)));
+					glVertexAttribDivisor(index, divisor);
+				}
+				index += vecs;
+			}
+			else if (is_vec<Cur>::value) {
+				using value_type = std::remove_cvref_t<decltype(Cur::x)>;
+
+				glEnableVertexAttribArray(index);
+				glVertexAttribPointer(index, Cur::length(), type, normalized, stride(), (void*)(pointer));
+				glVertexAttribDivisor(index, divisor);
+				++index;
+			}
+			else {
 				glEnableVertexAttribArray(index);
 				glVertexAttribPointer(index, 1, type, normalized, stride(), (void*)(pointer));
 				glVertexAttribDivisor(index, divisor);
 				++index;
-			}
-			else if constexpr (type == GL_UNSIGNED_BYTE) { // multiple bytes (meant for color data)
-				static constexpr size_t packSize = size / sizeof(unsigned char);
-				static_assert(packSize >= 1 && packSize <= 4);
-
-				glEnableVertexAttribArray(index);
-				glVertexAttribPointer(index, packSize, type, normalized, stride(), (void*)(pointer));
-				glVertexAttribDivisor(index, divisor);
-				++index;
-			}
-			else { // floating types
-				if constexpr (size > 16) { // mat types
-					static constexpr size_t vecs = size / sizeof(float);
-					static constexpr size_t packSize = vecs / sizeof(float);
-					for (int i = 0; i < vecs; ++i) {
-						glEnableVertexAttribArray(index  + i);
-						glVertexAttribPointer(index + i, packSize, type, normalized, stride(), (void*)(pointer + i * packSize * sizeof(float)));
-						glVertexAttribDivisor(index, divisor);
-					}
-					
-					index += vecs;
-				}
-				else if constexpr (size > 4) { // vec types
-					static constexpr size_t packSize = size / sizeof(float);
-					glEnableVertexAttribArray(index);
-					glVertexAttribPointer(index, packSize, type, normalized, stride(), (void*)(pointer));
-					glVertexAttribDivisor(index, divisor);
-					++index;
-				}
-				else {
-					glEnableVertexAttribArray(index);
-					glVertexAttribPointer(index, 1, type, normalized, stride(), (void*)(pointer));
-					glVertexAttribDivisor(index, divisor);
-					++index;
-				}
 			}
 
 			if constexpr (sizeof...(Rest) > 0) {
