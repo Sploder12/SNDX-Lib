@@ -85,21 +85,19 @@ namespace sndx {
 			static constexpr GLenum type = typeToGLenum<Cur>();
 			static_assert(type != -1);
 
-			static constexpr size_t size = sizeof(Cur);
 			static constexpr GLboolean normalized = is_GLnormalized<Cur>::value;
 
 			if constexpr (is_mat<Cur>::value) {
-				static constexpr glm::length_t vecs = Cur::length();
 				using value_type = std::remove_cvref_t<decltype(Cur::x0)>;
 
-				for (int i = 0; i < vecs; ++i) {
+				for (int i = 0; i < Cur::length(); ++i) {
 					glEnableVertexAttribArray(index + i);
 					glVertexAttribPointer(index + i, value_type::length(), type, normalized, stride(), (void*)(pointer + i * sizeof(value_type)));
 					glVertexAttribDivisor(index, divisor);
 				}
-				index += vecs;
+				index += Cur::length();
 			}
-			else if (is_vec<Cur>::value) {
+			else if constexpr (is_vec<Cur>::value) {
 				using value_type = std::remove_cvref_t<decltype(Cur::x)>;
 
 				glEnableVertexAttribArray(index);
@@ -115,7 +113,7 @@ namespace sndx {
 			}
 
 			if constexpr (sizeof...(Rest) > 0) {
-				return vertexAttribPointer<Rest...>(index, divisor, pointer + size);
+				return vertexAttribPointer<Rest...>(index, divisor, pointer + sizeof(Cur));
 			}
 			else {
 				return index;
