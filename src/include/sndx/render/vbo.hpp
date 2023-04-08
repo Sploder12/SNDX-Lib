@@ -16,26 +16,26 @@ namespace sndx {
 	};
 
 	template <typename T>
-	struct is_GLnormalized : std::bool_constant <
+	using is_GLnormalized = std::bool_constant <
 		requires (T) {
 		std::same_as<T::normalized, std::bool_constant<true>>;
-	} > {};
+	} >;
 
 	template <typename T>
-	struct is_vec : std::bool_constant <
+	using is_vec = std::bool_constant <
 		requires (T v) {
 		T::length();
 		T::x;
 		v[0];
-	} > {};
+	} >;
 
 	template <typename T>
-	struct is_mat : std::bool_constant <
+	using is_mat = std::bool_constant <
 		requires (T m) {
 		T::length();
 		T::x0;
 		m[0][0];
-	} > {};
+	} >;
 
 	template <class T>
 	constexpr GLenum typeToGLenum() {
@@ -48,28 +48,28 @@ namespace sndx {
 		else if constexpr (is_vec<T>::value) { //vec types
 			return typeToGLenum<std::remove_cvref_t<decltype(T::x)>>();
 		}
-		else if constexpr (std::is_same_v<T, char>) {
+		else if constexpr (std::is_same_v<T, GLbyte>) {
 			return GL_BYTE;
 		}
-		else if constexpr (std::is_same_v<T, unsigned char>) {
+		else if constexpr (std::is_same_v<T, GLubyte>) {
 			return GL_UNSIGNED_BYTE;
 		}
-		else if constexpr (std::is_same_v<T, short>) {
+		else if constexpr (std::is_same_v<T, GLshort>) {
 			return GL_SHORT;
 		}
-		else if constexpr (std::is_same_v<T, unsigned short>) {
+		else if constexpr (std::is_same_v<T, GLushort>) {
 			return GL_UNSIGNED_SHORT;
 		}
-		else if constexpr (std::is_same_v<T, int>) {
+		else if constexpr (std::is_same_v<T, GLint>) {
 			return GL_INT;
 		}
-		else if constexpr (std::is_same_v<T, unsigned int>) {
+		else if constexpr (std::is_same_v<T, GLuint>) {
 			return GL_UNSIGNED_INT;
 		}
-		else if constexpr (std::is_same_v<T, float>) {
+		else if constexpr (std::is_same_v<T, GLfloat>) {
 			return GL_FLOAT;
 		}
-		else if constexpr (std::is_same_v<T, double>) {
+		else if constexpr (std::is_same_v<T, GLdouble>) {
 			return GL_DOUBLE;
 		}
 		else {
@@ -93,7 +93,7 @@ namespace sndx {
 				for (int i = 0; i < Cur::length(); ++i) {
 					glEnableVertexAttribArray(index + i);
 					glVertexAttribPointer(index + i, value_type::length(), type, normalized, stride(), (void*)(pointer + i * sizeof(value_type)));
-					glVertexAttribDivisor(index, divisor);
+					glVertexAttribDivisor(index + i, divisor);
 				}
 				index += Cur::length();
 			}
