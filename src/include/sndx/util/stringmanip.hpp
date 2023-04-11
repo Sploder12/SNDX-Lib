@@ -8,6 +8,9 @@ namespace sndx {
 	template <typename CharT = char>
 	using sv = std::basic_string_view<CharT>;
 
+	template <typename CharT = char>
+	using Str = std::basic_string<CharT>;
+
 	template <typename CharT = char> [[nodiscard]]
 	sv<CharT> strip(sv<CharT> str, sv<CharT> strips = " \t") {
 		auto first = str.find_first_not_of(strips);
@@ -63,5 +66,60 @@ namespace sndx {
 		second = strip(second, strips);
 
 		return { first, second };
+	}
+
+	template <typename CharT = char> [[nodiscard]]
+	Str<CharT> parseEscaped(sv<CharT> str) {
+		Str<CharT> out{};
+		out.reserve(str.size());
+
+		for (int i = 0; i < str.size(); ++i) {
+			CharT cur = str[i];
+			if (cur == '\\') {
+				++i;
+				if (i >= str.size()) {
+					out += cur;
+					break;
+				}
+
+				CharT esc = str[i];
+				switch (esc) {
+				default:
+					out += cur;
+					// fallthrough
+				case '\'':
+				case '"':
+				case '?':
+				case '\\':
+					out += esc;
+					break;
+				case 'a':
+					out += '\a';
+					break;
+				case 'b':
+					out += '\b';
+					break;
+				case 'f':
+					out += '\f';
+					break;
+				case 'n':
+					out += '\n';
+					break;
+				case 'r':
+					out += '\r';
+					break;
+				case 't':
+					out += '\t';
+					break;
+				case 'v':
+					out += '\v';
+					break;
+				}
+			}
+			else {
+				out += cur;
+			}
+		}
+		return out;
 	}
 }

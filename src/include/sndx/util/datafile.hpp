@@ -12,10 +12,10 @@
 namespace sndx {
 	template <typename CharT = char>
 	struct TreeFileLayout {
-		const CharT* dataDelim;
-		const CharT* endDataDelim;
-		const CharT* beginDirDelim;
-		const CharT* endDirDelim;
+		CharT dataDelim;
+		CharT endDataDelim;
+		CharT beginDirDelim;
+		CharT endDirDelim;
 		const CharT* strip;
 		const CharT* idStrip;
 
@@ -29,14 +29,14 @@ namespace sndx {
 
 	// note this does NOT support JSON arrays (because they're stupid)
 	template <typename CharT = char>
-	constexpr TreeFileLayout<CharT> LayoutJSON{ ":", ",", "{", "}", " \t\n\"", " {}\n\t\"'", "\n", "\t", "\"", false, true };
+	constexpr TreeFileLayout<CharT> LayoutJSON{ ':', ',', '{', '}', " \t\n", " {}\n\t\"'", "\n", "\t", "\"", false, true };
 
 	// note this does NOT support sections (because they're stupid)
 	template <typename CharT = char>
-	constexpr TreeFileLayout<CharT> LayoutINI{ "=", "\n", "[", "]", " \t\n\"", " []\n\t\"'", "", "", "", false, false };
+	constexpr TreeFileLayout<CharT> LayoutINI{ '=', '\n', '[', ']', " \t\n", " []\n\t\"'", "", "", "", false, false};
 
 	template <typename CharT = char>
-	constexpr TreeFileLayout<CharT> LayoutSNDX{ "=", ",", "{", "}", " {}\t\n\"", " {}\n\t\"'", "\n", "\t", "", false, false };
+	constexpr TreeFileLayout<CharT> LayoutSNDX{ '=', ',', '{', '}', " {}\t\n", " {}\n\t\"'", "\n", "\t", "", false, false };
 
 	template <class dataT = std::string>
 	struct DataNode {
@@ -156,7 +156,7 @@ namespace sndx {
 
 		template <typename T = char>
 		void save(std::basic_ostream<CharT>& ostream, const TreeFileLayout<CharT>& layout, int depth = 0) const {
-			if (layout.dirOnFirst || depth != 0) ostream << StrT(layout.beginDirDelim) << StrT(layout.spacer);
+			if (layout.dirOnFirst || depth != 0) ostream << layout.beginDirDelim << StrT(layout.spacer);
 			
 			int i = 0;
 			for (const auto& [id, node] : data) {
@@ -165,14 +165,14 @@ namespace sndx {
 					ostream << StrT(layout.depthSpacer);
 				}
 
-				ostream << StrT(layout.decorator) << id << StrT(layout.decorator) << StrT(layout.dataDelim);
+				ostream << StrT(layout.decorator) << id << StrT(layout.decorator) << layout.dataDelim;
 
 				std::visit([&ostream, &layout, depth](auto&& cur) {
 					cur.save<CharT>(ostream, layout, depth + 1);
 				}, node);
 
 				if (layout.dataEndOnLast || i != data.size() - 1) [[likely]] {
-					ostream << StrT(layout.endDataDelim);
+					ostream << layout.endDataDelim;
 				}
 				ostream << StrT(layout.spacer);
 				
@@ -183,7 +183,7 @@ namespace sndx {
 				ostream << StrT(layout.depthSpacer);
 			}
 
-			if (layout.dirOnFirst || depth != 0) ostream << StrT(layout.endDirDelim);
+			if (layout.dirOnFirst || depth != 0) ostream << layout.endDirDelim;
 		}
 	};
 
@@ -268,7 +268,7 @@ namespace sndx {
 			}, root);
 
 			if (layout.dataEndOnLast) {
-				ostream << std::basic_string<CharT>(layout.endDataDelim);
+				ostream << layout.endDataDelim;
 			}
 		}
 
@@ -288,67 +288,94 @@ namespace sndx {
 	DirectoryNode<dataT, CharT> parseBranch(sv<CharT> branch, TreeFileLayout<CharT> layout) {
 		DirectoryNode<dataT, CharT> out{};
 
-		constexpr auto npos = sv<CharT>::npos;
-
 		size_t cur = 0;
-
 		size_t next = 0;
-		while (next != npos) {
-			next = branch.find_first_of(layout.dataDelim, cur);
+		CharT prev = '\0';
 
-			if (next == npos) return out;
+		sv<CharT> id = branch;
 
-			auto id = strip(branch.substr(cur, next - cur), sv(layout.idStrip));
+		bool inQuote = false;
+		bool idReady = false;
 
-			cur = next;
+		for (size_t i = 0; i < branch.size(); ++i) {
+			CharT chr = branch[i];
 
-			auto pDataEnd = branch.find_first_of(layout.endDataDelim, cur);
-			auto pDirBegin = branch.find_first_of(layout.beginDirDelim, cur);
+			if (!inQuote) {
+				if (chr == layout.dataDelim) {
+					next = i;
 
-			if (pDataEnd != npos) {
-				if (pDirBegin != npos && pDirBegin < pDataEnd) {
+					id = strip(branch.substr(cur, next - cur), sv(layout.idStrip));
+					cur = next;
+					idReady = true;
+				}
+				else if (chr == layout.beginDirDelim) {
+					if (idReady) {
+						int dirCount = 1;
+						size_t dirEnd = -1;
 
-					int count = 1;
-					auto dirEnd = pDirBegin;
-					const auto endDirStr = std::basic_string<CharT>(layout.endDirDelim);
-					while (count > 0) {
-						dirEnd = branch.find_first_of(endDirStr + layout.beginDirDelim, dirEnd + 1);
+						bool quoted = false;
 
-						if (dirEnd == npos) break;
+						for (size_t s = i + 1; s < branch.size(); ++s) {
+							if (!quoted) {
+								if (branch[s] == layout.endDirDelim) {
+									--dirCount;
+									dirEnd = s;
+									if (dirCount == 0) break;
+								}
+								else if (branch[s] == layout.beginDirDelim) {
+									++dirCount;
+								}
+							}
+								
+							if (branch[s] == '"') {
+								if (branch[s-1] != '\\') {
+									quoted = !quoted;
+								}
+							}
+						}
 
-						if (std::find(endDirStr.begin(), endDirStr.end(), branch[dirEnd]) != endDirStr.end()) {
-							--count;
+						if (dirCount != 0 || dirEnd == -1) [[unlikely]] return out;
+
+						out.data.emplace(id, parseBranch(branch.substr(i + 1, dirEnd - i - 1), layout));
+						i = dirEnd;
+						cur = i + 1;
+						idReady = false;
+					}
+				}
+				else if (chr == layout.endDataDelim) {
+					if (idReady) {
+						auto data = strip(branch.substr(cur + 1, i - cur - 1), sv(layout.strip));
+						if (data.front() == '"' && data.back() == '"' && data.size() > 2) {
+							out.data.emplace(id, DataNode<dataT>{dataT(parseEscaped(data.substr(1, data.size() - 2)))});
 						}
 						else {
-							++count;
+							out.data.emplace(id, DataNode<dataT>{dataT(data)});
 						}
-					}
-
-					if (pDirBegin > dirEnd) return out;
-
-					if (dirEnd != npos) {
-						out.data.emplace(id, parseBranch(branch.substr(pDirBegin + 1, dirEnd - pDirBegin - 1), layout));
-						cur = dirEnd + 2;
+						cur = i + 1;
+						idReady = false;
 					}
 					else {
-						if (id != "") out.data.emplace(id, parseBranch(branch.substr(pDirBegin + 1), layout));
-						break;
+						cur = i + 1;
 					}
 				}
-				else {
-					out.data.emplace(id, DataNode<dataT>{dataT(strip(branch.substr(cur + 1, pDataEnd - cur - 1), sv(layout.strip)))});
-					cur = pDataEnd + 1;
+			}
+
+			if (chr == '"') {
+				if (prev != '\\') {
+					inQuote = !inQuote;
 				}
 			}
+
+			prev = chr;
+		}
+
+		if (idReady && cur < branch.size()) {
+			auto data = strip(branch.substr(cur + 1), sv(layout.strip));
+			if (data.front() == '"' && data.back() == '"' && data.size() > 2) {
+				out.data.emplace(id, DataNode<dataT>{dataT(parseEscaped(data.substr(1, data.size() - 2)))});
+			}
 			else {
-				if (pDirBegin != npos) {
-					if (id != "") out.data.emplace(id, parseBranch(branch.substr(pDirBegin + 1), layout));
-					break;
-				}
-				else {
-					if (id != "") out.data.emplace(id, DataNode<dataT>{dataT(strip(branch.substr(cur + 1), sv(layout.strip)))});
-					break;
-				}
+				out.data.emplace(id, DataNode<dataT>{dataT(data)});
 			}
 		}
 
@@ -356,9 +383,8 @@ namespace sndx {
 	}
 
 	template <class dataT = std::string, typename CharT = char> [[nodiscard]]
-	DataTree<dataT, CharT> loadDataTree(std::basic_istream<CharT>& in, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
+	std::optional<DataTree<dataT, CharT>> loadDataTree(std::basic_istream<CharT>& in, const TreeFileLayout<CharT>& layout = LayoutSNDX<CharT>) {
 		DataTree<dataT, CharT> out{};
-		out.root = DataNode<dataT>{};
 
 		std::basic_stringstream<CharT> strm;
 		strm << in.rdbuf();
@@ -366,22 +392,51 @@ namespace sndx {
 
 		auto inpt = sv<CharT>(str);
 
-		auto firstData = inpt.find_first_of(layout.dataDelim);
-		auto firstDir = inpt.find_first_of(layout.beginDirDelim);
+		bool inQuote = false;
+		int dirBalance = 0;
+		CharT prev = '\0';
 
-		if (firstData == sv<CharT>::npos) [[unlikely]] return out;
+		size_t firstData = -1;
+		size_t firstDir = -1;
+		size_t lastDir = -1;
 
-		if (firstDir != sv<CharT>::npos && firstDir < firstData) {
-			auto lastDir = inpt.find_last_of(layout.endDirDelim);
+		for (size_t i = 0; i < inpt.size(); ++i) {
+			CharT cur = inpt[i];
 
-			if (lastDir == sv<CharT>::npos) {
-				inpt = inpt.substr(firstDir + 1);
+			if (!inQuote) {
+				if (firstData == -1 && cur == layout.dataDelim) [[unlikely]]  {
+					firstData = i;
+				}
+				else if (cur == layout.beginDirDelim) {
+					if (firstDir == -1) [[unlikely]] {
+						firstDir = i;
+					}
+					++dirBalance;
+				}
+				else if (cur == layout.endDirDelim) {
+					--dirBalance;
+					lastDir = i;
+				}
 			}
-			else {
-				inpt = inpt.substr(firstDir + 1, lastDir - firstDir - 2);
+
+			if (cur == '"') {
+				if (prev != '\\') {
+					inQuote = !inQuote;
+				}
 			}
+
+			prev = cur;
 		}
 
+		if (firstData == -1 || inQuote || dirBalance != 0) [[unlikely]] return {};
+
+		if (firstDir != -1 && firstDir < firstData) {
+			if (lastDir == -1) [[unlikely]] {
+				return {};
+			}
+
+			inpt = inpt.substr(firstDir + 1, lastDir - firstDir - 2);
+		}
 
 		out.root = parseBranch(strip(inpt, sv<CharT>(layout.strip)), layout);
 

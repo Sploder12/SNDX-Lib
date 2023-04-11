@@ -11,7 +11,6 @@ namespace sndx {
 	struct GLnormalized {
 		using value_type = T;
 		using normalized = std::bool_constant<true>;
-
 		T value;
 	};
 
@@ -24,29 +23,30 @@ namespace sndx {
 	template <typename T>
 	using is_vec = std::bool_constant <
 		requires (T v) {
-		T::length();
-		T::x;
+		T::length(); T::x;
 		v[0];
 	} >;
 
 	template <typename T>
 	using is_mat = std::bool_constant <
 		requires (T m) {
-		T::length();
-		T::x0;
+		T::length(); T::x0;
 		m[0][0];
 	} >;
 
 	template <class T>
 	constexpr GLenum typeToGLenum() {
+		static_assert(!std::is_pointer_v<T>);
+		static_assert(!std::is_reference_v<T>);
+
 		if constexpr (is_GLnormalized<T>::value) { //normalized types
 			return typeToGLenum<T::value_type>();
 		}
 		else if constexpr (is_mat<T>::value) { //mat types
-			return typeToGLenum<std::remove_cvref_t<decltype(T::x0)>>();
+			return typeToGLenum<std::remove_cv_t<decltype(T::x0)>>();
 		}
 		else if constexpr (is_vec<T>::value) { //vec types
-			return typeToGLenum<std::remove_cvref_t<decltype(T::x)>>();
+			return typeToGLenum<std::remove_cv_t<decltype(T::x)>>();
 		}
 		else if constexpr (std::is_same_v<T, GLbyte>) {
 			return GL_BYTE;
