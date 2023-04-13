@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <functional>
+#include <iomanip>
 
 #include "stringmanip.hpp"
 
@@ -49,7 +50,7 @@ namespace sndx {
 		template <typename CharT = char>
 		void save(std::basic_ostream<CharT>& ostream, const TreeFileLayout<CharT>& layout, int depth = 0) const {
 			using StrT = std::basic_string<CharT>;
-			ostream << StrT(layout.decorator) << StrT(data) << StrT(layout.decorator);
+			ostream << StrT(layout.decorator) << std::quoted(StrT(data)) << StrT(layout.decorator);
 		}
 	};
 
@@ -165,7 +166,7 @@ namespace sndx {
 					ostream << StrT(layout.depthSpacer);
 				}
 
-				ostream << StrT(layout.decorator) << id << StrT(layout.decorator) << layout.dataDelim;
+				ostream << StrT(layout.decorator) << std::quoted(id) << StrT(layout.decorator) << layout.dataDelim;
 
 				std::visit([&ostream, &layout, depth](auto&& cur) {
 					cur.save<CharT>(ostream, layout, depth + 1);
@@ -344,7 +345,7 @@ namespace sndx {
 				}
 				else if (chr == layout.endDataDelim) {
 					if (idReady) {
-						auto data = strip(branch.substr(cur + 1, i - cur - 1), sv(layout.strip));
+						auto data = strip(branch.substr(cur + 1, i - cur - 1), sv(layout.idStrip));
 						if (data.front() == '"' && data.back() == '"' && data.size() > 2) {
 							out.data.emplace(id, DataNode<dataT>{dataT(parseEscaped(data.substr(1, data.size() - 2)))});
 						}
