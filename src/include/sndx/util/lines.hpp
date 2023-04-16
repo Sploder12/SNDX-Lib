@@ -125,6 +125,18 @@ namespace sndx {
 		return true;
 	}
 
+	template <float threshold = 0.00001f> [[nodiscard]]
+	bool isColinear(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b) {
+		if (p == a || p == b) [[unlikely]] return true;
+
+		auto pv = p - a;
+		auto bv = b - a;
+
+		if (glm::length(glm::cross(pv, bv)) <= threshold) return true;
+
+		return false;
+	}
+
 	[[nodiscard]]
 	static glm::vec3 surfaceNormal(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {
 		auto u = p1 - p0;
