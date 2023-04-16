@@ -95,22 +95,22 @@
     <LibraryPath>$(SolutionDir)lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
     <VcpkgTriplet>
     </VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
     <VcpkgTriplet>
     </VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
     <VcpkgTriplet>
     </VcpkgTriplet>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseStatic>false</VcpkgUseStatic>
     <VcpkgTriplet>
     </VcpkgTriplet>
   </PropertyGroup>
@@ -205,11 +205,12 @@
     <ClInclude Include="src\include\sndx\render\atlas.hpp" />
     <ClInclude Include="src\include\sndx\render\imagedata.hpp" />
     <ClInclude Include="src\include\sndx\render\shader.hpp" />
-    <ClInclude Include="src\include\sndx\render\text.hpp" />
+    <ClInclude Include="src\include\sndx\render\font.hpp" />
     <ClInclude Include="src\include\sndx\render\texture.hpp" />
     <ClInclude Include="src\include\sndx\render\vao.hpp" />
     <ClInclude Include="src\include\sndx\render\vbo.hpp" />
     <ClInclude Include="src\include\sndx\util.hpp" />
+    <ClInclude Include="src\include\sndx\util\atlasbuild.hpp" />
     <ClInclude Include="src\include\sndx\util\datafile.hpp" />
     <ClInclude Include="src\include\sndx\util\lines.hpp" />
     <ClInclude Include="src\include\sndx\util\logging.hpp" />
@@ -223,6 +224,9 @@
     <None Include="tmp\in.json" />
     <None Include="tmp\model.fs" />
     <None Include="tmp\model.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

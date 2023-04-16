@@ -164,6 +164,8 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
+	doThing();
+
 	FreetypeContext FT_context{};
 	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", true).value();
 	font.atlas.save("notoSans");
@@ -189,8 +191,7 @@ int main() {
 	makeNoise();
 
 	while (!glfwWindowShouldClose(win.window)) {
-
-		//doThing();
+	
 
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

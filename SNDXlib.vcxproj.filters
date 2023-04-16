@@ -87,7 +87,10 @@
     <ClInclude Include="src\include\sndx\3d\collision.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\sndx\render\text.hpp">
+    <ClInclude Include="src\include\sndx\render\font.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\util\atlasbuild.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -100,5 +103,8 @@
     <None Include="tmp\in.json" />
     <None Include="tmp\model.vs" />
     <None Include="tmp\model.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
   </ItemGroup>
 </Project>

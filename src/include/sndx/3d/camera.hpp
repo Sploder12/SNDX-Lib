@@ -56,5 +56,9 @@ namespace sndx {
 			pos += getForward() * dist;
 			return *this;
 		}
+
+		Camera& lookAt(glm::vec3 at) {
+			orientation = glm::quatLookAt(at - pos, getUp());
+		}
 	};
 }

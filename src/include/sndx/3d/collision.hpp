@@ -6,6 +6,7 @@
 #include <array>
 #include <optional>
 #include <functional>
+#include <numbers>
 
 namespace sndx {
 

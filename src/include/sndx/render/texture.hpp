@@ -8,6 +8,7 @@
 
 namespace sndx {
 
+	[[nodiscard]]
 	constexpr GLenum formatFromChannels(int channels) {
 		switch (channels) {
 		case 1:
@@ -24,6 +25,7 @@ namespace sndx {
 		}
 	}
 
+	[[nodiscard]]
 	constexpr int channelsFromFormat(GLenum format) {
 		switch (format) {
 		case GL_RED:
