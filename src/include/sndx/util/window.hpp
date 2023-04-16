@@ -16,15 +16,19 @@ namespace sndx {
 		glm::vec2 offset;
 		float aspectRatio;
 
+		operator GLFWwindow* () const {
+			return window;
+		}
+
 		[[nodiscard]]
-		float getAspectRatio() {
+		constexpr float getAspectRatio() {
 			return aspectRatio;
 		}
-		
+
 		[[nodiscard]]
 		constexpr glm::vec2 pixToNDC(glm::vec2 in) const {
-			glm::vec2 realDims = glm::vec2(dims.x + offset.x * 2, dims.y + offset.y * 2);
-			return (glm::vec2(in.x, realDims.y - in.y) / realDims) * 2.0f - glm::vec2(1.0f);
+			in -= offset;
+			return (glm::vec2(in.x, dims.y - in.y) / dims) * 2.0f - glm::vec2(1.0f);
 		}
 
 		void resetViewport() const {
@@ -41,12 +45,12 @@ namespace sndx {
 				return;
 			}
 
-			if (width > asWidth) {
-				int padding = (width - asWidth) / 2;
-				dims = glm::vec2(asWidth, height);
-				offset = glm::vec2(padding, 0);
-				return;
-			}
+				if (width > asWidth) {
+					int padding = (width - asWidth) / 2;
+					dims = glm::vec2(asWidth, height);
+					offset = glm::vec2(padding, 0);
+					return;
+				}
 
 			int asHeight = int(width / aspectRatio);
 			int padding = (height - asHeight) / 2;
@@ -60,14 +64,16 @@ namespace sndx {
 		}
 	};
 
-
 	[[nodiscard]]
-	Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
-		GLFWwindow* win = glfwCreateWindow(width, height, name, monitor, share);
+	static Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
+		Window out{ nullptr, glm::vec2(0.0f), glm::vec2(0.0f), aspectRatio };
+		out.resize(width, height);
+
+		GLFWwindow* win = glfwCreateWindow(out.dims.x + out.offset.x * 2, out.dims.y + out.offset.y * 2, name, monitor, share);
 		if (win == nullptr) throw std::runtime_error("Creating window resulted in nullptr.");
 
-		Window out{ win, glm::vec2(0.0f), glm::vec2(0.0f), aspectRatio };
-		out.resize(width, height);
+		out.window = win;
+
 		return out;
 	}
 }
