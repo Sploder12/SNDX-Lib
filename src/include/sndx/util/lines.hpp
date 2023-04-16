@@ -127,8 +127,6 @@ namespace sndx {
 
 	template <float threshold = 0.00001f> [[nodiscard]]
 	bool isColinear(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b) {
-		if (p == a || p == b) [[unlikely]] return true;
-
 		auto pv = p - a;
 		auto bv = b - a;
 
