@@ -117,7 +117,16 @@ namespace sndx {
 		return bezier<sizeof...(Ts) + 1>(t, loci);
 	}
 
-	glm::vec3 surfaceNormal(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {
+	template <float threshold, class T> [[nodiscard]]
+	auto vecEqual(const T& a, const T& b) {
+		for (int i = 0; i < a.length(); ++i) {
+			if (abs(a[i] - b[i]) > threshold) return false;
+		}
+		return true;
+	}
+
+	[[nodiscard]]
+	static glm::vec3 surfaceNormal(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {
 		auto u = p1 - p0;
 		auto v = p2 - p0;
 

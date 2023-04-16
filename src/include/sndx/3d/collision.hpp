@@ -227,10 +227,20 @@ namespace sndx {
 
 	// THIS WILL INCREASE THE VOLUME OF THE BB
 	[[nodiscard]]
-	SphereBB toSphereBB(const AABB& bb) {
+	static SphereBB toSphereBB(const AABB& bb) {
 		SphereBB out{};
 		out.pos = bb.center();
 		out.radius = glm::distance(out.pos, bb.rub);
 		return out;
+	}
+
+	// technically 2d but useful in 3d scenarios
+	[[nodiscard]]
+	constexpr bool pointInTri(glm::vec2 p, glm::vec2 a, glm::vec2 b, glm::vec2 c) {
+		float ab = (p.y - a.y) * (b.x - a.x) - (p.x - a.x) * (b.y - a.y);
+		float ca = (p.y - c.y) * (a.x - c.x) - (p.x - c.x) * (a.y - c.y);
+		float bc = (p.y - b.y) * (c.x - b.x) - (p.x - b.x) * (c.y - b.y);
+
+		return (ab * bc >= 0.0f && bc * ca >= 0.0f);
 	}
 }

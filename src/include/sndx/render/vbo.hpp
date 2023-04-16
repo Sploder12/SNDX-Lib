@@ -34,7 +34,7 @@ namespace sndx {
 		m[0][0];
 	} >;
 
-	template <class T>
+	template <class T> [[nodiscard]]
 	constexpr GLenum typeToGLenum() {
 		static_assert(!std::is_pointer_v<T>);
 		static_assert(!std::is_reference_v<T>);
