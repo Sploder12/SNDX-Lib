@@ -20,9 +20,8 @@ namespace sndx {
 				ImGui::Text("Texture ID: %u", target->id);
 				ImGui::Text("Size: %u x %u", target->width, target->height);
 				
+				ImGui::Image((void*)target->id, ImVec2(target->width, target->height), uv0, uv1);
 			}
-
-
 		};
 
 		template <typename IdT = std::string>
@@ -38,7 +37,7 @@ namespace sndx {
 
 				auto width = ImGui::GetWindowContentRegionWidth();
 
-				if (ImGui::BeginChild("Atlas Texture", ImVec2(width * 0.75f, 0), false, ImGuiWindowFlags_HorizontalScrollbar)) {
+				if (ImGui::BeginChild("Atlas Texture", ImVec2(width * 0.8f, 0), false, ImGuiWindowFlags_HorizontalScrollbar)) {
 
 					ImGui::Image((void*)target->tex.id, ImVec2(target->tex.width, target->tex.height), ImVec2(0, 1), ImVec2(1, 0));
 
@@ -57,7 +56,7 @@ namespace sndx {
 							glm::vec2 adjp1(entry.first.x * float(target->tex.width), (1.0f - entry.first.y) * float(target->tex.height));
 							auto adjp2 = adjp1 + glm::vec2(entry.second.x * float(target->tex.width), -entry.second.y * float(target->tex.height));
 
-							if (clickPos.x > adjp1.x && clickPos.x < adjp2.x && clickPos.y < adjp1.y && clickPos.y > adjp2.y) {
+							if (clickPos.x >= adjp1.x && clickPos.x <= adjp2.x && clickPos.y <= adjp1.y && clickPos.y >= adjp2.y) {
 								cur = it;
 								break;
 							}
@@ -68,7 +67,7 @@ namespace sndx {
 
 				
 				ImGui::SameLine();
-				if (ImGui::BeginChild("Atlas Entries", ImVec2(width * 0.25f, 0))) {
+				if (ImGui::BeginChild("Atlas Entries", ImVec2(width * 0.2f, 0))) {
 
 					ImGui::Text("Texture ID: %u", target->tex.id);
 					ImGui::Text("Size: %u x %u", target->tex.width, target->tex.height);
@@ -92,7 +91,7 @@ namespace sndx {
 
 					ImGui::SameLine();
 					if constexpr (std::is_same_v<std::string, IdT>) {
-						ImGui::Text("Entry: %s", cur->first);
+						ImGui::Text("Entry: %s", cur->first.c_str());
 					}
 					else {
 						ImGui::Text("Entry: %d", cur->first);
