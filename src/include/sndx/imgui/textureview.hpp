@@ -20,7 +20,8 @@ namespace sndx {
 				ImGui::Text("Texture ID: %u", target->id);
 				ImGui::Text("Size: %u x %u", target->width, target->height);
 				
-				ImGui::Image((void*)target->id, ImVec2(target->width, target->height), uv0, uv1);
+				long long id = target->id;
+				ImGui::Image((void*)id, ImVec2(float(target->width), float(target->height)), uv0, uv1);
 			}
 		};
 
@@ -36,10 +37,11 @@ namespace sndx {
 			void View(iterator_t& cur) const {
 
 				auto width = ImGui::GetWindowContentRegionWidth();
+				long long id = target->tex.id;
 
 				if (ImGui::BeginChild("Atlas Texture", ImVec2(width * 0.8f, 0), false, ImGuiWindowFlags_HorizontalScrollbar)) {
 
-					ImGui::Image((void*)target->tex.id, ImVec2(target->tex.width, target->tex.height), ImVec2(0, 1), ImVec2(1, 0));
+					ImGui::Image((void*)id, ImVec2(float(target->tex.width), float(target->tex.height)), ImVec2(0, 1), ImVec2(1, 0));
 
 					if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
 						const auto& pos = ImGui::GetMousePos();
@@ -109,7 +111,7 @@ namespace sndx {
 					size.x *= 2.0f;
 					size.y *= 2.0f;
 
-					ImGui::Image((void*)target->tex.id, size, ImVec2(pos.x, pos.y + dims.y), ImVec2(pos.x + dims.x, pos.y));
+					ImGui::Image((void*)id, size, ImVec2(pos.x, pos.y + dims.y), ImVec2(pos.x + dims.x, pos.y));
 				}
 
 				ImGui::EndChild();
