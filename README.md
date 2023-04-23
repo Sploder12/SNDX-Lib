@@ -14,6 +14,7 @@ Includes support for:
 - Fourier Transform (and inverse)
 - WAVE and MP3 audio format loading
 - Image writing and reading (using stbi)
+- Debug widgets (using Dear ImGui)
 
 ## Building
 Not needed! Just include the files!
