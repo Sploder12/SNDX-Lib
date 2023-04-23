@@ -37,7 +37,9 @@ namespace sndx {
 
 		template <typename T>
 		Logger& operator<<(const T& msg) {
-			stream << msg;
+			if (active) {
+				stream << msg;
+			}
 			return *this;
 		}
 	};

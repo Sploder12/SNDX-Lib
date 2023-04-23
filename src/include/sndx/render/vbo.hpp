@@ -6,7 +6,6 @@
 
 namespace sndx {
 
-
 	template <typename T>
 	struct GLnormalized {
 		using value_type = T;
@@ -72,9 +71,8 @@ namespace sndx {
 		else if constexpr (std::is_same_v<T, GLdouble>) {
 			return GL_DOUBLE;
 		}
-		else {
-			return -1;
-		}
+
+		return -1;
 	}
 
 	template <class... Layout>
@@ -115,9 +113,8 @@ namespace sndx {
 			if constexpr (sizeof...(Rest) > 0) {
 				return vertexAttribPointer<Rest...>(index, divisor, pointer + sizeof(Cur));
 			}
-			else {
-				return index;
-			}
+
+			return index;
 		}
 	public:
 		static_assert(sizeof...(Layout) > 0);
@@ -166,14 +163,14 @@ namespace sndx {
 		GLuint id;
 		GLenum target;
 
-		operator GLuint() const {
+		constexpr operator GLuint() const {
 			return id;
 		}
 
-		VBO() :
+		constexpr VBO() :
 			id(0), target(GL_ARRAY_BUFFER) {}
 
-		explicit VBO(GLenum target) :
+		constexpr explicit VBO(GLenum target) :
 			id(0), target(target) {}
 
 		void bind() {

@@ -21,7 +21,7 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		constexpr float getAspectRatio() {
+		constexpr float getAspectRatio() const {
 			return aspectRatio;
 		}
 
@@ -45,12 +45,12 @@ namespace sndx {
 				return;
 			}
 
-				if (width > asWidth) {
-					int padding = (width - asWidth) / 2;
-					dims = glm::vec2(asWidth, height);
-					offset = glm::vec2(padding, 0);
-					return;
-				}
+			if (width > asWidth) {
+				int padding = (width - asWidth) / 2;
+				dims = glm::vec2(asWidth, height);
+				offset = glm::vec2(padding, 0);
+				return;
+			}
 
 			int asHeight = int(width / aspectRatio);
 			int padding = (height - asHeight) / 2;

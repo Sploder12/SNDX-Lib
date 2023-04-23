@@ -49,7 +49,6 @@ namespace sndx {
 
 		for (auto& val : out) {
 			val = std::conj(val) / T(out.size());
-
 		}
 
 		return out;
