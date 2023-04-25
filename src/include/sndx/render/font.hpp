@@ -150,7 +150,7 @@ namespace sndx {
 		}
 		FT_Done_Face(face);
 	
-		out.atlas = builder.buildAtlas<font_padding>(columns / 4);
+		out.atlas = builder.buildAtlas<font_padding>(columns / 4.0f);
 	
 		return out;
 	}

@@ -77,7 +77,7 @@ namespace sndx {
 	struct ShaderProgram {
 		GLuint id;
 
-		std::unordered_map<std::string, GLint> uniformCache;
+		mutable std::unordered_map<std::string, GLint> uniformCache;
 
 		explicit ShaderProgram() :
 			id(0), uniformCache{} {}
@@ -116,7 +116,7 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		GLint getUniformLocation(const std::string& uid) {
+		GLint getUniformLocation(const std::string& uid) const {
 			auto it = uniformCache.find(uid);
 			if (it != uniformCache.end()) [[likely]] {
 				return it->second;
@@ -128,39 +128,39 @@ namespace sndx {
 		}
 
 
-		void uniform(const std::string& uid, int data) {
+		void uniform(const std::string& uid, int data) const {
 			glUniform1i(getUniformLocation(uid), data);
 		}
 
-		void uniform(const std::string& uid, unsigned int data) {
+		void uniform(const std::string& uid, unsigned int data) const {
 			glUniform1ui(getUniformLocation(uid), data);
 		}
 
-		void uniform(const std::string& uid, float data) {
+		void uniform(const std::string& uid, float data) const {
 			glUniform1f(getUniformLocation(uid), data);
 		}
 
-		void uniform(const std::string& uid, glm::vec2 data) {
+		void uniform(const std::string& uid, glm::vec2 data) const {
 			glUniform2f(getUniformLocation(uid), data.x, data.y);
 		}
 
-		void uniform(const std::string& uid, glm::vec3 data) {
+		void uniform(const std::string& uid, glm::vec3 data) const {
 			glUniform3f(getUniformLocation(uid), data.x, data.y, data.z);
 		}
 
-		void uniform(const std::string& uid, glm::vec4 data) {
+		void uniform(const std::string& uid, glm::vec4 data) const {
 			glUniform4f(getUniformLocation(uid), data.x, data.y, data.z, data.w);
 		}
 
-		void uniform(const std::string& uid, glm::mat2 data) {
+		void uniform(const std::string& uid, glm::mat2 data) const {
 			glUniformMatrix2fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
 		}
 
-		void uniform(const std::string& uid, glm::mat3 data) {
+		void uniform(const std::string& uid, glm::mat3 data) const {
 			glUniformMatrix3fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
 		}
 
-		void uniform(const std::string& uid, glm::mat4 data) {
+		void uniform(const std::string& uid, glm::mat4 data) const {
 			glUniformMatrix4fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
 		}
 	};
