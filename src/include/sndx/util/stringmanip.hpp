@@ -12,7 +12,7 @@ namespace sndx {
 	using Str = std::basic_string<CharT>;
 
 	template <typename CharT = char> [[nodiscard]]
-	sv<CharT> strip(sv<CharT> str, sv<CharT> strips = " \t") {
+	constexpr sv<CharT> strip(sv<CharT> str, sv<CharT> strips = " \t") {
 		auto first = str.find_first_not_of(strips);
 		auto last = str.find_last_not_of(strips);
 
@@ -24,7 +24,7 @@ namespace sndx {
 	}
 
 	template <typename CharT = char> [[nodiscard]]
-	std::vector<sv<CharT>> splitStrip(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
+	inline std::vector<sv<CharT>> splitStrip(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
 		std::vector<sv<CharT>> out{};
 		if (str == "") return out;
 
@@ -50,7 +50,7 @@ namespace sndx {
 	}
 
 	template <typename CharT = char> [[nodiscard]]
-	std::pair<sv<CharT>, sv<CharT>> splitFirst(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
+	constexpr std::pair<sv<CharT>, sv<CharT>> splitFirst(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
 		auto end = str.find_first_of(delim);
 		sv<CharT> first;
 		sv<CharT> second;
@@ -69,7 +69,7 @@ namespace sndx {
 	}
 
 	template <typename CharT = char> [[nodiscard]]
-	Str<CharT> parseEscaped(sv<CharT> str) {
+	inline Str<CharT> parseEscaped(sv<CharT> str) {
 		Str<CharT> out{};
 		out.reserve(str.size());
 
