@@ -65,7 +65,7 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	static Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
+	inline Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
 		Window out{ nullptr, glm::vec2(0.0f), glm::vec2(0.0f), aspectRatio };
 		out.resize(width, height);
 

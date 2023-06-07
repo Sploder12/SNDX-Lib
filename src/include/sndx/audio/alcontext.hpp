@@ -20,7 +20,7 @@
 
 namespace sndx {
 
-	static std::vector<std::string> getAlDevices() {
+	inline std::vector<std::string> getAlDevices() {
 		if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") != AL_TRUE) {
 			return {};
 		}

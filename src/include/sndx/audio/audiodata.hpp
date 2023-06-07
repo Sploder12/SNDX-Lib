@@ -169,7 +169,7 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	static AudioData<short> loadMP3(std::istream& in) {
+	inline AudioData<short> loadMP3(std::istream& in) {
 		in.seekg(0, std::ios::end);
 		size_t size = in.tellg();
 		in.seekg(0);
@@ -198,7 +198,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	std::optional<AudioData<short>> loadMP3(const std::filesystem::path& path) {
+	inline std::optional<AudioData<short>> loadMP3(const std::filesystem::path& path) {
 		std::ifstream file(path, std::ifstream::in | std::ifstream::binary);
 
 		if (file.is_open()) {
@@ -209,7 +209,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	static AudioData<short> loadWAV(std::istream& in) {
+	inline AudioData<short> loadWAV(std::istream& in) {
 	
 		char type[4];
 		unsigned long size, chunkSize;
@@ -280,7 +280,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	std::optional<AudioData<short>> loadWAV(const std::filesystem::path& path) {
+	inline std::optional<AudioData<short>> loadWAV(const std::filesystem::path& path) {
 		std::ifstream file(path, std::ifstream::in | std::ifstream::binary);
 
 		if (file.is_open()) {
@@ -291,7 +291,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	std::optional<AudioData<short>> loadAudioFile(const std::filesystem::path& path) {
+	inline std::optional<AudioData<short>> loadAudioFile(const std::filesystem::path& path) {
 		auto&& extension = path.extension().string();
 
 		if (extension == ".wav") {

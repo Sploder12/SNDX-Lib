@@ -11,7 +11,7 @@ namespace sndx {
 			idT id;
 			ImageData data;
 
-			bool operator>(const Entry& other) const {
+			bool operator>(const Entry& other) const noexcept {
 				return data.height > other.data.height;
 			}
 		};

@@ -23,20 +23,20 @@ namespace sndx {
 		}
 	};
 
-	static void ImGuiTerminate(ImGuiContext* context = (ImGuiContext*)0) {
+	inline void ImGuiTerminate(ImGuiContext* context = (ImGuiContext*)0) {
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext(context);
 	}
 
-	static void ImGuiNewFrame() {
+	inline void ImGuiNewFrame() {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 	}
 
 	// this also renders the frame using GetDrawData
-	static void ImGuiEndFrame() {
+	inline void ImGuiEndFrame() {
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

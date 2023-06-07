@@ -118,7 +118,7 @@ namespace sndx {
 	}
 
 	template <float threshold, class T> [[nodiscard]]
-	auto vecEqual(const T& a, const T& b) {
+	inline auto vecEqual(const T& a, const T& b) {
 		for (int i = 0; i < a.length(); ++i) {
 			if (abs(a[i] - b[i]) > threshold) return false;
 		}
@@ -126,7 +126,7 @@ namespace sndx {
 	}
 
 	template <float threshold = 0.00001f> [[nodiscard]]
-	bool areColinear(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b) {
+	inline bool areColinear(const glm::vec3& p, const glm::vec3& a, const glm::vec3& b) {
 		auto pv = p - a;
 		auto bv = b - a;
 
@@ -136,7 +136,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	static glm::vec3 surfaceNormal(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {
+	inline glm::vec3 surfaceNormal(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2) {
 		auto u = p1 - p0;
 		auto v = p2 - p0;
 

@@ -20,7 +20,7 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	ShaderType determineShaderType(const std::filesystem::path& path) {
+	inline ShaderType determineShaderType(const std::filesystem::path& path) {
 		auto ext = path.extension();
 		if (ext == ".vs") {
 			return ShaderType::Vertex;
@@ -36,8 +36,9 @@ namespace sndx {
 		}
 	}
 
+	// returns a error message on error. Empty optional otherwise.
 	template <class T>
-	void checkShaderErr(T&& obj) {
+	inline std::optional<std::string> checkShaderErr(T&& obj) {
 		GLint success;
 		glGetShaderiv(obj.id, GL_COMPILE_STATUS, &success);
 
@@ -49,14 +50,15 @@ namespace sndx {
 			errMsg.resize(logLen + 1ll);
 			glGetShaderInfoLog(obj.id, logLen, NULL, errMsg.data());
 			obj.destroy();
-			throw std::runtime_error(errMsg);
+			return errMsg;
 		}
+		return {};
 	}
 
 	struct Shader {
 		GLuint id;
 
-		Shader() :
+		constexpr Shader() noexcept:
 			id(0) {}
 
 		Shader(const char* code, ShaderType type) :
@@ -166,7 +168,7 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	static Shader shaderFromFile(const std::filesystem::path& path, ShaderType type) {
+	inline std::optional<Shader> shaderFromFile(const std::filesystem::path& path, ShaderType type) {
 		std::ifstream file(path);
 
 		if (file.is_open()) {
@@ -176,25 +178,35 @@ namespace sndx {
 			return Shader(strstr.str().c_str(), type);
 		}
 
-		throw std::runtime_error("Failed to open file: " + path.string());
+		return {};
 	}
 
 	[[nodiscard]]
-	static Shader shaderFromFile(const std::filesystem::path& path) {
+	inline std::optional<Shader> shaderFromFile(const std::filesystem::path& path) {
 		auto Ftype = determineShaderType(path);
 
 		return shaderFromFile(path, Ftype);
 	}
 
 	template <class... Files> [[nodiscard]]
-	static ShaderProgram programFromFiles(Files&&... files) {
+	inline std::optional<ShaderProgram> programFromFiles(Files&&... files) {
 
 		std::array<Shader, sizeof...(files)> shaders{};
 
 		auto&& loci = { files... };
 		size_t i = 0;
 		for (auto&& file : loci) {
-			shaders[i] = shaderFromFile(file);
+			auto shdr = shaderFromFile(file);
+			if (shdr) [[likely]] {
+				shaders[i] = std::move(shdr.value());
+			}
+			else {
+				for (; i > 0; --i) {
+					shaders[i - 1].destroy();
+				}
+				return {};
+			}
+
 			++i;
 		}
 

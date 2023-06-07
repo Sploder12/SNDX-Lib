@@ -228,7 +228,7 @@ namespace sndx {
 
 	// THIS WILL INCREASE THE VOLUME OF THE BB
 	[[nodiscard]]
-	static SphereBB toSphereBB(const AABB& bb) {
+	inline SphereBB toSphereBB(const AABB& bb) {
 		SphereBB out{};
 		out.pos = bb.center();
 		out.radius = glm::distance(out.pos, bb.rub);

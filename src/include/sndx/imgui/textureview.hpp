@@ -119,7 +119,7 @@ namespace sndx {
 		};
 	}
 
-	static void TextureView(const Texture& texture, const char* name, ImGuiWindowFlags flags = 0) {
+	inline void TextureView(const Texture& texture, const char* name, ImGuiWindowFlags flags = 0) {
 		widget::TextureView view(texture);
 		if (view.Begin(name, (bool*)0, flags)) {
 			view.View();
@@ -128,7 +128,7 @@ namespace sndx {
 	}
 
 	template <typename IdT = std::string>
-	static void AtlasView(const Atlas<IdT>& atlas, const char* name, typename widget::AtlasView<IdT>::iterator_t& it, ImGuiWindowFlags flags = 0) {
+	inline void AtlasView(const Atlas<IdT>& atlas, const char* name, typename widget::AtlasView<IdT>::iterator_t& it, ImGuiWindowFlags flags = 0) {
 		widget::AtlasView<IdT> view(atlas);
 		if (view.Begin(name, (bool*)0, flags)) {
 			view.View(it);

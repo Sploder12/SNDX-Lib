@@ -201,6 +201,10 @@
     <ClInclude Include="src\include\sndx\audio\alsource.hpp" />
     <ClInclude Include="src\include\sndx\audio\audiodata.hpp" />
     <ClInclude Include="src\include\sndx\audio\signal.hpp" />
+    <ClInclude Include="src\include\sndx\imgui.hpp" />
+    <ClInclude Include="src\include\sndx\imgui\datafileview.hpp" />
+    <ClInclude Include="src\include\sndx\imgui\textureview.hpp" />
+    <ClInclude Include="src\include\sndx\imgui\widget.hpp" />
     <ClInclude Include="src\include\sndx\render.hpp" />
     <ClInclude Include="src\include\sndx\render\atlas.hpp" />
     <ClInclude Include="src\include\sndx\render\imagedata.hpp" />
@@ -227,6 +231,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE.txt" />
+    <Text Include="src\include\sndx\imgui\Text.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

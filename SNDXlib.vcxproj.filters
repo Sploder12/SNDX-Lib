@@ -93,6 +93,18 @@
     <ClInclude Include="src\include\sndx\util\atlasbuild.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\include\sndx\imgui\textureview.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\imgui\widget.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\imgui.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\imgui\datafileview.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -106,5 +118,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="LICENSE.txt" />
+    <Text Include="src\include\sndx\imgui\Text.txt" />
   </ItemGroup>
 </Project>

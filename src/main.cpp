@@ -14,8 +14,18 @@
 #include "3d/model.hpp"
 #include "3d/camera.hpp"
 
+#include "imgui/textureview.hpp"
+#include "imgui/datafileview.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 using namespace sndx;
 
+/*
 ALContext alcontext{};
 
 void makeNoise() {
@@ -38,7 +48,7 @@ void makeNoise() {
 	testsrc.setGain(0.1f).setParam(AL_ROLLOFF_FACTOR, 0.0f).setParam(AL_SOURCE_RELATIVE, AL_TRUE)
 		.setParam(AL_LOOPING, AL_TRUE).setSpeed(1.0f)
 		.setBuffer(testbuf).play();
-}
+}*/
 
 void doThing() {
 	auto dataO = loadDataTree("tmp/in.json", LayoutJSON<char>);
@@ -162,15 +172,26 @@ int main() {
 
 	glewInit();
 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(win, true);
+	ImGui_ImplOpenGL3_Init("#version 330 core");
+
 	glEnable(GL_DEPTH_TEST);
 
-	doThing();
+	//doThing();
 
 	FreetypeContext FT_context{};
-	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", true).value();
+	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", false).value();
 	font.atlas.save("notoSans");
 
-	ShaderProgram shdr = programFromFiles("tmp/model.vs", "tmp/model.fs");
+	ShaderProgram shdr = programFromFiles("tmp/model.vs", "tmp/model.fs").value();
 
 	auto m = loadModelFromFile("tmp/model.obj");
 	if (!m.has_value()) return 1;
@@ -187,14 +208,20 @@ int main() {
 	shdr.uniform("view", glm::mat4(1.0f));
 
 
+	auto dataO = loadDataTree("tmp/in.json", LayoutJSON<char>).value();
 
-	makeNoise();
+
+	//makeNoise();
+
+	auto it = font.atlas.entries.begin();
 
 	while (!glfwWindowShouldClose(win.window)) {
 	
 
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		
 
 		
 		mdl = glm::mat4(1.0);
@@ -211,12 +238,22 @@ int main() {
 			glDrawElements(GL_TRIANGLES, GLsizei(mesh.indices.size()), GL_UNSIGNED_INT, 0);
 		});
 
+		ImGuiNewFrame();
+
+		AtlasView(font.atlas, "Atlas", it);
+
+		DataTreeView(dataO, "Atlas Tree");
+
+		ImGuiEndFrame();
+
 		glfwSwapBuffers(win.window);
 		glfwPollEvents();
 
 	}
 
-	model.destroy();
+	ImGuiTerminate();
+
+	//model.destroy();
 	glfwTerminate();
 	return 0;
 }
