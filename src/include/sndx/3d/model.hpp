@@ -95,7 +95,7 @@ namespace sndx {
 	using ModelNodeT = ModelNode<Vertex, glm::vec3, glm::vec3, glm::vec2>;
 	
 	[[nodiscard]]
-	std::vector<Texture> loadMaterialTextures(aiMaterial* material, aiTextureType type, ModelT& target, const std::string path = "") {
+	inline std::vector<Texture> loadMaterialTextures(aiMaterial* material, aiTextureType type, ModelT& target, const std::string path = "") {
 		std::vector<Texture> textures{};
 		auto texSize = material->GetTextureCount(type);
 		textures.reserve(texSize);
@@ -121,7 +121,7 @@ namespace sndx {
 
 	// https://learnopengl.com/Model-Loading/Model
 	[[nodiscard]]
-	Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2> processMesh(aiMesh* src, const aiScene* scene, ModelT& target, const std::string path = "") {
+	inline Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2> processMesh(aiMesh* src, const aiScene* scene, ModelT& target, const std::string path = "") {
 		Mesh<Vertex, glm::vec3, glm::vec3, glm::vec2> out{};
 
 		out.vertices.reserve(src->mNumVertices);
@@ -142,14 +142,32 @@ namespace sndx {
 			out.vertices.emplace_back(std::move(v));
 		}
 
-		out.indices.reserve(src->mNumFaces * 10);
-		for (unsigned int i = 0; i < src->mNumFaces; ++i) {
-			const auto& face = src->mFaces[i];
-			for (unsigned int j = 0; j < face.mNumIndices; ++j) {
-				out.indices.emplace_back(face.mIndices[j]);
+		if (src->HasBones()) {
+			out.bones.reserve(src->mNumBones);
+			for (unsigned int i = 0; i < src->mNumBones; ++i) {
+				const auto& cur = src->mBones[i];
+
+				Bone bone{};
+				bone.reserve(cur->mNumWeights);
+
+				for (unsigned int j = 0; j < cur->mNumWeights; ++j) {
+					bone.emplace_back(cur->mWeights[j].mVertexId, cur->mWeights[j].mWeight);
+				}
+
+				out.bones.emplace(cur->mName.data, std::move(bone));
 			}
 		}
 
+		if (src->HasFaces()) [[likely]] {
+			out.indices.reserve(src->mNumFaces * 10);
+			for (unsigned int i = 0; i < src->mNumFaces; ++i) {
+				const auto& face = src->mFaces[i];
+				for (unsigned int j = 0; j < face.mNumIndices; ++j) {
+					out.indices.emplace_back(face.mIndices[j]);
+				}
+			}
+		}
+		
 		if (src->mMaterialIndex >= 0) {
 			aiMaterial* material = scene->mMaterials[src->mMaterialIndex];
 			out.textures = loadMaterialTextures(material, aiTextureType_DIFFUSE, target, path);
@@ -160,7 +178,7 @@ namespace sndx {
 		return out;
 	}
 
-	void processNode(aiNode* cur, ModelNodeT& curNode, const aiScene* scene, ModelT& target, const std::string path = "") {
+	inline void processNode(aiNode* cur, ModelNodeT& curNode, const aiScene* scene, ModelT& target, const std::string path = "") {
 		
 		for (unsigned int i = 0; i < cur->mNumMeshes; ++i) {
 			aiMesh* mesh = scene->mMeshes[cur->mMeshes[i]];
@@ -176,7 +194,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	std::optional<ModelT> loadModelFromFile(const std::filesystem::path& path) {
+	inline std::optional<ModelT> loadModelFromFile(const std::filesystem::path& path) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
 

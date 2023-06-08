@@ -22,6 +22,8 @@ namespace sndx {
 		}
 	};
 
+	typedef std::vector<std::pair<size_t, float>> Bone;
+
 	// this would be nicer if we had reflection
 	template <class VertexT, class... VertexLayout>
 	class Mesh {
@@ -38,6 +40,8 @@ namespace sndx {
 		std::vector<VertexT> vertices{};
 		std::vector<unsigned int> indices{};
 		std::vector<Texture> textures{};
+
+		std::unordered_map<std::string, Bone> bones{};
 
 		AABB getBounds() const {
 			if (vertices.empty()) return AABB{ glm::vec3(0.0f), glm::vec3(0.0f) };

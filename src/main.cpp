@@ -102,7 +102,7 @@ void doThing() {
 					if (pos.x >= tmp.width || pos.x < 0.0f) continue;
 					if (pos.y >= tmp.height || pos.y < 0.0f) continue;
 
-					int index = int((floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels);
+					auto index = size_t((floor(pos.x) + floor(pos.y) * tmp.width) * tmp.channels);
 
 					unsigned char color = 255u - abs(x) * 100u - abs(y) * 100u;
 					tmp.data[index + 2] = std::max(color, tmp.data[index + 2]);
