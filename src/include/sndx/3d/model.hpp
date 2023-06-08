@@ -95,7 +95,7 @@ namespace sndx {
 	using ModelNodeT = ModelNode<Vertex, glm::vec3, glm::vec3, glm::vec2>;
 	
 	[[nodiscard]]
-	inline std::vector<Texture> loadMaterialTextures(aiMaterial* material, aiTextureType type, ModelT& target, const std::string path = "") {
+	inline std::vector<Texture> loadMaterialTextures(const aiScene* scene, aiMaterial* material, aiTextureType type, ModelT& target, const std::string path = "") {
 		std::vector<Texture> textures{};
 		auto texSize = material->GetTextureCount(type);
 		textures.reserve(texSize);
@@ -103,17 +103,52 @@ namespace sndx {
 		for (unsigned int i = 0; i < texSize; i++)
 		{
 			aiString str;
-			material->GetTexture(type, i, &str);
-			auto tmp = path + str.C_Str();
+			if (material->GetTexture(type, i, &str) == AI_SUCCESS) {
+				if (str.length > 0 && str.C_Str()[0] == '*') {
+					// embedded textures
+					// note: not put into loadedTextures map
 
-			auto it = target.loadedTextures.find(tmp);
-			if (it != target.loadedTextures.end()) {
-				textures.emplace_back(target.textures[it->second]);
-			}
-			else {
-				target.textures.emplace_back(textureFromFile(tmp.c_str(), 0));
-				textures.emplace_back(target.textures.back());
-				target.loadedTextures.insert({tmp, target.textures.size() - 1 });
+					auto idx = std::atoi(str.C_Str() + 1);
+					const auto& tex = scene->mTextures[idx];
+					
+					// raw data textures
+					if (tex->mHeight > 0) {
+						ImageData data;
+						data.width = tex->mWidth;
+						data.height = tex->mHeight;
+						data.channels = 4;
+						data.data.reserve(data.width * data.height * data.channels);
+
+						for (int t = 0; t < data.width * data.height; ++t) {
+							const auto& curTex = tex->pcData[t];
+
+							// this does reorder the data from ARGB to RGBA
+							data.data.emplace_back(curTex.r);
+							data.data.emplace_back(curTex.g);
+							data.data.emplace_back(curTex.b);
+							data.data.emplace_back(curTex.a);
+						}
+
+						textures.emplace_back(textureFromImage(std::move(data), GL_RGBA));
+					}
+					else { 
+						// file-like embedded textures are not currently supported :(
+						throw std::runtime_error("Models with file-like embedded textures are not supported");
+					}
+				}
+				else {
+					auto tmp = path + str.C_Str();
+
+					auto it = target.loadedTextures.find(tmp);
+					if (it != target.loadedTextures.end()) {
+						textures.emplace_back(target.textures[it->second]);
+					}
+					else {
+						target.textures.emplace_back(textureFromFile(tmp.c_str(), 0));
+						textures.emplace_back(target.textures.back());
+						target.loadedTextures.insert({ tmp, target.textures.size() - 1 });
+					}
+				}
 			}
 		}
 		return textures;
@@ -170,8 +205,8 @@ namespace sndx {
 		
 		if (src->mMaterialIndex >= 0) {
 			aiMaterial* material = scene->mMaterials[src->mMaterialIndex];
-			out.textures = loadMaterialTextures(material, aiTextureType_DIFFUSE, target, path);
-			auto spec = loadMaterialTextures(material, aiTextureType_DIFFUSE, target, path);
+			out.textures = loadMaterialTextures(scene, material, aiTextureType_DIFFUSE, target, path);
+			auto spec = loadMaterialTextures(scene, material, aiTextureType_SPECULAR, target, path);
 			out.textures.insert(out.textures.end(), spec.begin(), spec.end());
 		}
 
@@ -196,6 +231,7 @@ namespace sndx {
 	[[nodiscard]]
 	inline std::optional<ModelT> loadModelFromFile(const std::filesystem::path& path) {
 		Assimp::Importer importer;
+		importer.SetPropertyBool("#AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING", true); // for embedded textures
 		const aiScene* scene = importer.ReadFile(path.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
 
 		if (scene == nullptr) return {};
