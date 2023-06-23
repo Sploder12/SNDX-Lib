@@ -51,13 +51,13 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	ImageData imageFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha) {
+	std::optional<ImageData> imageFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha) {
 		stbi_set_flip_vertically_on_load(true);
 
 		ImageData out;
 		unsigned char* data = stbi_load(path, &out.width, &out.height, &out.channels, wantedChannels);
 		if (!data || out.width <= 0 || out.height <= 0) [[unlikely]] {
-			throw std::runtime_error(std::string("Failed to load image: ") + path);
+			return {};
 		}
 
 		out.data.resize(out.width * out.height * out.channels);

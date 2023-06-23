@@ -113,7 +113,7 @@ namespace sndx {
 			return out;
 		}
 
-		void save(const char* path, int quality = 100)  const{
+		void save(const char* path, int quality = 100) const {
 			asImage().save(path, quality);
 		}
 	};
@@ -124,8 +124,14 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	Texture textureFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha, GLenum iformat = GL_RGBA, GLenum filter = GL_NEAREST) {
-		return textureFromImage(imageFromFile(path, wantedChannels), iformat, filter);
+	std::optional<Texture> textureFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha, GLenum iformat = GL_RGBA, GLenum filter = GL_NEAREST) {
+		auto img = imageFromFile(path, wantedChannels);
+
+		if (img.has_value()) {
+			return textureFromImage(img.value(), iformat, filter);
+		}
+
+		return {};
 	}
 }
 

@@ -144,9 +144,16 @@ namespace sndx {
 						textures.emplace_back(target.textures[it->second]);
 					}
 					else {
-						target.textures.emplace_back(textureFromFile(tmp.c_str(), 0));
-						textures.emplace_back(target.textures.back());
-						target.loadedTextures.insert({ tmp, target.textures.size() - 1 });
+						auto tex = textureFromFile(tmp.c_str(), 0);
+						if (tex.has_value()) {
+							target.textures.emplace_back(tex.value());
+							textures.emplace_back(target.textures.back());
+							target.loadedTextures.insert({ tmp, target.textures.size() - 1 });
+						}
+						else {
+							// @TODO some failure indicator
+							throw std::runtime_error("Couldn't load texture");
+						}
 					}
 				}
 			}

@@ -37,7 +37,7 @@ namespace sndx {
 	}
 
 	// returns a error message on error. Empty optional otherwise.
-	template <class T>
+	template <class T> [[nodiscard]]
 	inline std::optional<std::string> checkShaderErr(T&& obj) {
 		GLint success;
 		glGetShaderiv(obj.id, GL_COMPILE_STATUS, &success);
@@ -67,7 +67,10 @@ namespace sndx {
 			glShaderSource(id, 1, &code, nullptr);
 			glCompileShader(id);
 
-			checkShaderErr(*this);
+			auto err = checkShaderErr(*this);
+			if (err.has_value()) [[unlikely]] {
+				throw std::runtime_error(err.value());
+			}
 		}
 
 		void destroy() {
@@ -101,10 +104,14 @@ namespace sndx {
 
 			glLinkProgram(id);
 
-			checkShaderErr(*this);
+			auto err = checkShaderErr(*this);
 
 			for (auto shader : shaders) {
 				glDetachShader(id, shader.id);
+			}
+
+			if (err.has_value()) [[unlikely]] {
+				throw std::runtime_error(err.value());
 			}
 		}
 
