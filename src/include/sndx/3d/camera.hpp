@@ -59,6 +59,7 @@ namespace sndx {
 
 		Camera& lookAt(glm::vec3 at) {
 			orientation = glm::quatLookAt(at - pos, getUp());
+			return *this;
 		}
 	};
 }

@@ -131,7 +131,7 @@ namespace sndx {
 		}
 	};
 
-	template <class Layout>
+	template <class... Layout>
 	class VBO {
 	protected:
 		template <class Cur, class... LinearContainers>
@@ -158,7 +158,7 @@ namespace sndx {
 		}
 	public:
 	
-		using DataT = Layout::DataT;
+		using DataT = VboLayout<Layout...>::DataT;
 
 		GLuint id;
 		GLenum target;

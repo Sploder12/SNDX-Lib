@@ -70,7 +70,7 @@ namespace sndx {
 		out.resize(width, height);
 
 		GLFWwindow* win = glfwCreateWindow(int(out.dims.x + out.offset.x * 2), int(out.dims.y + out.offset.y * 2), name, monitor, share);
-		if (win == nullptr) throw std::runtime_error("Creating window resulted in nullptr.");
+		if (win == nullptr) [[unlikely]] throw std::runtime_error("Creating window resulted in nullptr.");
 
 		out.window = win;
 
