@@ -88,10 +88,12 @@ namespace sndx {
 			id(0), uniformCache{} {}
 
 		ShaderProgram(ShaderProgram&& other) noexcept :
-			id(std::move(other.id)), uniformCache(std::move(other.uniformCache)) {
+			id(std::exchange(other.id, 0)), uniformCache(std::exchange(other.uniformCache, {})) {}
 
-			other.id = 0;
-			other.uniformCache = {};
+		ShaderProgram& operator=(ShaderProgram&& other) noexcept {
+			std::swap(id, other.id);
+			std::swap(uniformCache, other.uniformCache);
+			return *this;
 		}
 
 		template <class T>
@@ -200,9 +202,8 @@ namespace sndx {
 
 		std::array<Shader, sizeof...(files)> shaders{};
 
-		auto&& loci = { files... };
 		size_t i = 0;
-		for (auto&& file : loci) {
+		for (auto&& file : { files... }) {
 			auto shdr = shaderFromFile(file);
 			if (shdr) [[likely]] {
 				shaders[i] = std::move(shdr.value());

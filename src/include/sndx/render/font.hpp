@@ -96,7 +96,7 @@ namespace sndx {
 	};
 
 	template <size_t font_padding = 2>
-	std::optional<Font> loadFont(FreetypeContext& context, const char* filepath, bool sdf = false, unsigned int size = 32) {
+	inline std::optional<Font> loadFont(FreetypeContext& context, const char* filepath, bool sdf = false, unsigned int size = 32) {
 		FT_Face face;
 		if (FT_New_Face(context, filepath, 0, &face)) return {};
 

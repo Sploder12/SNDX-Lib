@@ -59,16 +59,18 @@ namespace sndx {
 		}
 
 		ALContext(ALContext&& other) noexcept:
-			device(std::move(other.device)), context(std::move(other.context)),
-			buffers(std::move(other.buffers)), sources(std::move(other.sources)) {
-
-			other.device = nullptr;
-			other.context = nullptr;
-			other.buffers = {};
-			other.sources = {};
-		}
+			device(std::exchange(other.device, nullptr)), context(std::exchange(other.context, nullptr)),
+			buffers(std::exchange(other.buffers, {})), sources(std::exchange(other.sources, {})) {}
 
 		ALContext(const ALContext&) = delete;
+
+		ALContext& operator=(ALContext&& other) noexcept {
+			std::swap(device, other.device);
+			std::swap(context, other.context);
+			std::swap(buffers, other.buffers);
+			std::swap(sources, other.sources);
+			return *this;
+		}
 
 		~ALContext() {
 			for (auto& src : sources) {
@@ -106,7 +108,7 @@ namespace sndx {
 			return std::string(alcGetString(device, ALC_DEVICE_SPECIFIER));
 		}
 
-		template <typename T>
+		template <typename T> [[nodiscard]]
 		ABO createBuffer(const IdT& id, const AudioData<T>& data) {
 			ABO out{};
 			out.setData(ALenum(data.format), std::span(data.buffer), data.freq);
@@ -114,6 +116,7 @@ namespace sndx {
 			return out;
 		}
 
+		[[nodiscard]]
 		ALSource createSource(const IdT& id) {
 			ALSource out{};
 			out.gen();

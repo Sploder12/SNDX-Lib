@@ -29,7 +29,7 @@ namespace sndx {
 	template <typename T>
 	using is_mat = std::bool_constant <
 		requires (T m) {
-		T::length(); T::x0;
+		T::length(); typename T::col_type;
 		m[0][0];
 	} >;
 
@@ -42,10 +42,10 @@ namespace sndx {
 			return typeToGLenum<T::value_type>();
 		}
 		else if constexpr (is_mat<T>::value) { //mat types
-			return typeToGLenum<std::remove_cv_t<decltype(T::x0)>>();
+			return typeToGLenum<typename T::value_type>();
 		}
 		else if constexpr (is_vec<T>::value) { //vec types
-			return typeToGLenum<std::remove_cv_t<decltype(T::x)>>();
+			return typeToGLenum<typename T::value_type>();
 		}
 		else if constexpr (std::is_same_v<T, GLbyte>) {
 			return GL_BYTE;
@@ -86,7 +86,7 @@ namespace sndx {
 			static constexpr GLboolean normalized = is_GLnormalized<Cur>::value;
 
 			if constexpr (is_mat<Cur>::value) {
-				using value_type = std::remove_cvref_t<decltype(Cur::x0)>;
+				using value_type = Cur::col_type;
 
 				for (int i = 0; i < Cur::length(); ++i) {
 					glEnableVertexAttribArray(index + i);

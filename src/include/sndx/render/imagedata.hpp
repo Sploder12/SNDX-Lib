@@ -51,7 +51,7 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	std::optional<ImageData> imageFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha) {
+	inline std::optional<ImageData> imageFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha) {
 		stbi_set_flip_vertically_on_load(true);
 
 		ImageData out;

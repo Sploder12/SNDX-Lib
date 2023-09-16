@@ -31,6 +31,12 @@ namespace sndx {
 			return (glm::vec2(in.x, dims.y - in.y) / dims) * 2.0f - glm::vec2(1.0f);
 		}
 
+		[[nodiscard]]
+		constexpr glm::vec2 NDCtoPix(glm::vec2 ndc) const {
+			auto tmp = (ndc + glm::vec2(1.0f)) / 2.0f;
+			return dims * tmp;
+		}
+
 		void resetViewport() const {
 			glfwMakeContextCurrent(window);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -41,7 +47,22 @@ namespace sndx {
 			int asWidth = int(height * aspectRatio);
 
 			if (asWidth == width) [[unlikely]] {
+				offset = glm::vec2(0.0f);
 				dims = glm::vec2(width, height);
+				return;
+			}
+
+			if (width == 0) {
+				offset = glm::vec2(0.0f);
+				dims = glm::vec2(asWidth, height);
+				return;
+			}
+
+			int asHeight = int(width / aspectRatio);
+
+			if (height == 0) {
+				offset = glm::vec2(0.0f);
+				dims = glm::vec2(width, asHeight);
 				return;
 			}
 
@@ -52,7 +73,6 @@ namespace sndx {
 				return;
 			}
 
-			int asHeight = int(width / aspectRatio);
 			int padding = (height - asHeight) / 2;
 			dims = glm::vec2(width, asHeight);
 			offset = glm::vec2(0, padding);

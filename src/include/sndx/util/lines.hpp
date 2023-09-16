@@ -112,9 +112,7 @@ namespace sndx {
 
 	template <typename T, typename... Ts> [[nodiscard]]
 	constexpr auto bezier(float t, T a, Ts... points) {
-		auto loci = { a, points... };
-
-		return bezier<sizeof...(Ts) + 1>(t, loci);
+		return bezier<sizeof...(Ts) + 1>(t, { a, points... });
 	}
 
 	template <float threshold, class T> [[nodiscard]]

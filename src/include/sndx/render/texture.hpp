@@ -119,12 +119,12 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	Texture textureFromImage(const ImageData& image, GLenum iformat = GL_RGBA, GLenum filter = GL_NEAREST) {
+	inline Texture textureFromImage(const ImageData& image, GLenum iformat = GL_RGBA, GLenum filter = GL_NEAREST) {
 		return Texture(image.width, image.height, image.data.data(), iformat, formatFromChannels(image.channels), filter);
 	}
 
 	[[nodiscard]]
-	std::optional<Texture> textureFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha, GLenum iformat = GL_RGBA, GLenum filter = GL_NEAREST) {
+	inline std::optional<Texture> textureFromFile(const char* path, int wantedChannels = (int)STBI_rgb_alpha, GLenum iformat = GL_RGBA, GLenum filter = GL_NEAREST) {
 		auto img = imageFromFile(path, wantedChannels);
 
 		if (img.has_value()) {

@@ -11,12 +11,12 @@ namespace sndx {
 		glm::quat orientation;
 
 		constexpr Camera():
-			pos(), orientation() {}
+			pos(), orientation(1.0f, 0.0f, 0.0f, 0.0f) {}
 
 		[[nodiscard]]
 		glm::mat4 getViewMatrix() const {
 			auto out = glm::translate(glm::mat4(1.0), pos);
-			return out * glm::mat4_cast(orientation);
+			return glm::mat4_cast(orientation) * out;
 		}
 
 		[[nodiscard]]
@@ -35,7 +35,7 @@ namespace sndx {
 		}
 
 		Camera& rotate(float angleDeg, glm::vec3 axis) {
-			glm::rotate(orientation, glm::radians(angleDeg), axis);
+			orientation = glm::rotate(orientation, glm::radians(angleDeg), axis);
 			return *this;
 		}
 
@@ -57,7 +57,7 @@ namespace sndx {
 			return *this;
 		}
 
-		Camera& lookAt(glm::vec3 at) {
+		Camera& lookAt(const glm::vec3& at) {
 			orientation = glm::quatLookAt(at - pos, getUp());
 			return *this;
 		}
