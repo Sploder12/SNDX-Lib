@@ -96,9 +96,12 @@ namespace sndx {
 				char cur = str[i];
 
 				if (cur == '"') {
-					i += find_quote_end(str.substr(i));
-					if (i == -1) [[unlikely]]
+					auto q = find_quote_end(str.substr(i));
+					
+					if (q == -1) [[unlikely]]
 						return -1;
+
+					i += q;
 
 					continue;
 				}
@@ -132,11 +135,12 @@ namespace sndx {
 				char cur = str[i];
 
 				if (cur == '"') {
-					i += find_quote_end(str.substr(i));
-					if (i == -1) [[unlikely]]
+					auto q = find_quote_end(str.substr(i));
+
+					if (q == -1) [[unlikely]]
 						return -1;
 
-					continue;
+						i += q;
 				}
 
 				if (cur == scheme.beginArr) {
@@ -251,7 +255,7 @@ namespace sndx {
 					ebegin = i + 1;
 				}
 				else if (cur == scheme.primDelim) {
-					if (!hasKey)
+					if (!hasKey || ebegin == -1)
 						continue;
 
 					out.emplace(std::move(key), parsePrimitive(strip(dict.substr(ebegin, i - ebegin), strips)));

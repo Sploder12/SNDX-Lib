@@ -58,7 +58,7 @@ void window_size_callback(GLFWwindow* window, int width, int height) {
 	win.resetViewport();
 }
 
-void doThing() {
+Texture doThing() {
 	auto dataO = decodeData<JSONdecoder>("tmp/in.json");
 	if (dataO.has_value()) {
 		auto data = std::move(dataO.value());
@@ -133,7 +133,9 @@ void doThing() {
 			}
 		}
 
-		tmp.asGrayScale().save("tmp/out.jpg");
+		auto tex = textureFromImage(tmp);
+		TextureView(tex, "Bezier");
+		return tex;
 	}
 }
 
@@ -194,7 +196,7 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	doThing();
+	//doThing();
 
 	FreetypeContext FT_context{};
 	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", false).value();
@@ -251,7 +253,11 @@ int main() {
 
 		DataTreeView(data1, "Atlas Tree");
 
+		auto t = doThing();
+		
 		ImGuiEndFrame();
+
+		t.destroy();
 
 		glfwSwapBuffers(win.window);
 		glfwPollEvents();
