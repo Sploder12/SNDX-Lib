@@ -64,40 +64,28 @@ void doThing() {
 		auto data = std::move(dataO.value());
 
 		size_t n = 0;
-		auto nptr = data.get("n");
-		if (nptr && nptr->holdsAlternative<Primitive>()) {
-			if (std::get<Primitive>(nptr->data).holdsAlternative<int64_t>()) {
-				n = std::get<int64_t>(std::get<Primitive>(nptr->data).data);
-			}
+		auto nptr = data.get<int64_t>("n");
+		if (nptr) {
+			n = *nptr;
 		}
 
 		std::vector<glm::vec2> points{};
 		points.reserve(n);
 
-		auto collectionptr = data.get("coords");
-		if (collectionptr && collectionptr->holdsAlternative<DataArray>()) {
-			auto& coords = std::get<DataArray>(collectionptr->data);
-			for (auto& val : coords) {
-				auto xptr = val.get("x");
-
-				long double x = 0.0;
-				if (xptr && xptr->holdsAlternative<Primitive>()) {
-					if (std::get<Primitive>(xptr->data).holdsAlternative<long double>()) {
-						x = std::get<long double>(std::get<Primitive>(nptr->data).data);
-					}
-				}
-
-				auto yptr = val.get("y");
-
-				long double y = 0.0;
-				if (yptr && yptr->holdsAlternative<Primitive>()) {
-					if (std::get<Primitive>(yptr->data).holdsAlternative<long double>()) {
-						y = std::get<long double>(std::get<Primitive>(yptr->data).data);
-					}
-				}
-
-				points.emplace_back(x, y);
+		for (size_t i = 0; i < n; ++i) {
+			auto xptr = data.get<long double>("coords", i, "x");
+			long double x = 0.0;
+			if (xptr) {
+				x = *xptr;
 			}
+
+			auto yptr = data.get<long double>("coords", i, "y");
+			long double y = 0.0;
+			if (yptr) {
+				y = *yptr;
+			}
+
+			points.emplace_back(x, y);
 		}
 
 		ImageData tmp{};
@@ -219,7 +207,7 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	//doThing();
+	doThing();
 
 	FreetypeContext FT_context{};
 	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", false).value();

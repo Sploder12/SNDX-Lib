@@ -11,6 +11,9 @@
 
 namespace sndx {
 
+	template <class T>
+	concept Arithmetic = std::integral<T> || std::floating_point<T>;
+
 	struct Primitive {
 		std::variant<
 			bool,
@@ -32,14 +35,13 @@ namespace sndx {
 			}, other.data);
 		}
 
+		Primitive(Primitive&& other) noexcept :
+			data(std::exchange(other.data, false)) {}
+
 		constexpr Primitive(bool val) noexcept:
 			data(val) {}
 
-		template <std::integral T>
-		constexpr Primitive(T val) noexcept :
-			data(val) {}
-
-		template <std::floating_point T>
+		template <Arithmetic T>
 		constexpr Primitive(T val) noexcept :
 			data(val) {}
 
@@ -49,8 +51,12 @@ namespace sndx {
 		Primitive(std::string&& val) noexcept:
 			data(std::move(val)) {}
 
-		Primitive(Primitive&& other) noexcept:
-			data(std::exchange(other.data, false)) {}
+
+		template <Arithmetic T>
+		constexpr Primitive& operator=(T val) {
+			data.emplace(val);
+			return *this;
+		}
 
 		Primitive& operator=(const Primitive& other) {
 			data = other.data;
@@ -125,16 +131,34 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		Primitive* get() {
+		Primitive* get() noexcept {
 			return std::get_if<Primitive>(&data);
 		}
 
-		[[nodiscard]]
-		Data* get(size_t index) {
-			auto arr = std::get_if<DataArray>(&data);
+		template <class T> [[nodiscard]]
+		T* get() noexcept {
+			if (auto pptr = get(); pptr) {
+				return std::get_if<T>(&pptr->data);
+			}
 
-			if (arr) {
-				return &arr->at(index);
+			return nullptr;
+		}
+	
+		[[nodiscard]]
+		Data* get(size_t index) noexcept {
+			if (auto arr = std::get_if<DataArray>(&data); arr) {
+				if (index < arr->size()) {
+					return &((*arr)[index]);
+				}
+			}
+
+			return nullptr;
+		}
+
+		template <class T> [[nodiscard]]
+		T* get(size_t index) {
+			if (auto elem = get(index); elem) {
+				return elem->get<T>();
 			}
 
 			return nullptr;
@@ -142,12 +166,47 @@ namespace sndx {
 
 		[[nodiscard]]
 		Data* get(const std::string& key) {
-			auto dict = std::get_if<DataDict>(&data);
-			
-			if (dict) {
+			if (auto dict = std::get_if<DataDict>(&data); dict) {
 				if (auto it = dict->find(key); it != dict->end()) {
 					return &it->second;
 				}
+			}
+
+			return nullptr;
+		}
+
+		template <class T> [[nodiscard]]
+		T* get(const std::string& key) {
+			if (auto elem = get(key); elem) {
+				return elem->get<T>();
+			}
+
+			return nullptr;
+		}
+
+		template <class First, class... Args> [[nodiscard]]
+		Data* get(const First& first, const Args&... args) 
+			requires (
+				(sizeof...(Args) > 0) &&
+				((std::convertible_to<std::decay_t<Args>, std::string>
+				|| (std::convertible_to<std::decay_t<Args>, size_t>)) && ...)) {
+
+			if (auto cur = get(first); cur) {
+				return cur->get(args...);
+			}
+
+			return nullptr;
+		}
+
+		template <class T, class First, class... Args> [[nodiscard]]
+		T* get(const First& first, const Args&... args)
+			requires (
+				(sizeof...(Args) > 0) &&
+				((std::convertible_to<std::decay_t<Args>, std::string>
+				|| (std::convertible_to<std::decay_t<Args>, size_t>)) && ...)) {
+
+			if (auto elem = get(first, args...); elem) {
+				return elem->get<T>();
 			}
 
 			return nullptr;
@@ -161,9 +220,7 @@ namespace sndx {
 
 		[[nodiscard]]
 		bool has(size_t index) const {
-			auto arr = std::get_if<DataArray>(&data);
-
-			if (arr) {
+			if (auto arr = std::get_if<DataArray>(&data); arr) {
 				return index < arr->size();
 			}
 
@@ -172,26 +229,11 @@ namespace sndx {
 
 		[[nodiscard]]
 		bool has(const std::string& key) const {
-			auto dict = std::get_if<DataDict>(&data);
-
-			if (dict) {
+			if (auto dict = std::get_if<DataDict>(&data); dict) {
 				return dict->find(key) != dict->cend();
 			}
 
 			return false;
-		}
-
-		[[nodiscard]]
-		Data* find(const std::string& key) {
-			if (holdsAlternative<DataDict>()) {
-				auto& dict = std::get<DataDict>(data);
-
-				if (auto it = dict.find(key); it != dict.end()) {
-					return &it->second;
-				}
-			}
-			
-			return nullptr;
 		}
 
 		[[nodiscard]]
