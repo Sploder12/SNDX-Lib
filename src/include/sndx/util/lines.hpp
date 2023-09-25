@@ -20,7 +20,7 @@ namespace sndx {
 
 	[[nodiscard]]
 	constexpr size_t factorial(size_t n) {
-		if (n == 0) return 1;
+		if (n == 0 || n == -1) return 1;
 
 		size_t out = n;
 		for (int i = 2; i < n; ++i) {

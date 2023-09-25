@@ -293,7 +293,8 @@ namespace sndx {
 				return parseDict(data);
 			}
 			else {
-				return parsePrimitive(stripped);
+				// assume it's a dict
+				return parseDict(stripped);
 			}
 		}
 	
