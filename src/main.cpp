@@ -63,27 +63,14 @@ void doThing() {
 	if (dataO.has_value()) {
 		auto data = std::move(dataO.value());
 
-		size_t n = 0;
-		auto nptr = data.get<int64_t>("n");
-		if (nptr) {
-			n = *nptr;
-		}
+		size_t n = data.get_or_else<int64_t>(0, "n");
 
 		std::vector<glm::vec2> points{};
 		points.reserve(n);
 
 		for (size_t i = 0; i < n; ++i) {
-			auto xptr = data.get<long double>("coords", i, "x");
-			long double x = 0.0;
-			if (xptr) {
-				x = *xptr;
-			}
-
-			auto yptr = data.get<long double>("coords", i, "y");
-			long double y = 0.0;
-			if (yptr) {
-				y = *yptr;
-			}
+			auto x = data.get_or_else(0.0l, "coords", i, "x");
+			auto y = data.get_or_else(0.0l, "coords", i, "y");
 
 			points.emplace_back(x, y);
 		}
