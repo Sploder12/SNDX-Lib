@@ -134,7 +134,7 @@ namespace sndx {
 	template <class... Layout>
 	class VBO {
 	protected:
-		template <class Cur, class... LinearContainers>
+		template <class Cur, class... LinearContainers> [[nodiscard]]
 		static size_t size(const Cur& data, const LinearContainers&... others) {
 			if constexpr (sizeof...(LinearContainers) > 0) {
 				return data.size() + size<LinearContainers...>(others...);
@@ -224,6 +224,20 @@ namespace sndx {
 
 			bind();
 			glBufferData(target, data.size() * sizeof(vtype), data.data(), GL_STATIC_DRAW);
+		}
+
+		void setDataSize(size_t count) {
+			bind();
+			glBufferData(target, count * sizeof(DataT), nullptr, GL_DYNAMIC_DRAW);
+		}
+
+		template <class LinearContainer>
+		void setSubData(const LinearContainer& data, size_t offset) {
+			using vtype = LinearContainer::value_type;
+			static_assert(sizeof(vtype) == sizeof(DataT));
+
+			bind();
+			glBufferSubData(target, sizeof(vtype) * offset, sizeof(vtype) * data.size(), data.data());
 		}
 
 		void gen() {

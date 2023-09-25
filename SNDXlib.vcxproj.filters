@@ -21,9 +21,6 @@
     <ClInclude Include="src\include\sndx\util\window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\sndx\util\datafile.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\include\sndx\util\stringmanip.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -102,7 +99,19 @@
     <ClInclude Include="src\include\sndx\imgui.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\include\sndx\imgui\datafileview.hpp">
+    <ClInclude Include="src\include\sndx\imgui\datatreeview.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\data\datatree.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\data.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\data\encoder.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\sndx\data\decoder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

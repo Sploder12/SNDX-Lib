@@ -2,7 +2,7 @@
 
 #include "texture.hpp"
 
-#include "../util/datafile.hpp"
+#include "../data.hpp"
 
 #include <unordered_map>
 #include <set>
@@ -110,31 +110,24 @@ namespace sndx {
 		// currently only supports string based atlases
 		bool save(const std::string& atlasname) const {
 
-			static constexpr char delim = '.';
-			
 			std::string imgPath = atlasname + ".jpg";
 
-			DirectoryNode root;
-			root.add(imgPath, "img", delim);
+			Data root("img", imgPath);
 			
-			DirectoryNode offsets;
+			Data offsets(DataDict{});
+			
 			for (const auto& [id, entry] : entries) {
-				DirectoryNode entryData;
-				
-				entryData.add(std::to_string(entry.first.x), "x", delim);
-				entryData.add(std::to_string(entry.first.y), "y", delim);
-				entryData.add(std::to_string(entry.second.x), "wid", delim);
-				entryData.add(std::to_string(entry.second.y), "hig", delim);
-				
-				offsets.data.emplace(std::to_string(id), std::move(entryData));
+				Data data("x", entry.first.x);
+				data.append("y", entry.first.y);
+				data.append("wid", entry.second.x);
+				data.append("hig", entry.second.y);
+
+				offsets.append(std::to_string(id), std::move(data));
 			}
 
-			root.data.emplace("offsets", std::move(offsets));
+			root.append("offsets", std::move(offsets));
 
-			DataTree out;
-			out.root = std::move(root);
-
-			if (out.save(atlasname + ".atlas")) {
+			if (encodeData<JSONencoder>(atlasname + ".atlas", root)) {
 				tex.save(imgPath.c_str());
 				return true;
 			}

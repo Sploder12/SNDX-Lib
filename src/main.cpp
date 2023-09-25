@@ -1,4 +1,3 @@
-#include "util/datafile.hpp"
 #include "util/logging.hpp"
 #include "util/stringmanip.hpp"
 #include "util/window.hpp"
@@ -15,7 +14,9 @@
 #include "3d/camera.hpp"
 
 #include "imgui/textureview.hpp"
-#include "imgui/datafileview.hpp"
+#include "imgui/datatreeview.hpp"
+
+#include "data.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -24,6 +25,8 @@
 #include <stb_image_write.h>
 
 using namespace sndx;
+
+Window win;
 
 /*
 ALContext alcontext{};
@@ -50,21 +53,51 @@ void makeNoise() {
 		.setBuffer(testbuf).play();
 }*/
 
+void window_size_callback(GLFWwindow* window, int width, int height) {
+	win.resize(width, height);
+	win.resetViewport();
+}
+
 void doThing() {
-	auto dataO = loadDataTree("tmp/in.json", LayoutJSON<char>);
+	auto dataO = decodeData<JSONdecoder>("tmp/in.json");
 	if (dataO.has_value()) {
 		auto data = std::move(dataO.value());
 
-		auto n = data.getOrElse<int>("n", '.', 0, [](const std::string& in) {return std::stoi(in); });
+		size_t n = 0;
+		auto nptr = data.get("n");
+		if (nptr && nptr->holdsAlternative<Primitive>()) {
+			if (std::get<Primitive>(nptr->data).holdsAlternative<int64_t>()) {
+				n = std::get<int64_t>(std::get<Primitive>(nptr->data).data);
+			}
+		}
 
 		std::vector<glm::vec2> points{};
 		points.reserve(n);
 
-		for (int i = 0; i < n; ++i) {
-			auto x = data.getOrElse<float>(std::to_string(i) + ".x", '.', 0.0f, [](const std::string& in) { return std::stof(in); });
-			auto y = data.getOrElse<float>(std::to_string(i) + ".y", '.', 0.0f, [](const std::string& in) { return std::stof(in); });
+		auto collectionptr = data.get("coords");
+		if (collectionptr && collectionptr->holdsAlternative<DataArray>()) {
+			auto& coords = std::get<DataArray>(collectionptr->data);
+			for (auto& val : coords) {
+				auto xptr = val.get("x");
 
-			points.emplace_back(x, y);
+				long double x = 0.0;
+				if (xptr && xptr->holdsAlternative<Primitive>()) {
+					if (std::get<Primitive>(xptr->data).holdsAlternative<long double>()) {
+						x = std::get<long double>(std::get<Primitive>(nptr->data).data);
+					}
+				}
+
+				auto yptr = val.get("y");
+
+				long double y = 0.0;
+				if (yptr && yptr->holdsAlternative<Primitive>()) {
+					if (std::get<Primitive>(yptr->data).holdsAlternative<long double>()) {
+						y = std::get<long double>(std::get<Primitive>(yptr->data).data);
+					}
+				}
+
+				points.emplace_back(x, y);
+			}
 		}
 
 		ImageData tmp{};
@@ -164,11 +197,12 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	Window win = createWindow(600, 600, "window", 1.0f);
+	win = createWindow(600, 600, "window");
 	
 	glfwMakeContextCurrent(win.window);
 
 	glfwSetCursorPosCallback(win.window, mouse_callback);
+	glfwSetWindowSizeCallback(win.window, window_size_callback);
 
 	glewInit();
 
@@ -193,7 +227,7 @@ int main() {
 
 	ShaderProgram shdr = programFromFiles("tmp/model.vs", "tmp/model.fs").value();
 
-	auto m = loadModelFromFile("tmp/model.obj");
+	auto m = loadModelFromFile("tmp/duck.obj");
 	if (!m.has_value()) return 1;
 
 	Model model = m.value();
@@ -207,9 +241,7 @@ int main() {
 	shdr.uniform("projection", projection);
 	shdr.uniform("view", glm::mat4(1.0f));
 
-
-	auto dataO = loadDataTree("tmp/in.json", LayoutJSON<char>).value();
-
+	auto data1 = decodeData<JSONdecoder>("tmp/in.json").value();
 
 	//makeNoise();
 
@@ -225,9 +257,9 @@ int main() {
 
 		
 		mdl = glm::mat4(1.0);
-		mdl = glm::translate(mdl, glm::vec3(0.0, 0.0, -2.0));
+		mdl = glm::translate(mdl, glm::vec3(0.0, -2.0, -7.0));
 		mdl = glm::rotate(mdl, yrot, glm::vec3(cos(xrot), 0.0, sin(xrot)));
-		mdl = glm::rotate(mdl, xrot, glm::vec3(0.0, 1.0, 0.0));
+		mdl = glm::rotate(mdl, xrot, glm::vec3(0.0, -1.0, 0.0));
 		
 		shdr.uniform("model", mdl);
 		
@@ -242,7 +274,7 @@ int main() {
 
 		AtlasView(font.atlas, "Atlas", it);
 
-		DataTreeView(dataO, "Atlas Tree");
+		DataTreeView(data1, "Atlas Tree");
 
 		ImGuiEndFrame();
 

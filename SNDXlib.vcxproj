@@ -201,8 +201,12 @@
     <ClInclude Include="src\include\sndx\audio\alsource.hpp" />
     <ClInclude Include="src\include\sndx\audio\audiodata.hpp" />
     <ClInclude Include="src\include\sndx\audio\signal.hpp" />
+    <ClInclude Include="src\include\sndx\data.hpp" />
+    <ClInclude Include="src\include\sndx\data\datatree.hpp" />
+    <ClInclude Include="src\include\sndx\data\decoder.hpp" />
+    <ClInclude Include="src\include\sndx\data\encoder.hpp" />
     <ClInclude Include="src\include\sndx\imgui.hpp" />
-    <ClInclude Include="src\include\sndx\imgui\datafileview.hpp" />
+    <ClInclude Include="src\include\sndx\imgui\datatreeview.hpp" />
     <ClInclude Include="src\include\sndx\imgui\textureview.hpp" />
     <ClInclude Include="src\include\sndx\imgui\widget.hpp" />
     <ClInclude Include="src\include\sndx\render.hpp" />
@@ -215,7 +219,6 @@
     <ClInclude Include="src\include\sndx\render\vbo.hpp" />
     <ClInclude Include="src\include\sndx\util.hpp" />
     <ClInclude Include="src\include\sndx\util\atlasbuild.hpp" />
-    <ClInclude Include="src\include\sndx\util\datafile.hpp" />
     <ClInclude Include="src\include\sndx\util\lines.hpp" />
     <ClInclude Include="src\include\sndx\util\logging.hpp" />
     <ClInclude Include="src\include\sndx\util\stringmanip.hpp" />
