@@ -12,8 +12,11 @@ namespace sndx {
 	template <class Enc>
 	struct Encoder {
 		
-		static auto encode(const Primitive& prim, int depth = 0) {
-			if constexpr (requires(decltype(prim)) { Enc::encode(prim, 0); }) {
+		static auto encode(const Primitive& prim, int depth = 0, bool spaceFirst = true) {
+			if constexpr (requires(decltype(prim)) { Enc::encode(prim, 0, true); }) {
+				return Enc::encode(prim, depth, spaceFirst);
+			}
+			else if constexpr (requires(decltype(prim)) { Enc::encode(prim, 0); }) {
 				return Enc::encode(prim, depth);
 			}
 			else if constexpr (requires(decltype(prim)) { Enc::encode(prim); }) {
@@ -45,17 +48,17 @@ namespace sndx {
 			}
 		}
 
-		static auto encode(const DataDict& dict, int depth = 0) {
-			return Enc::encode(dict, depth);
+		static auto encode(const DataDict& dict, int depth = 0, bool spaceFirst = true) {
+			return Enc::encode(dict, depth, spaceFirst);
 		}
 
-		static auto encode(const DataArray& arr, int depth = 0) {
-			return Enc::encode(arr, depth);
+		static auto encode(const DataArray& arr, int depth = 0, bool spaceFirst = true) {
+			return Enc::encode(arr, depth, spaceFirst);
 		}
 
-		static auto encode(const Data& data, int depth = 0) {
-			return std::visit([depth](auto&& val) {
-				return encode(val, depth);
+		static auto encode(const Data& data, int depth = 0, bool spaceFirst = true) {
+			return std::visit([depth, spaceFirst](auto&& val) {
+				return encode(val, depth, spaceFirst);
 			}, data.data);
 		}
 	};
@@ -67,10 +70,12 @@ namespace sndx {
 
 		static constexpr auto encoderScheme = scheme;
 
-		static auto encode(const DataDict& dict, int depth = 0) {
+		static auto encode(const DataDict& dict, int depth = 0, bool spaceFirst = true) {
 			std::string out = "";
-			for (int i = 0; i < depth; ++i) {
-				out += scheme.depthSpacer;
+			if (spaceFirst) {
+				for (int i = 0; i < depth; ++i) {
+					out += scheme.depthSpacer;
+				}
 			}
 
 			out += scheme.beginDir;
@@ -86,8 +91,15 @@ namespace sndx {
 
 				out += ss.str();
 				out += scheme.keyDelim;
-				out += Encoder<GenericEncoder<scheme>>::encode(val, depth + 1);
+				out += ' ';
+				out += Encoder<GenericEncoder<scheme>>::encode(val, depth + 1, false);
 				out += scheme.primDelim;
+				out += scheme.spacer;
+			}
+
+			if (dict.size() > 0) {
+				out.pop_back();
+				out.pop_back();
 				out += scheme.spacer;
 			}
 
@@ -99,10 +111,13 @@ namespace sndx {
 			return out;
 		}
 
-		static auto encode(const DataArray& arr, int depth = 0) {
+		static auto encode(const DataArray& arr, int depth = 0, bool spaceFirst = true) {
 			std::string out = "";
-			for (int i = 0; i < depth; ++i) {
-				out += scheme.depthSpacer;
+
+			if (spaceFirst) {
+				for (int i = 0; i < depth; ++i) {
+					out += scheme.depthSpacer;
+				}
 			}
 
 			out += scheme.beginArr;
@@ -116,6 +131,12 @@ namespace sndx {
 
 				out += Encoder<GenericEncoder<scheme>>::encode(val, depth + 1);
 				out += scheme.primDelim;
+				out += scheme.spacer;
+			}
+
+			if (arr.size() > 0) {
+				out.pop_back();
+				out.pop_back();
 				out += scheme.spacer;
 			}
 
