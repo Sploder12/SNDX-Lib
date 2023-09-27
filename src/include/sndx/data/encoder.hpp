@@ -63,7 +63,7 @@ namespace sndx {
 		}
 	};
 
-	template <EncodingScheme scheme>
+	template <GenericEncodingScheme scheme>
 	struct GenericEncoder : public Encoder<GenericEncoder<scheme>> {
 
 		using Base = Encoder<GenericEncoder<scheme>>;
@@ -149,8 +149,8 @@ namespace sndx {
 		}
 	};
 
-	using SNDXencoder = GenericEncoder<EncodingScheme{'='}>;
-	using JSONencoder = GenericEncoder<EncodingScheme{':'}>;
+	using SNDXencoder = GenericEncoder<GenericEncodingScheme{'='}>;
+	using JSONencoder = GenericEncoder<GenericEncodingScheme{':'}>;
 
 	template <class Enc>
 	bool encodeData(const std::filesystem::path& path, const Data& data) {

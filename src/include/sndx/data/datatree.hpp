@@ -295,7 +295,7 @@ namespace sndx {
 		}
 
 		template <class T, class... Args>
-		const T& get_or_else(const T& other, Args&&... args) const {
+		T get_or_else(const T& other, Args&&... args) const {
 			auto dat = get<T>(std::forward<Args>(args)...);
 			if (dat) {
 				return *dat;
@@ -305,7 +305,7 @@ namespace sndx {
 		}
 
 		template <class T, class O, class... Args>
-		const T& get_or_else(const O& other, Args&&... args) const {
+		T get_or_else(const O& other, Args&&... args) const {
 			auto dat = get<T>(std::forward<Args>(args)...);
 			if (dat) {
 				return *dat;
@@ -412,7 +412,7 @@ namespace sndx {
 		}
 	};
 
-	struct EncodingScheme {
+	struct GenericEncodingScheme {
 		char keyDelim, primDelim = ',';
 		char beginDir = '{', endDir = '}';
 		char beginArr = '[', endArr = ']';

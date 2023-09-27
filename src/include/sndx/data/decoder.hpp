@@ -52,7 +52,7 @@ namespace sndx {
 		}
 	}
 
-	template <EncodingScheme scheme>
+	template <GenericEncodingScheme scheme>
 	class GenericDecoder {
 	protected:
 		static constexpr char strips_cstr[4] = { ' ', scheme.spacer, scheme.depthSpacer, '\0'};
@@ -300,8 +300,8 @@ namespace sndx {
 	
 	};
 
-	using SNDXdecoder = GenericDecoder<EncodingScheme{ '=' }>;
-	using JSONdecoder = GenericDecoder<EncodingScheme{ ':' }>;
+	using SNDXdecoder = GenericDecoder<GenericEncodingScheme{ '=' }>;
+	using JSONdecoder = GenericDecoder<GenericEncodingScheme{ ':' }>;
 
 	template <class Dec> [[nodiscard]]
 	std::optional<Data> decodeData(std::basic_istream<char>& in) {
