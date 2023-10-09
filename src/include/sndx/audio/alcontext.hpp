@@ -1,16 +1,26 @@
 #pragma once
 
 #define NOMINMAX
+#ifndef WIN32_LEAN_AND_MEAN
+
+#define WIN32_LEAN_AND_MEAN
 #include <AL/al.h>
 #include <AL/alc.h>
+#undef WIN32_LEAN_AND_MEAN
+#else 
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif
+
+#include "audiodata.hpp"
+#include "abo.hpp"
+#include "alsource.hpp"
 
 #include <stdexcept>
 #include <unordered_map>
 #include <array>
 
-#include "alsource.hpp"
-#include "abo.hpp"
-#include "audiodata.hpp"
+
 
 // note because of lgpl OpenAL itself must be dynamically linked
 // I have modified my vcpkg triplet for this, you must too

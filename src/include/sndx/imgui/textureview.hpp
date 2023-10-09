@@ -21,7 +21,7 @@ namespace sndx {
 				ImGui::Text("Size: %u x %u", target->width, target->height);
 				
 				long long id = target->id;
-				ImGui::Image((void*)id, ImVec2(float(target->width), float(target->height)), uv0, uv1);
+				ImGui::Image((void*)id, ImVec2(float(target->width), float(target->height)), uv0, uv1, tint_col, border_col);
 			}
 		};
 

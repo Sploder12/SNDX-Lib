@@ -1,11 +1,23 @@
 #pragma once
 
-#include <AL/al.h>
-#include <AL/alc.h>
+#include "al.h"
 
+
+
+#ifndef WIN32_LEAN_AND_MEAN
+
+#define WIN32_LEAN_AND_MEAN
 #define MINIMP3_IMPLEMENTATION
 #include "minimp3/minimp3.h"
 #include <minimp3/minimp3_ex.h>
+#undef WIN32_LEAN_AND_MEAN
+
+#else
+#define MINIMP3_IMPLEMENTATION
+#include "minimp3/minimp3.h"
+#include <minimp3/minimp3_ex.h>
+#endif
+
 
 #include <filesystem>
 #include <fstream>
@@ -47,9 +59,9 @@ namespace sndx {
 	struct AudioData {
 		static_assert(std::is_integral_v<T>);
 
-		ChannelFormat format;
-		ALsizei freq;
-		std::vector<T> buffer;
+		ChannelFormat format{};
+		ALsizei freq{};
+		std::vector<T> buffer{};
 
 		bool isMono() const {
 			return format == ChannelFormat::mono8 || format == ChannelFormat::mono16;

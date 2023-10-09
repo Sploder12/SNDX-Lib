@@ -85,6 +85,8 @@ namespace sndx {
 	struct Data;
 
 	using DataArray = std::vector<Data>;
+	
+	// this is not portable and may only work on MSVC.
 	using DataDict = std::unordered_map<std::string, Data>;
 
 	struct Data {

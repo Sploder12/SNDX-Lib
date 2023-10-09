@@ -20,7 +20,7 @@ namespace sndx {
 				return Enc::encode(prim, depth);
 			}
 			else if constexpr (requires(decltype(prim)) { Enc::encode(prim); }) {
-				return Enc::code(prim);
+				return Enc::encode(prim);
 			}
 			else {
 				return std::visit([](auto&& val) {

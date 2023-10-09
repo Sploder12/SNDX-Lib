@@ -16,6 +16,8 @@
 #include "imgui/textureview.hpp"
 #include "imgui/datatreeview.hpp"
 
+
+#include "network.hpp"
 #include "data.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION

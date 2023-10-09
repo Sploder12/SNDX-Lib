@@ -71,8 +71,9 @@ namespace sndx {
 		else if constexpr (std::is_same_v<T, GLdouble>) {
 			return GL_DOUBLE;
 		}
-
-		return -1;
+		else {
+			return -1;
+		}
 	}
 
 	template <class... Layout>
@@ -113,8 +114,9 @@ namespace sndx {
 			if constexpr (sizeof...(Rest) > 0) {
 				return vertexAttribPointer<Rest...>(index, divisor, pointer + sizeof(Cur));
 			}
-
-			return index;
+			else {
+				return index;
+			}
 		}
 	public:
 		static_assert(sizeof...(Layout) > 0);

@@ -54,7 +54,6 @@ namespace sndx {
 
 			int shelfWidth = (int)(maxWidth * widthBias + padding * widthBias);
 			int shelfHeight = entries.cbegin()->data.height;
-			int maxHeight = shelfHeight;
 
 			int totalHeight = 0;
 
