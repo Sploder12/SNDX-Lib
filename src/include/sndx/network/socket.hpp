@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <type_traits>
 
+#include <vector>
+
 namespace sndx {
 
 	[[nodiscard]] // C++23's byteswap
@@ -126,6 +128,10 @@ namespace sndx {
 			std::swap(socket, other.socket);
 			return *this;
 		}
+
+		bool alive() const {
+			return socket != invalidSocket;
+		}
 		
 		~Socket() {
 			if (socket != invalidSocket) {
@@ -135,6 +141,15 @@ namespace sndx {
 	};
 
 	class ClientSocket : public Socket {
+	protected:
+		explicit ClientSocket(SocketType socket) :
+			Socket(socket) {}
+
+		friend class HostSocket;
+	
+	public:
+
+		// Warning, check if alive, connecting may fail without throwing.
 		ClientSocket(const std::string& addr, unsigned short port, int domain = AF_INET, int type = SOCK_STREAM, Protocol protocol = Protocol::TCP) {
 			auto protocolID = context.protocol(protocol);
 
@@ -155,10 +170,10 @@ namespace sndx {
 				this->socket = ::socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
 				if (this->socket == invalidSocket) {
 					::freeaddrinfo(res);
-					throw std::system_error(invalidSocket, std::system_category(), "Could Not Create Socket");
+					throw std::system_error(-1, std::system_category(), "Could Not Create Socket");
 				}
 
-				if (auto err = ::connect(this->socket, cur->ai_addr, cur->ai_addrlen)) {
+				if (auto err = ::connect(this->socket, cur->ai_addr, (int)cur->ai_addrlen)) {
 					context.close(this->socket);
 					continue;
 				}
@@ -166,10 +181,6 @@ namespace sndx {
 			}
 
 			::freeaddrinfo(res);
-
-			if (socket == invalidSocket) {
-				throw std::system_error(invalidSocket, std::system_category(), "Could Not Connect To Server");
-			}
 
 			#else
 
@@ -193,15 +204,111 @@ namespace sndx {
 
 			::connect(socket, (const sockaddr*)&saddr, sizeof(sadder));
 			if (errno != 0) {
-				throw std::system_error(errno, std::system_category(), "Could Not Connect To Server");
+				socket = invaildSocket;
 			}
 
 			#endif
+		}
+
+		// blocks until some data is recieved, check alive after calling, connection may drop
+		[[nodiscard]]
+		std::vector<char> recieve(size_t count, int flags = 0) {
+			std::vector<char> out{};
+			out.resize(count);
+
+			auto amount = ::recv(this->socket, out.data(), count * sizeof(decltype(out)::value_type), flags);
+
+			#ifdef _WIN32
+			if (amount == SOCKET_ERROR) {
+				auto err = WSAGetLastError();
+				if (err == WSAEWOULDBLOCK) {
+					return {};
+				}
+
+				if (err == WSAECONNABORTED || err == WSAETIMEDOUT || err == WSAECONNRESET) {
+					context.close(this->socket);
+					return {};
+				}
+				
+				throw std::system_error(err, std::system_category(), "Socket Recieve Failed");
+			}
+			#else
+			if (amount == -1) {
+				if (errno == EAGAIN || errno == EWOULDBLOCK) {
+					return {};
+				}
+
+				context.close(this->socket);
+				return {};
+			}
+			#endif
+
+			out.resize(amount);
+			return out;
+		}
+
+		// check alive after calling, connection may die
+		template <class T> [[nodiscard]]
+		auto send(const T& buffer, int flags = 0, size_t offset = 0) {
+			size_t len = buffer.size() * sizeof(T::value_type) - offset;
+
+			if (offset >= buffer.size() * sizeof(T::value_type)) [[unlikely]]
+				return 0;
+
+			auto res = ::send(this->socket, (const char*)(buffer.data()) + offset, len, flags);
+
+			#ifdef _WIN32
+			if (res == SOCKET_ERROR) {
+				auto err = WSAGetLastError();
+				if (err == WSAEWOULDBLOCK) {
+					return 0;
+				}
+
+				if (err == WSAECONNABORTED || err == WSAETIMEDOUT || err == WSAECONNRESET) {
+					context.close(this->socket);
+					return -1;
+				}
+
+				throw std::system_error(err, std::system_category(), "Socket Send Failed");
+			}
+
+			#else
+			if (res == -1) {
+				if (errno == EAGAIN || errno == EWOULDBLOCK) {
+					return 0;
+				}
+
+				context.close(this->socket);
+				return -1;
+			}
+
+			#endif
+
+			return res;
+		}
+
+		// sends the entire buffer (pretty much guarenteed to block)
+		template <class T>
+		bool sendAll(const T& buffer, int flags = 0) {
+			size_t loc = 0;
+			size_t len = buffer.size() * sizeof(T::value_type);
+
+			while (loc < len) {
+				auto res = send(buffer, flags, loc);
+				if (res == -1)
+					return false;
+
+				loc += res;
+			}
+
+			return true;
 		}
 	};
 
 	class HostSocket : public Socket {
 	public:
+
+		// Warning, check if alive, binding may fail without throwing.
 		HostSocket(unsigned short port, int domain = AF_INET, int type = SOCK_STREAM, Protocol protocol = Protocol::TCP) {
 			auto protocolID = context.protocol(protocol);
 
@@ -221,12 +328,18 @@ namespace sndx {
 			this->socket = ::socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 			if (this->socket == invalidSocket) {
 				::freeaddrinfo(res);
-				throw std::system_error(invalidSocket, std::system_category(), "Could Not Create Socket");
+				throw std::system_error(-1, std::system_category(), "Could Not Create Socket");
 			}
 
-			if (auto err = ::bind(this->socket, res->ai_addr, (int)res->ai_addrlen); err != 0) {
+			auto err = ::bind(this->socket, res->ai_addr, (int)res->ai_addrlen);
+			if (err != 0 && err != WSAEADDRINUSE) {
 				::freeaddrinfo(res);
 				throw std::system_error(err, std::system_category(), "Could Not Bind Socket");
+			}
+
+			// address in use is not exceptional, expected to a degree
+			if (err == WSAEADDRINUSE) {
+				this->socket = invalidSocket;
 			}
 
 			::freeaddrinfo(res);
@@ -246,14 +359,47 @@ namespace sndx {
 
 			sockaddr_in addr{ domain, port, INADDR_ANY };
 			::bind(this->socket, (const sockaddr*)(&addr), sizeof(addr));
-			if (errno != 0) {
+			if (errno != 0 && errno != EADDRINUSE) {
 				throw std::system_error(errno, std::system_category(), "Could Not Bind Socket");
 			}
+
+			// address in use is not exceptional, expected to a degree
+			if (errno == EADDRINUSE) {
+				this->socket = invalidSocket;
+			}
+
 			#endif
 		}
 
-		void listen(std::decay_t<decltype(queueSizeSocket)> queueSize = queueSizeSocket) {
-			::listen(this->socket, queueSize);
+		// please call this before calling accept
+		auto listen(std::decay_t<decltype(queueSizeSocket)> queueSize = queueSizeSocket) const {
+			return ::listen(this->socket, queueSize);
+		}
+
+		// this will block, check the returned socket for being alive, accept may fail without exception
+		[[nodiscard]]
+		ClientSocket accept() const {
+			auto outs = ::accept(this->socket, nullptr, nullptr);
+
+			if (outs == invalidSocket) {
+				#ifdef _WIN32
+				if (auto err = WSAGetLastError(); err != WSAECONNRESET) {
+					throw std::system_error(err, std::system_category(), "Socket Accept Failed");
+				}
+				#else
+				if (errno != ECONNABORTED) {
+					throw std::system_error(errno, std::system_category(), "Socket Accept Failed");
+				}
+				#endif
+				return ClientSocket(invalidSocket);
+			}
+
+			return ClientSocket(outs);
 		}
 	};
+
+	// these are to ensure that ::select doesn't need to do any allocation
+	static_assert(sizeof(Socket) == sizeof(SocketType));
+	static_assert(sizeof(ClientSocket) == sizeof(SocketType));
+	static_assert(sizeof(HostSocket) == sizeof(SocketType));
 }
