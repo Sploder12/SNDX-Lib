@@ -140,14 +140,17 @@ namespace sndx {
 		}
 	};
 
+	template <bool Blocks = true>
 	class ClientSocket : public Socket {
 	protected:
 		explicit ClientSocket(SocketType socket) :
 			Socket(socket) {}
 
+		template <bool T>
 		friend class HostSocket;
 	
 	public:
+		static constexpr bool Blocking = Blocks;
 
 		// Warning, check if alive, connecting may fail without throwing.
 		ClientSocket(const std::string& addr, unsigned short port, int domain = AF_INET, int type = SOCK_STREAM, Protocol protocol = Protocol::TCP) {
@@ -182,10 +185,23 @@ namespace sndx {
 
 			::freeaddrinfo(res);
 
+			if constexpr (!Blocking) {
+				if (this->socket != invalidSocket) {
+					u_long mode = 1;
+					::ioctlsocket(this->socket, FIONBIO, &mode);
+				}
+			}
+
 			#else
 
 			errno = 0;
-			this->socket = ::socket(domain, type, protocolID);
+
+			if constexpr (Blocking) {
+				this->socket = ::socket(domain, type, protocolID);
+			}
+			else {
+				this->socket = ::socket(domain, type | SOCK_NONBLOCK, protocolID);
+			}
 
 			if (this->socket < 0 || errno != 0) {
 				throw std::system_error(errno, std::system_category(), "Could Not Create Socket");
@@ -221,8 +237,10 @@ namespace sndx {
 			#ifdef _WIN32
 			if (amount == SOCKET_ERROR) {
 				auto err = WSAGetLastError();
-				if (err == WSAEWOULDBLOCK) {
-					return {};
+				if constexpr (!Blocking) {
+					if (err == WSAEWOULDBLOCK) {
+						return {};
+					}
 				}
 
 				if (err == WSAECONNABORTED || err == WSAETIMEDOUT || err == WSAECONNRESET) {
@@ -234,8 +252,10 @@ namespace sndx {
 			}
 			#else
 			if (amount == -1) {
-				if (errno == EAGAIN || errno == EWOULDBLOCK) {
-					return {};
+				if constexpr (!Blocking) {
+					if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						return {};
+					}
 				}
 
 				context.close(this->socket);
@@ -260,8 +280,10 @@ namespace sndx {
 			#ifdef _WIN32
 			if (res == SOCKET_ERROR) {
 				auto err = WSAGetLastError();
-				if (err == WSAEWOULDBLOCK) {
-					return 0;
+				if constexpr (!Blocking) {
+					if (err == WSAEWOULDBLOCK) {
+						return 0;
+					}
 				}
 
 				if (err == WSAECONNABORTED || err == WSAETIMEDOUT || err == WSAECONNRESET) {
@@ -274,8 +296,10 @@ namespace sndx {
 
 			#else
 			if (res == -1) {
-				if (errno == EAGAIN || errno == EWOULDBLOCK) {
-					return 0;
+				if constexpr (!Blocking) {
+					if (errno == EAGAIN || errno == EWOULDBLOCK) {
+						return 0;
+					}
 				}
 
 				context.close(this->socket);
@@ -305,8 +329,11 @@ namespace sndx {
 		}
 	};
 
+	template <bool Blocks = true>
 	class HostSocket : public Socket {
 	public:
+
+		static constexpr bool Blocking = Blocks;
 
 		// Warning, check if alive, binding may fail without throwing.
 		HostSocket(unsigned short port, int domain = AF_INET, int type = SOCK_STREAM, Protocol protocol = Protocol::TCP) {
@@ -344,10 +371,23 @@ namespace sndx {
 
 			::freeaddrinfo(res);
 
+			if constexpr (!Blocking) {
+				if (this->socket != invalidSocket) {
+					u_long mode = 1;
+					::ioctlsocket(this->socket, FIONBIO, &mode);
+				}
+			}
+
 			#else
 
 			errno = 0;
-			this->socket = ::socket(domain, type, protocolID);
+
+			if constexpr (Blocking) {
+				this->socket = ::socket(domain, type, protocolID);
+			}
+			else {
+				this->socket = ::socket(domain, type | SOCK_NONBLOCK, protocolID);
+			}
 
 			if (this->socket < 0 || errno != 0) {
 				throw std::system_error(errno, std::system_category(), "Could Not Create Socket");
@@ -378,28 +418,40 @@ namespace sndx {
 
 		// this will block, check the returned socket for being alive, accept may fail without exception
 		[[nodiscard]]
-		ClientSocket accept() const {
+		ClientSocket<Blocking> accept() const {
+			
+
+			#ifdef _WIN32
 			auto outs = ::accept(this->socket, nullptr, nullptr);
+			#else
+			SocketType outs;
+			if constexpr (Blocking) {
+				outs = ::accept(this->socket, nullptr, nullptr);
+			}
+			else {
+				outs = ::accept4(this->socket, nullptr, nullptr, SOCK_NONBLOCK);
+			}
+			#endif
 
 			if (outs == invalidSocket) {
 				#ifdef _WIN32
-				if (auto err = WSAGetLastError(); err != WSAECONNRESET) {
+				if (auto err = WSAGetLastError(); err != WSAECONNRESET && err != WSAEWOULDBLOCK) {
 					throw std::system_error(err, std::system_category(), "Socket Accept Failed");
 				}
 				#else
-				if (errno != ECONNABORTED) {
+				if (errno != ECONNABORTED && errno != EAGAIN && errno != EWOULDBLOCK) {
 					throw std::system_error(errno, std::system_category(), "Socket Accept Failed");
 				}
 				#endif
-				return ClientSocket(invalidSocket);
+				return ClientSocket<Blocking>(invalidSocket);
 			}
 
-			return ClientSocket(outs);
+			return ClientSocket<Blocking>(outs);
 		}
 	};
 
 	// these are to ensure that ::select doesn't need to do any allocation
 	static_assert(sizeof(Socket) == sizeof(SocketType));
-	static_assert(sizeof(ClientSocket) == sizeof(SocketType));
-	static_assert(sizeof(HostSocket) == sizeof(SocketType));
+	static_assert(sizeof(ClientSocket<>) == sizeof(SocketType));
+	static_assert(sizeof(HostSocket<>) == sizeof(SocketType));
 }
