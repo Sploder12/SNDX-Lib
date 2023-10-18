@@ -267,6 +267,31 @@ namespace sndx {
 			return out;
 		}
 
+		[[nodiscard]]
+		std::vector<char> recieveExactly(size_t count, int flags = 0) {
+			std::vector<char> out{};
+			out.resize(count);
+			
+			size_t recvd = 0;
+
+			while (recvd < count) {
+				if (!this->alive()) {
+					break;
+				}
+
+				auto tmp = recieve(count - recvd, flags);
+
+				size_t iters = std::min(tmp.size(), count - recvd);
+				for (size_t i = 0; i < iters; ++i) {
+					out[recvd + i] = tmp[i];
+				}
+
+				recvd += iters;
+			}
+
+			return out;
+		}
+
 		// check alive after calling, connection may die
 		template <class T> [[nodiscard]]
 		auto send(const T& buffer, int flags = 0, size_t offset = 0) {

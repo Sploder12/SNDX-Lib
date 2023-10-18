@@ -126,6 +126,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -144,6 +145,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -162,6 +164,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -180,6 +183,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -197,6 +201,7 @@
     <ClInclude Include="src\include\sndx\3d\model.hpp" />
     <ClInclude Include="src\include\sndx\audio.hpp" />
     <ClInclude Include="src\include\sndx\audio\abo.hpp" />
+    <ClInclude Include="src\include\sndx\audio\al.h" />
     <ClInclude Include="src\include\sndx\audio\alcontext.hpp" />
     <ClInclude Include="src\include\sndx\audio\alsource.hpp" />
     <ClInclude Include="src\include\sndx\audio\audiodata.hpp" />
@@ -209,6 +214,8 @@
     <ClInclude Include="src\include\sndx\imgui\datatreeview.hpp" />
     <ClInclude Include="src\include\sndx\imgui\textureview.hpp" />
     <ClInclude Include="src\include\sndx\imgui\widget.hpp" />
+    <ClInclude Include="src\include\sndx\network.hpp" />
+    <ClInclude Include="src\include\sndx\network\socket.hpp" />
     <ClInclude Include="src\include\sndx\render.hpp" />
     <ClInclude Include="src\include\sndx\render\atlas.hpp" />
     <ClInclude Include="src\include\sndx\render\imagedata.hpp" />

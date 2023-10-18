@@ -11,50 +11,24 @@ namespace sndx {
 	template <typename CharT = char>
 	using Str = std::basic_string<CharT>;
 
-	template <typename CharT = char> [[nodiscard]]
-	constexpr sv<CharT> strip(sv<CharT> str, sv<CharT> strips = " \t") {
+	[[nodiscard]]
+	inline constexpr auto strip(sv<char> str, sv<char> strips = " \t") {
 		auto first = str.find_first_not_of(strips);
 		auto last = str.find_last_not_of(strips);
 
-		if (first == sv<CharT>::npos) [[unlikely]] {
+		if (first == sv<char>::npos) [[unlikely]] {
 			return str.substr(0, 0);
 		}
 
 		return str.substr(first, last - first + 1);
 	}
 
-	template <typename CharT = char> [[nodiscard]]
-	inline std::vector<sv<CharT>> splitStrip(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
-		std::vector<sv<CharT>> out{};
-		if (str == "") return out;
-
-		out.reserve(str.size() / 2);
-
-		auto in = strip(str, strips);
-
-		size_t split = 0;
-		while (split != sv<CharT>::npos) {
-			auto next = in.find_first_of(delim, split);
-
-			if (next != sv::npos) {
-				out.emplace_back(strip(in.substr(split, next - split), strips));
-			}
-			else {
-				out.emplace_back(strip(in.substr(split), strips));
-				break;
-			}
-			split = next + 1;
-		}
-
-		return out;
-	}
-
-	template <typename CharT = char> [[nodiscard]]
-	constexpr std::pair<sv<CharT>, sv<CharT>> splitFirst(sv<CharT> str, CharT delim, sv<CharT> strips = " \t") {
+	[[nodiscard]]
+	inline constexpr std::pair<sv<char>, sv<char>> splitFirst(sv<char> str, char delim, sv<char> strips = " \t") {
 		auto end = str.find_first_of(delim);
-		sv<CharT> first;
-		sv<CharT> second;
-		if (end == sv<CharT>::npos) {
+		sv<char> first, second;
+
+		if (end == sv<char>::npos) {
 			first = str;
 			second = "";
 		}
@@ -62,10 +36,32 @@ namespace sndx {
 			first = str.substr(0, end);
 			second = str.substr(end + 1);
 		}
-		first = strip(first, strips);
-		second = strip(second, strips);
 
-		return { first, second };
+		return { strip(first, strips), strip(second, strips) };
+	}
+
+	[[nodiscard]]
+	inline std::vector<sv<char>> splitStrip(sv<char> str, char delim, sv<char> strips = " \t") {
+		std::vector<sv<char>> out{};
+		str = strip(str, strips);
+		if (str == "") return out;
+
+		out.reserve(str.size() / 2);
+
+		auto [first, next] = splitFirst(str, delim, strips);
+		out.emplace_back(std::move(first));
+
+		while (next != "") {
+			auto [cur, rest] = splitFirst(next, delim, strips);
+			out.emplace_back(std::move(cur));
+			next = std::move(rest);
+		}
+
+		if (str.back() == delim) {
+			out.emplace_back("");
+		}
+
+		return out;
 	}
 
 	template <typename CharT = char> [[nodiscard]]
