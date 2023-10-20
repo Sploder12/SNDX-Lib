@@ -36,25 +36,6 @@ namespace sndx {
 		}
 	}
 
-	// returns a error message on error. Empty optional otherwise.
-	template <class T> [[nodiscard]]
-	inline std::optional<std::string> checkShaderErr(T&& obj) {
-		GLint success;
-		glGetShaderiv(obj.id, GL_COMPILE_STATUS, &success);
-
-		if (!success) {
-			int logLen;
-			glGetShaderiv(obj.id, GL_INFO_LOG_LENGTH, &logLen);
-
-			std::string errMsg;
-			errMsg.resize(logLen + 1ll);
-			glGetShaderInfoLog(obj.id, logLen, NULL, errMsg.data());
-			obj.destroy();
-			return errMsg;
-		}
-		return {};
-	}
-
 	struct Shader {
 		GLuint id;
 
@@ -67,7 +48,7 @@ namespace sndx {
 			glShaderSource(id, 1, &code, nullptr);
 			glCompileShader(id);
 
-			auto err = checkShaderErr(*this);
+			auto err = checkErr();
 			if (err.has_value()) [[unlikely]] {
 				throw std::runtime_error(err.value());
 			}
@@ -76,6 +57,27 @@ namespace sndx {
 		void destroy() {
 			glDeleteShader(id);
 			id = 0;
+		}
+		
+	protected:
+		// returns a error message on error. Empty optional otherwise.
+		[[nodiscard]]
+		std::optional<std::string> checkErr() {
+			GLint success = 0;
+			glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+
+			if (!success) {
+				int logLen = 0;
+				glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLen);
+
+				std::string errMsg{};
+				errMsg.resize(logLen);
+				glGetShaderInfoLog(id, logLen, NULL, errMsg.data());
+				destroy();
+				return errMsg;
+			}
+
+			return std::nullopt;
 		}
 	};
 
@@ -106,7 +108,7 @@ namespace sndx {
 
 			glLinkProgram(id);
 
-			auto err = checkShaderErr(*this);
+			auto err = checkErr();
 
 			for (auto shader : shaders) {
 				glDetachShader(id, shader.id);
@@ -173,6 +175,27 @@ namespace sndx {
 
 		void uniform(const std::string& uid, glm::mat4 data) const {
 			glUniformMatrix4fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+		}
+
+	protected:
+		// returns a error message on error. Empty optional otherwise.
+		[[nodiscard]]
+		std::optional<std::string> checkErr() {
+			GLint success = 0;
+			glGetProgramiv(id, GL_LINK_STATUS, &success);
+
+			if (!success) {
+				int logLen = 0;
+				glGetProgramiv(id, GL_INFO_LOG_LENGTH, &logLen);
+
+				std::string errMsg{};
+				errMsg.resize(logLen);
+				glGetProgramInfoLog(id, logLen, NULL, errMsg.data());
+				destroy();
+				return errMsg;
+			}
+
+			return std::nullopt;
 		}
 	};
 
