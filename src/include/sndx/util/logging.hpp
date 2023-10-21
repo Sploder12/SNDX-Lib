@@ -16,7 +16,7 @@ namespace sndx {
 	using Formatter = std::function<std::basic_string<CharT>(std::basic_string_view<CharT>)>;
 
 	template <typename CharT = char>
-	std::basic_string<CharT> formatterNone(std::basic_string_view<CharT> str) { return str; }
+	std::basic_string<CharT> formatterNone(std::basic_string_view<CharT> str) { return std::basic_string<CharT>(str); }
 
 	template <typename CharT = char>
 	class Logger {
@@ -26,13 +26,15 @@ namespace sndx {
 	public:
 		std::atomic_bool active;
 
-		Formatter<CharT> formatter = formatterNone;
-
 		Logger(std::basic_streambuf<CharT>* target) :
 			active(false), stream(target) {}
 
-		void log(std::basic_string_view<CharT> msg) {
-			if (active) stream << formatter(msg);
+		virtual void log(std::basic_string_view<CharT> msg) {
+			if (active) stream << msg;
+		}
+
+		bool setActive(bool newVal) {
+			return active.exchange(newVal);
 		}
 
 		template <typename T>
@@ -41,6 +43,20 @@ namespace sndx {
 				stream << msg;
 			}
 			return *this;
+		}
+	};
+
+	// Warning: operator<< is still raw logging
+	template <typename CharT = char>
+	class FormatLogger : public Logger<CharT> {
+	public:
+		Formatter<CharT> formatter;
+
+		FormatLogger(std::basic_streambuf<CharT>* target, Formatter<CharT> formatter = formatterNone<CharT>) :
+			Logger<CharT>(target), formatter(formatter) {}
+
+		void log(std::basic_string_view<CharT> msg) {
+			Logger<CharT>::log(formatter(msg));
 		}
 	};
 
@@ -60,8 +76,8 @@ namespace sndx {
 		}
 
 		void activateLogger(LoggerT& logger) {
-			std::unique_lock lock(contextMtx);
 			logger->active = true;
+			std::unique_lock lock(contextMtx);
 			loggers.emplace_back(&logger);
 		}
 

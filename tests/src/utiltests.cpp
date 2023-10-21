@@ -5,6 +5,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 #include "util.hpp"
 #include <string_view>
+#include <sstream>
 
 namespace Util_Tests
 {
@@ -66,6 +67,71 @@ namespace Util_Tests
 			Assert::IsTrue(vec{ "", "hello" } == sndx::splitStrip("\t\t   ,hello  \t", ','));
 		}
 
+
+	};
+
+	TEST_CLASS(Logging_Tests) {
+
+	public:
+
+		TEST_METHOD(TestBasicLog) {
+			std::stringstream buf;
+
+			sndx::Logger logger(buf.rdbuf());
+			logger.setActive(true);
+
+			logger << "This" << " is a log thing ";
+			logger.log(":)");
+
+			Assert::IsTrue("This is a log thing :)" == buf.str());
+		}
+
+		TEST_METHOD(TestBasicFormatLog) {
+			std::stringstream buf;
+
+			sndx::FormatLogger logger(buf.rdbuf());
+			logger.setActive(true);
+
+			logger.log("This");
+			Assert::IsTrue("This" == buf.str());
+
+			logger.formatter = [](std::string_view str) {
+				return std::string(str) + " :)";
+			};
+
+			logger.log(" is a log thing");
+
+			Assert::IsTrue("This is a log thing :)" == buf.str());
+
+			logger << " no fmt!";
+			Assert::IsTrue("This is a log thing :) no fmt!" == buf.str());
+		}
+
+		TEST_METHOD(TestActive) {
+			std::stringstream buf;
+
+			sndx::Logger logger(buf.rdbuf());
+			logger.setActive(false);
+
+			logger << "This is a log thing :(";
+
+			Assert::IsTrue("" == buf.str());
+
+			logger.setActive(true);
+
+			logger << "This";
+			Assert::IsTrue("This" == buf.str());
+
+			logger.setActive(false);
+
+			logger.log(" is a log thing :(");
+			Assert::IsTrue("This" == buf.str());
+
+			logger.setActive(true);
+
+			logger.log(" is a log thing :)");
+			Assert::IsTrue("This is a log thing :)" == buf.str());
+		}
 
 	};
 }
