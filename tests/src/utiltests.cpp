@@ -133,5 +133,26 @@ namespace Util_Tests
 			Assert::IsTrue("This is a log thing :)" == buf.str());
 		}
 
+		TEST_METHOD(TestContext) {
+			std::stringstream buf1, buf2;
+
+			sndx::LoggingContext cntx{};
+
+			sndx::Logger logger(buf1.rdbuf());
+			cntx.activateLogger(logger);
+
+			sndx::FormatLogger fLogger(buf2.rdbuf());
+			cntx.activateLogger(fLogger);
+
+			fLogger.formatter = [](std::string_view str) {
+				return std::string(str) + " :)";
+			};
+
+			cntx.log("This is a log thing");
+
+			Assert::IsTrue("This is a log thing" == buf1.str());
+			Assert::IsTrue("This is a log thing :)" == buf2.str());
+		}
+
 	};
 }

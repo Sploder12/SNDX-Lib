@@ -76,7 +76,7 @@ namespace sndx {
 		}
 
 		void activateLogger(LoggerT& logger) {
-			logger->active = true;
+			logger.setActive(true);
 			std::unique_lock lock(contextMtx);
 			loggers.emplace_back(&logger);
 		}
