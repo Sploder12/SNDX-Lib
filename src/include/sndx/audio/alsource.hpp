@@ -6,6 +6,7 @@
 
 #include <span>
 #include <chrono>
+#include <array>
 
 #include "abo.hpp"
 

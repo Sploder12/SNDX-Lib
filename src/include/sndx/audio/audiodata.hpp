@@ -280,7 +280,7 @@ namespace sndx {
 			out.freq = tmp.freq;
 			out.format = tmp.format;
 
-			out.buffer.reserve(tmp.buffer.size() / 2);
+			out.buffer.resize(tmp.buffer.size() / 2);
 
 			for (int i = 0; i < tmp.buffer.size() / 2; ++i) {
 				char* cur = (char*)(&out.buffer[i]);

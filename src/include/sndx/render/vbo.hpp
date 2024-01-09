@@ -91,7 +91,14 @@ namespace sndx {
 
 				for (int i = 0; i < Cur::length(); ++i) {
 					glEnableVertexAttribArray(index + i);
-					glVertexAttribPointer(index + i, value_type::length(), type, normalized, stride(), (void*)(pointer + i * sizeof(value_type)));
+
+					if constexpr (!normalized && std::is_integral_v<value_type>) {
+						glVertexAttribIPointer(index + i, value_type::length(), type, stride(), (void*)(pointer + i * sizeof(value_type)));
+					}
+					else {
+						glVertexAttribPointer(index + i, value_type::length(), type, normalized, stride(), (void*)(pointer + i * sizeof(value_type)));
+					}
+
 					glVertexAttribDivisor(index + i, divisor);
 				}
 				index += Cur::length();
@@ -100,13 +107,27 @@ namespace sndx {
 				using value_type = std::remove_cvref_t<decltype(Cur::x)>;
 
 				glEnableVertexAttribArray(index);
-				glVertexAttribPointer(index, Cur::length(), type, normalized, stride(), (void*)(pointer));
+
+				if constexpr (!normalized && std::is_integral_v<value_type>) {
+					glVertexAttribIPointer(index, Cur::length(), type, stride(), (void*)(pointer));
+				}
+				else {
+					glVertexAttribPointer(index, Cur::length(), type, normalized, stride(), (void*)(pointer));
+				}
+
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
 			else {
 				glEnableVertexAttribArray(index);
-				glVertexAttribPointer(index, 1, type, normalized, stride(), (void*)(pointer));
+
+				if constexpr (!normalized && std::is_integral_v<Cur>) {
+					glVertexAttribIPointer(index, 1, type, stride(), (void*)(pointer));
+				}
+				else {
+					glVertexAttribPointer(index, 1, type, normalized, stride(), (void*)(pointer));
+				}
+
 				glVertexAttribDivisor(index, divisor);
 				++index;
 			}
