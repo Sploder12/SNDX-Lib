@@ -48,24 +48,7 @@ namespace sndx {
 		GLenum type = GL_TEXTURE_2D;
 
 		constexpr explicit Texture() :
-			width(0), height(0), channels(0), id(0) {}
-
-		Texture(size_t width, size_t height, GLenum iformat, GLenum filter) :
-			width(width), height(height), channels(channelsFromFormat(iformat)) {
-
-			if (width <= 0 || height <= 0) [[unlikely]] {
-				throw std::runtime_error("Texture has dimension of 0");
-			}
-
-			glPixelStorei(GL_PACK_ALIGNMENT, 1);
-			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glGenTextures(1, &id);
-			glBindTexture(type, id);
-			glTexImage2D(type, 0, iformat, (GLsizei)width, (GLsizei)height, 0, iformat, GL_UNSIGNED_BYTE, NULL);
-			glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter);
-			glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter);
-			glBindTexture(type, 0);
-		}
+			id(0), width(0), height(0), channels(0) {}
 
 		Texture(size_t width, size_t height, const void* data, GLenum iformat, GLenum format, GLenum filter) :
 			width(width), height(height), channels(channelsFromFormat(iformat)) {
@@ -84,6 +67,9 @@ namespace sndx {
 			glBindTexture(type, 0);
 		}
 
+		Texture(size_t width, size_t height, GLenum iformat, GLenum filter) :
+			Texture(width, height, NULL, iformat, iformat, filter) {}
+
 		void bind(size_t tex = 0) const {
 			assert(tex <= 31);
 			glActiveTexture(GLenum(GL_TEXTURE0 + tex));
@@ -91,8 +77,11 @@ namespace sndx {
 		}
 
 		void destroy() {
-			glDeleteTextures(1, &id);
-			id = 0;
+			if (id != 0) {
+				glDeleteTextures(1, &id);
+				id = 0;
+			}
+
 			width = 0;
 			height = 0;
 		}

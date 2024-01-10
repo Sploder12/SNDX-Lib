@@ -67,24 +67,29 @@ namespace sndx {
 		bool sdf = false;
 
 		// returns charcode if it exists, the charcode "white square" otherwise
+		[[nodiscard]]
 		FT_ULong getChar(FT_ULong charcode) const {
 			if (!contains(charcode)) return 9633;
 
 			return charcode;
 		}
 
+		[[nodiscard]]
 		bool contains(FT_ULong charcode) const {
 			return metrics.contains(charcode);
 		}
 
+		[[nodiscard]]
 		const gmetric& getCharMetrics(FT_ULong charcode) const {
 			return metrics.at(getChar(charcode));
 		}
 
+		[[nodiscard]]
 		glm::vec2 getCharOffset(FT_ULong charcode) const {
 			return atlas.getCell(getChar(charcode)).first;
 		}
 
+		[[nodiscard]]
 		glm::vec2 getCharDims(FT_ULong charcode) const {
 			return atlas.getCell(getChar(charcode)).second;
 		}
@@ -99,7 +104,8 @@ namespace sndx {
 		}
 	};
 
-	template <size_t font_padding = 2>
+
+	template <size_t font_padding = 2> [[nodiscard]]
 	inline std::optional<Font> loadFont(FreetypeContext& context, const char* filepath, bool sdf = false, unsigned int size = 32) {
 		FT_Face face;
 		if (FT_New_Face(context, filepath, 0, &face)) return {};

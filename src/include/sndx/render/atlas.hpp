@@ -59,11 +59,13 @@ namespace sndx {
 			tex.bind(id);
 		}
 
+		[[nodiscard]]
 		glm::vec2 cellDims() const {
 			return { 1.0f / float(width), 1.0f / float(height) };
 		}
 
 		// half pixel corrected dimensions
+		[[nodiscard]]
 		glm::vec2 cellDimsAdj() const {
 			auto base = cellDims();
 			glm::vec2 texAdj{ float(tex.width), float(tex.height) };
@@ -72,10 +74,12 @@ namespace sndx {
 			return base;
 		}
 
+		[[nodiscard]]
 		glm::vec2 getOffset(size_t x, size_t y) const {
 			return getOffset(x + y * width);
 		}
 
+		[[nodiscard]]
 		glm::vec2 getOffset(size_t id) const {
 			if (id >= offsets.size()) [[unlikely]] return { -1.0, -1.0 };
 			return offsets[id];
@@ -95,10 +99,12 @@ namespace sndx {
 
 		std::unordered_map<IdT, std::pair<glm::vec2, glm::vec2>> entries{};
 
+		[[nodiscard]]
 		auto& getCell(const IdT& id) {
 			return entries.at(id);
 		}
 
+		[[nodiscard]]
 		const auto& getCell(const IdT& id) const {
 			return entries.at(id);
 		}
