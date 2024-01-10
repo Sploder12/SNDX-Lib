@@ -71,7 +71,6 @@ namespace Util_Tests
 	};
 
 	TEST_CLASS(Logging_Tests) {
-
 	public:
 
 		TEST_METHOD(TestBasicLog) {
@@ -154,5 +153,33 @@ namespace Util_Tests
 			Assert::IsTrue("This is a log thing :)" == buf2.str());
 		}
 
+	};
+
+	TEST_CLASS(WeightedVector_Tests) {
+	public:
+		TEST_METHOD(TestPushing) {
+			sndx::WeightedVector<int> vec{};
+
+			vec.push_back(1, 123);
+			vec.push_back(2, 321);
+			vec.push_back(3, 555);
+
+			Assert::IsTrue(vec.back().data == 555);
+			Assert::IsTrue(vec.size() == 1 + 2 + 3);
+			Assert::IsTrue(vec.count() == 3);
+			Assert::IsTrue(*vec.at(0) == 123);
+			Assert::IsTrue(*vec.at(1) == 321);
+			Assert::IsTrue(*vec.at(2) == 321);
+			Assert::IsTrue(*vec.at(3) == 555);
+			Assert::IsTrue(*vec.at(4) == 555);
+			Assert::IsTrue(*vec.at(5) == 555);
+			Assert::IsTrue(vec.at(6) == nullptr);
+
+			vec.pop_back();
+
+			Assert::IsTrue(vec.back().data == 321);
+			Assert::IsTrue(vec.size() == 1 + 2);
+			Assert::IsTrue(vec.at(3) == nullptr);
+		}
 	};
 }
