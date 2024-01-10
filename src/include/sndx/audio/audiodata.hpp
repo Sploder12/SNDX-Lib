@@ -2,20 +2,29 @@
 
 #include "al.h"
 
-
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4267) 
+#pragma warning(disable: 4244)
+#endif
 
 #ifndef WIN32_LEAN_AND_MEAN
 
 #define WIN32_LEAN_AND_MEAN
 #define MINIMP3_IMPLEMENTATION
-#include "minimp3/minimp3.h"
+#include <minimp3/minimp3.h>
 #include <minimp3/minimp3_ex.h>
 #undef WIN32_LEAN_AND_MEAN
 
 #else
 #define MINIMP3_IMPLEMENTATION
-#include "minimp3/minimp3.h"
+#include <minimp3/minimp3.h>
 #include <minimp3/minimp3_ex.h>
+#endif
+
+
+#ifdef _MSC_VER
+#pragma warning(pop)
 #endif
 
 

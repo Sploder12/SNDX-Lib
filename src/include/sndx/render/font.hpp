@@ -67,29 +67,33 @@ namespace sndx {
 		bool sdf = false;
 
 		// returns charcode if it exists, the charcode "white square" otherwise
-		inline FT_ULong getChar(FT_ULong charcode) const {
-			if (metrics.find(charcode) == metrics.end()) charcode = 9633;
+		FT_ULong getChar(FT_ULong charcode) const {
+			if (!contains(charcode)) return 9633;
 
 			return charcode;
 		}
 
-		inline const gmetric& getCharMetrics(FT_ULong charcode) const {
+		bool contains(FT_ULong charcode) const {
+			return metrics.contains(charcode);
+		}
+
+		const gmetric& getCharMetrics(FT_ULong charcode) const {
 			return metrics.at(getChar(charcode));
 		}
 
-		inline glm::vec2 getCharOffset(FT_ULong charcode) const {
+		glm::vec2 getCharOffset(FT_ULong charcode) const {
 			return atlas.getCell(getChar(charcode)).first;
 		}
 
-		inline glm::vec2 getCharDims(FT_ULong charcode) const {
+		glm::vec2 getCharDims(FT_ULong charcode) const {
 			return atlas.getCell(getChar(charcode)).second;
 		}
 
-		inline void bind(size_t id = 0) const {
+		void bind(size_t id = 0) const {
 			atlas.bind(id);
 		}
 
-		inline void destroy() {
+		void destroy() {
 			metrics.clear();
 			atlas.destroy();
 		}

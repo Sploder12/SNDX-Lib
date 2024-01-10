@@ -58,6 +58,8 @@ namespace sndx {
 		std::unordered_map<IdT, ABO> buffers;
 		std::unordered_map<IdT, ALSource> sources;
 
+		mutable std::string deviceName;
+
 		explicit ALContext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
 			device(alcOpenDevice(deviceName)), buffers({}), sources({}) {
 
@@ -110,12 +112,12 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		std::string currentDevice() {
-			if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") != AL_TRUE) {
-				return "";
+		const std::string& currentDevice() const {
+			if (deviceName == "" && alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) {
+				deviceName = std::string(alcGetString(device, ALC_DEVICE_SPECIFIER));
 			}
 
-			return std::string(alcGetString(device, ALC_DEVICE_SPECIFIER));
+			return deviceName;
 		}
 
 		template <typename T> [[nodiscard]]
@@ -124,6 +126,29 @@ namespace sndx {
 			out.setData(ALenum(data.format), std::span(data.buffer), data.freq);
 			buffers.emplace(id, out);
 			return out;
+		}
+
+		// make sure you unbind the buffer from all sources!
+		bool deleteBuffer(const IdT& id) {
+			if (auto it = buffers.find(id); it != buffers.end()) {
+				it->second.destroy();
+
+				buffers.erase(it);
+				return true;
+			}
+
+			return false;
+		}
+
+		bool deleteSource(const IdT& id) {
+			if (auto it = sources.find(id); it != sources.end()) {
+				it->second.destroy();
+
+				sources.erase(it);
+				return true;
+			}
+
+			return false;
 		}
 
 		[[nodiscard]]

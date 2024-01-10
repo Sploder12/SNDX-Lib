@@ -100,8 +100,7 @@ namespace sndx {
 		auto texSize = material->GetTextureCount(type);
 		textures.reserve(texSize);
 
-		for (unsigned int i = 0; i < texSize; i++)
-		{
+		for (unsigned int i = 0; i < texSize; i++) {
 			aiString str;
 			if (material->GetTexture(type, i, &str) == AI_SUCCESS) {
 				if (str.length > 0 && str.C_Str()[0] == '*') {
