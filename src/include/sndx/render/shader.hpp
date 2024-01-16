@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <fstream>
 #include <filesystem>
+#include <array>
+#include <vector>
 
 namespace sndx {
 	enum class ShaderType : GLenum {
@@ -218,6 +220,36 @@ namespace sndx {
 		auto Ftype = determineShaderType(path);
 
 		return shaderFromFile(path, Ftype);
+	}
+
+	template <class Iterable> [[nodiscard]]
+	inline std::optional<ShaderProgram> programFromFiles(const Iterable& files) {
+		std::vector<Shader> shaders{};
+		shaders.resize(files.size());
+
+		size_t i = 0;
+		for (auto&& file : files) {
+			auto shdr = shaderFromFile(file);
+			if (shdr) [[likely]] {
+				shaders[i] = std::move(shdr.value());
+			}
+			else {
+				for (; i > 0; --i) {
+					shaders[i - 1].destroy();
+				}
+				return {};
+			}
+
+			++i;
+		}
+
+		auto out = ShaderProgram(shaders);
+
+		for (auto& shader : shaders) {
+			shader.destroy();
+		}
+
+		return out;
 	}
 
 	template <class... Files> [[nodiscard]]

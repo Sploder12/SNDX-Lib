@@ -109,6 +109,16 @@ namespace sndx {
 			return entries.at(id);
 		}
 
+		[[nodiscard]]
+		bool contains(const IdT& id) const {
+			return entries.contains(id);
+		}
+
+		[[nodiscard]]
+		decltype(auto) find(const IdT& id) const {
+			return entries.find(id);
+		}
+
 		void bind(size_t id = 0) const {
 			tex.bind(id);
 		}
