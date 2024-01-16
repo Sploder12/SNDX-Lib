@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include <istream>
+#include <fstream>
 #include <filesystem>
 
 #include "datatree.hpp"
