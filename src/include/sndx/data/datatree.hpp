@@ -73,6 +73,54 @@ namespace sndx {
 			return std::holds_alternative<T>(data);
 		}
 
+		template <class T>
+		constexpr decltype(auto) get_if() noexcept {
+			if constexpr (std::is_floating_point_v<T>) {
+				return std::get_if<long double>(&data);
+			}
+			else if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+				return std::get_if<bool>(&data);
+			}
+			else if constexpr (std::is_convertible_v<std::string, std::decay_t<T>>) {
+				return std::get_if<std::string>(&data);
+			}
+			else if constexpr (std::is_integral_v<T>) {
+				if constexpr (std::is_unsigned_v<T>) {
+					return std::get_if<uint64_t>(&data);
+				}
+				else {
+					return std::get_if<int64_t>(&data);
+				}
+			}
+			else {
+				static_assert(!std::is_same_v<T, T>, "sndx::Primitive get_if has invalid type");
+			}
+		}
+
+		template <class T>
+		constexpr decltype(auto) get_if() const noexcept {
+			if constexpr (std::is_floating_point_v<T>) {
+				return std::get_if<long double>(&data);
+			}
+			else if constexpr (std::is_same_v<T, bool>) {
+				return std::get_if<bool>(&data);
+			}
+			else if constexpr (std::is_convertible_v<std::string, T>) {
+				return std::get_if<std::string>(&data);
+			}
+			else if constexpr (std::is_integral_v<T>) {
+				if constexpr (std::is_unsigned_v<T>) {
+					return std::get_if<uint64_t>(&data);
+				}
+				else {
+					return std::get_if<int64_t>(&data);
+				}
+			}
+			else {
+				static_assert(!std::is_same_v<T, T>, "sndx::Primitive get_if has invalid type");
+			}
+		}
+
 		constexpr operator decltype(data)& (){
 			return data;
 		}
@@ -132,20 +180,10 @@ namespace sndx {
 			return data;
 		}
 
-		[[nodiscard]]
-		Primitive* get() noexcept {
-			return std::get_if<Primitive>(&data);
-		}
-
-		[[nodiscard]]
-		const Primitive* get() const noexcept {
-			return std::get_if<Primitive>(&data);
-		}
-
 		template <class T> [[nodiscard]]
 		T* get() noexcept {
-			if (auto pptr = get(); pptr) {
-				return std::get_if<T>(&pptr->data);
+			if (auto pptr = get<Primitive>(); pptr) {
+				return pptr->get_if<T>();
 			}
 
 			return nullptr;
@@ -153,13 +191,43 @@ namespace sndx {
 
 		template <class T> [[nodiscard]]
 		const T* get() const noexcept {
-			if (auto pptr = get(); pptr) {
-				return std::get_if<T>(&pptr->data);
+			if (auto pptr = get<Primitive>(); pptr) {
+				return pptr->get_if<T>();
 			}
 
 			return nullptr;
 		}
+
+		template <> [[nodiscard]]
+		Primitive* get() noexcept {
+			return std::get_if<Primitive>(&data);
+		}
+
+		template <> [[nodiscard]]
+		const Primitive* get() const noexcept {
+			return std::get_if<Primitive>(&data);
+		}
+
+		template <> [[nodiscard]]
+		sndx::DataDict* get() noexcept {
+			return std::get_if<sndx::DataDict>(&data);
+		}
+
+		template <> [[nodiscard]]
+		const sndx::DataDict* get() const noexcept {
+			return std::get_if<sndx::DataDict>(&data);
+		}
 	
+		template <> [[nodiscard]]
+		sndx::DataArray* get() noexcept {
+			return std::get_if<sndx::DataArray>(&data);
+		}
+
+		template <> [[nodiscard]]
+		const sndx::DataArray* get() const noexcept {
+			return std::get_if<sndx::DataArray>(&data);
+		}
+
 		[[nodiscard]]
 		Data* get(size_t index) noexcept {
 			if (auto arr = std::get_if<DataArray>(&data); arr) {
@@ -379,38 +447,6 @@ namespace sndx {
 			}
 
 			return false;
-		}
-
-		template <class T>
-		auto begin() {
-			if constexpr (std::is_same_v<T, Primitive>) {
-				return &std::get<Primitive>(data);
-			}
-			else if constexpr (std::is_same_v<T, DataDict>) {
-				return std::get<DataDict>(data).begin();
-			}
-			if constexpr (std::is_same_v<T, DataArray>) {
-				return std::get<DataArray>(data).begin();
-			}
-			else {
-				return nullptr;
-			}
-		}
-
-		template <class T>
-		auto end() {
-			if constexpr (std::is_same_v<T, Primitive>) {
-				return &std::get<Primitive>(data) + 1;
-			}
-			else if constexpr (std::is_same_v<T, DataDict>) {
-				return std::get<DataDict>(data).end();
-			}
-			if constexpr (std::is_same_v<T, DataArray>) {
-				return std::get<DataArray>(data).end();
-			}
-			else {
-				return nullptr;
-			}
 		}
 	};
 
