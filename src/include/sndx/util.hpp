@@ -6,3 +6,4 @@
 #include "util/window.hpp"
 #include "util/atlasbuild.hpp"
 #include "util/weightedvector.hpp"
+#include "util/resourcemanager.hpp"

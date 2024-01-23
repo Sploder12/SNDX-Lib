@@ -126,6 +126,9 @@
     <ClInclude Include="src\include\sndx\util\weightedvector.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\include\sndx\util\resourcemanager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

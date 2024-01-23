@@ -55,6 +55,8 @@ namespace sndx {
 			int shelfWidth = (int)(maxWidth * widthBias + padding * widthBias);
 			int shelfHeight = entries.cbegin()->data.height;
 
+			int maxShelfWidth = 0;
+
 			int totalHeight = 0;
 
 			std::vector<Shelf> shelves{};
@@ -73,6 +75,7 @@ namespace sndx {
 					if (currentShelf.canAddEntry(entry))
 						currentShelf.addEntry(entry);
 					else {
+						maxShelfWidth = std::max(maxShelfWidth, currentShelf.occupiedWidth);
 						totalHeight += currentShelf.height + padding;
 						shelves.emplace_back(std::move(currentShelf));
 						shelfHeight = entry.data.height;
@@ -83,13 +86,14 @@ namespace sndx {
 			}
 
 			if (!currentShelf.entries.empty()) {
+				maxShelfWidth = std::max(maxShelfWidth, currentShelf.occupiedWidth);
 				totalHeight += currentShelf.height + padding;
 				shelves.emplace_back(std::move(currentShelf));
 			}
 
 			ImageData outImg{};
 			outImg.height = totalHeight + padding;
-			outImg.width = shelfWidth + padding;
+			outImg.width = maxShelfWidth + padding;
 			outImg.channels = maxChannels;
 
 			outImg.data.resize(outImg.width * outImg.height * outImg.channels, 0);

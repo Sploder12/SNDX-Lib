@@ -119,6 +119,14 @@ namespace sndx {
 			return entries.find(id);
 		}
 
+		decltype(auto) begin() const {
+			return entries.begin();
+		}
+
+		decltype(auto) end() const {
+			return entries.end();
+		}
+
 		void bind(size_t id = 0) const {
 			tex.bind(id);
 		}
