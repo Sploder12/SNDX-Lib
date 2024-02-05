@@ -44,7 +44,7 @@ namespace sndx {
 		}
 
 		constexpr void resize(int width, int height) {
-			int asWidth = int(height * aspectRatio);
+			int asWidth = std::max(int(height * aspectRatio), 1);
 
 			if (asWidth == width) [[unlikely]] {
 				offset = glm::vec2(0.0f);
@@ -58,7 +58,7 @@ namespace sndx {
 				return;
 			}
 
-			int asHeight = int(width / aspectRatio);
+			int asHeight = std::max(int(width / aspectRatio), 1);
 
 			if (height == 0) {
 				offset = glm::vec2(0.0f);

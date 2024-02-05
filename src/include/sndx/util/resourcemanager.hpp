@@ -20,8 +20,10 @@ namespace sndx {
 		ResourceManager() = default;
 
 		ResourceManager(const ResourceManager&) = delete;
+		ResourceManager(ResourceManager&&) = default;
 
 		ResourceManager& operator=(const ResourceManager&) = delete;
+		ResourceManager& operator=(ResourceManager&&) = default;
 
 		void clear() {
 			if constexpr (requires(ResourceT obj) { sndx::destroy<ResourceT>(obj); }) {
@@ -33,7 +35,7 @@ namespace sndx {
 			internal_storage_type::clear();
 		}
 
-		~ResourceManager() {
+		virtual ~ResourceManager() {
 			clear();
 		}
 	};
@@ -46,8 +48,10 @@ namespace sndx {
 		LinearResourceManager() = default;
 
 		LinearResourceManager(const LinearResourceManager&) = delete;
+		LinearResourceManager(LinearResourceManager&&) = default;
 
 		LinearResourceManager& operator=(const LinearResourceManager&) = delete;
+		LinearResourceManager& operator=(LinearResourceManager&&) = default;
 
 		bool contains(internal_storage_type::size_type index) const {
 			return index >= 0 && index < this->size();
@@ -63,7 +67,7 @@ namespace sndx {
 			internal_storage_type::clear();
 		}
 
-		~LinearResourceManager() {
+		virtual ~LinearResourceManager() {
 			clear();
 		}
 	};
