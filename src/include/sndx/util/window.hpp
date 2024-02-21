@@ -7,89 +7,36 @@
 
 #include <stdexcept>
 
+#include "../render/viewport.hpp"
+
 namespace sndx {
 
-	struct Window {
+	struct Window : public Viewport {
 
 		GLFWwindow* window;
-		glm::vec2 dims;
-		glm::vec2 offset;
-		float aspectRatio;
+
+		explicit Window() :
+			Viewport(glm::ivec2(0)), window(nullptr) {}
+
+		Window(GLFWwindow* window, glm::ivec2 size, std::optional<float> aspectRatio = std::nullopt):
+			Viewport(size, glm::ivec2(0), aspectRatio), window(window) {}
 
 		operator GLFWwindow* () const {
 			return window;
 		}
 
-		[[nodiscard]]
-		constexpr float getAspectRatio() const {
-			return aspectRatio;
-		}
-
-		[[nodiscard]]
-		constexpr glm::vec2 pixToNDC(glm::vec2 in) const {
-			in -= offset;
-			return (glm::vec2(in.x, dims.y - in.y) / dims) * 2.0f - glm::vec2(1.0f);
-		}
-
-		[[nodiscard]]
-		constexpr glm::vec2 NDCtoPix(glm::vec2 ndc) const {
-			auto tmp = (ndc + glm::vec2(1.0f)) / 2.0f;
-			return dims * tmp;
-		}
-
-		void resetViewport() const {
+		void setViewport() const {
 			glfwMakeContextCurrent(window);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(GLint(offset.x), GLint(offset.y), GLint(dims.x), GLint(dims.y));
-		}
-
-		constexpr void resize(int width, int height) {
-			int asWidth = std::max(int(height * aspectRatio), 1);
-
-			if (asWidth == width) [[unlikely]] {
-				offset = glm::vec2(0.0f);
-				dims = glm::vec2(width, height);
-				return;
-			}
-
-			if (width == 0) {
-				offset = glm::vec2(0.0f);
-				dims = glm::vec2(asWidth, height);
-				return;
-			}
-
-			int asHeight = std::max(int(width / aspectRatio), 1);
-
-			if (height == 0) {
-				offset = glm::vec2(0.0f);
-				dims = glm::vec2(width, asHeight);
-				return;
-			}
-
-			if (width > asWidth) {
-				int padding = (width - asWidth) / 2;
-				dims = glm::vec2(asWidth, height);
-				offset = glm::vec2(padding, 0);
-				return;
-			}
-
-			int padding = (height - asHeight) / 2;
-			dims = glm::vec2(width, asHeight);
-			offset = glm::vec2(0, padding);
-		}
-
-		constexpr void setAspectRatio(float AR) {
-			aspectRatio = AR;
-			resize((int)dims.x, (int)dims.y);
+			Viewport::setViewport();
 		}
 	};
 
 	[[nodiscard]]
 	inline Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
-		Window out{ nullptr, glm::vec2(0.0f), glm::vec2(0.0f), aspectRatio };
-		out.resize(width, height);
+		Window out{ nullptr, glm::ivec2(width, height), aspectRatio };
 
-		GLFWwindow* win = glfwCreateWindow(int(out.dims.x + out.offset.x * 2), int(out.dims.y + out.offset.y * 2), name, monitor, share);
+		GLFWwindow* win = glfwCreateWindow(out.dims.x + out.offset.x * 2, out.dims.y + out.offset.y * 2, name, monitor, share);
 		if (win == nullptr) [[unlikely]] throw std::runtime_error("Creating window resulted in nullptr.");
 
 		out.window = win;
