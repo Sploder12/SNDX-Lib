@@ -61,13 +61,11 @@ namespace sndx {
 		mutable std::string deviceName;
 
 		explicit ALContext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
-			device(alcOpenDevice(deviceName)), buffers({}), sources({}) {
+			device(alcOpenDevice(deviceName)), context(nullptr), buffers({}), sources({}) {
 
-			if (device == nullptr) throw std::runtime_error("OpenAL failed to open device.");
-
+			if (device == nullptr) return;
+	
 			context = alcCreateContext(device, attrList);
-
-			if (context == nullptr) throw std::runtime_error("OpenAL failed to create context.");
 		}
 
 		ALContext(ALContext&& other) noexcept:
@@ -106,6 +104,10 @@ namespace sndx {
 			if (device != nullptr) alcCloseDevice(device);
 		}
 
+		bool valid() const {
+			return device != nullptr && context != nullptr;
+		}
+
 		const auto& bind() const {
 			alcMakeContextCurrent(context);
 			return *this;
@@ -113,6 +115,8 @@ namespace sndx {
 
 		[[nodiscard]]
 		const std::string& currentDevice() const {
+			if (!device) [[unlikely]] return "";
+
 			if (deviceName == "" && alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) {
 				deviceName = std::string(alcGetString(device, ALC_DEVICE_SPECIFIER));
 			}
@@ -123,13 +127,19 @@ namespace sndx {
 		template <typename T> [[nodiscard]]
 		ABO createBuffer(const IdT& id, const AudioData<T>& data) {
 			ABO out{};
-			out.setData(ALenum(data.format), std::span(data.buffer), data.freq);
-			buffers.emplace(id, out);
+
+			if (context) [[likely]] {
+				out.setData(ALenum(data.format), std::span(data.buffer), data.freq);
+				buffers.emplace(id, out);
+			}
+
 			return out;
 		}
 
 		// make sure you unbind the buffer from all sources!
 		bool deleteBuffer(const IdT& id) {
+			if (!context) [[unlikely]] return;
+
 			if (auto it = buffers.find(id); it != buffers.end()) {
 				it->second.destroy();
 
@@ -141,6 +151,8 @@ namespace sndx {
 		}
 
 		bool deleteSource(const IdT& id) {
+			if (!context) [[unlikely]] return;
+
 			if (auto it = sources.find(id); it != sources.end()) {
 				it->second.destroy();
 
@@ -154,36 +166,50 @@ namespace sndx {
 		[[nodiscard]]
 		ALSource createSource(const IdT& id) {
 			ALSource out{};
-			out.gen();
-			sources.emplace(id, out);
+
+			if (context) [[likely]] {
+				out.gen();
+				sources.emplace(id, out);
+			}
+
 			return out;
 		}
 
 		const auto& setVolume(float gain) const {
-			alListenerf(AL_GAIN, gain);
+			if (context) [[likely]] {
+				alListenerf(AL_GAIN, gain);
+			}
 			return *this;
 		}
 
 		const auto& setListenerPos(glm::vec3 pos) const {
-			alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+			if (context) [[likely]] {
+				alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+			}
 			return *this;
 		}
 
 		const auto& setListenerVel(glm::vec3 vel) const {
-			alListener3f(AL_POSITION, vel.x, vel.y, vel.z);
+			if (context) [[likely]] {
+				alListener3f(AL_POSITION, vel.x, vel.y, vel.z);
+			}
 			return *this;
 		}
 
 		const auto& setListenerOrientation(glm::vec3 at, glm::vec3 up) const {
-			std::array<glm::vec3, 2> dat{ at, up };
-			alListenerfv(AL_ORIENTATION, (ALfloat*)dat.data());
+			if (context) [[likely]] {
+				std::array<glm::vec3, 2> dat{ at, up };
+				alListenerfv(AL_ORIENTATION, (ALfloat*)dat.data());
+			}
 			return *this;
 		}
 
 		[[nodiscard]]
 		float getVolume() const {
-			float out;
-			alGetListenerf(AL_GAIN, &out);
+			float out = 0.0f;
+			if (context) [[likely]] {
+				alGetListenerf(AL_GAIN, &out);
+			}
 			return out;
 		}
 	};
