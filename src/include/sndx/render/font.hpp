@@ -45,17 +45,15 @@ namespace sndx {
 
 	// metrics a character
 	struct gmetric {
-		int advance;
-		int bearingX;
-		int bearingY;
-		unsigned short width;
-		unsigned short height;
+		float advance;
+		glm::vec2 bearing;
+		glm::vec2 dims;
 
 		constexpr gmetric() :
-			advance(0), bearingX(0), bearingY(0), width(0), height(0) {}
+			advance(0), bearing(0.0f), dims(0.0f) {}
 
-		constexpr gmetric(int advance, int bearingX, int bearingY, unsigned short width, unsigned short height) :
-			advance(advance), bearingX(bearingX), bearingY(bearingY), width(width), height(height) {}
+		constexpr gmetric(float advance, int bearingX, int bearingY, unsigned short width, unsigned short height) :
+			advance(advance), bearing(bearingX, bearingY), dims(width, height) {}
 	};
 
 	struct Font {
@@ -154,7 +152,7 @@ namespace sndx {
 			if (glyph->bitmap_top > out.maxBearingY) out.maxBearingY = glyph->bitmap_top;
 
 			// create the metric for the font, the advance is in 64ths of pixels so divide by 64 to get it into pixels
-			out.metrics[chr] = gmetric(glyph->advance.x / 64, glyph->bitmap_left, glyph->bitmap_top, glyph->bitmap.width, glyph->bitmap.rows);
+			out.metrics[chr] = gmetric(glyph->advance.x / 64.0f, glyph->bitmap_left, glyph->bitmap_top, glyph->bitmap.width, glyph->bitmap.rows);
 		
 			chr = FT_Get_Next_Char(face, chr, &idx);
 		}
@@ -162,6 +160,45 @@ namespace sndx {
 	
 		out.atlas = builder.buildAtlas<font_padding>(columns / 4.0f);
 	
+		return out;
+	}
+
+	using CharPosWH = std::pair<glm::vec2, glm::vec2>;
+
+	struct TextLocationResult {
+		// the position is the top-left of the glyph
+		std::vector<CharPosWH> result{};
+
+		// the cursor after the last character
+		glm::vec2 endPos;
+	};
+
+	template <typename C = char>
+	inline TextLocationResult getTextLocations(const Font& font, std::basic_string_view<C> text, glm::vec2 pos, glm::vec2 scale, bool center) {
+		pos.y -= font.maxBearingY * scale.y;
+		
+		if (center) {
+			for (const auto& chr : text) {
+				const auto& metrics = font.getCharMetrics(FT_ULong(chr));
+				pos.x -= metrics.advance * scale.x * 0.5f;
+			}
+		}
+
+		TextLocationResult out{};
+		out.result.reserve(text.size());
+
+		for (const auto& chr : text) {
+			const auto& metrics = font.getCharMetrics(FT_ULong(chr));
+
+			auto charPos = pos + metrics.bearing * scale;
+			auto charDims = metrics.dims * scale;
+
+			out.result.emplace_back(charPos, charDims);
+
+			pos.x += metrics.advance * scale.x;
+		}
+
+		out.endPos = pos;
 		return out;
 	}
 }
