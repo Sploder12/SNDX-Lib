@@ -142,21 +142,20 @@ namespace sndx {
 			if ((chr & 0b11100000) == 0b11000000) {
 				len = 2;
 				cur = chr & 0b00011111;
-				cur <<= 5;
 			}
 			else if ((chr & 0b11110000) == 0b11100000) {
 				len = 3;
 				cur = chr & 0b00001111;
-				cur <<= 4;
 			}
 			else if ((chr & 0b11111000) == 0b11110000) {
 				len = 4;
 				cur = chr & 0b00000111;
-				cur <<= 3;
 			}
 			else {
 				return std::nullopt;
 			}
+
+			cur <<= 6;
 
 			if (i + len - 1 >= str.size()) 
 				return std::nullopt;
