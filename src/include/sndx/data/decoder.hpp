@@ -25,11 +25,7 @@ namespace sndx {
 			if (in.size() == 1) [[unlikely]]
 				return "\"";
 
-			std::stringstream ss;
-			ss << parseEscaped(in);
-			std::string out;
-			ss >> std::quoted(out);
-			return std::move(out);
+			return parseEscaped(in.substr(1, in.size() - 2));
 		}
 
 		if (in == "true") {
@@ -245,9 +241,7 @@ namespace sndx {
 
 					if (!hasKey) {
 						auto in = dict.substr(i + 1, e - 1);
-						std::stringstream ss;
-						ss << parseEscaped(in);
-						ss >> std::quoted(key);
+						key = parseEscaped(in);
 						hasKey = true;
 
 						ebegin = -1;
