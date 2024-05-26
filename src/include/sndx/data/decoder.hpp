@@ -168,7 +168,14 @@ namespace sndx {
 			for (size_t i = 0; i < arr.size(); ++i) {
 				char cur = arr[i];
 
-				if (cur == scheme.beginDir) {
+				if (cur == '"') {
+					size_t e = find_quote_end(arr.substr(i));
+					if (e == -1) [[unlikely]]
+						return out;
+
+					i += e;
+				}
+				else if (cur == scheme.beginDir) {
 					size_t e = find_dict_end(arr.substr(i));
 					if (e == -1) [[unlikely]]
 						return out;
