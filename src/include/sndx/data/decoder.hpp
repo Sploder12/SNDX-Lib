@@ -26,7 +26,7 @@ namespace sndx {
 				return "\"";
 
 			std::stringstream ss;
-			ss << in;
+			ss << parseEscaped(in);
 			std::string out;
 			ss >> std::quoted(out);
 			return std::move(out);
@@ -246,7 +246,7 @@ namespace sndx {
 					if (!hasKey) {
 						auto in = dict.substr(i + 1, e - 1);
 						std::stringstream ss;
-						ss << in;
+						ss << parseEscaped(in);
 						ss >> std::quoted(key);
 						hasKey = true;
 

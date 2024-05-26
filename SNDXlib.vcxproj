@@ -224,6 +224,7 @@
     <ClInclude Include="src\include\sndx\render\texture.hpp" />
     <ClInclude Include="src\include\sndx\render\vao.hpp" />
     <ClInclude Include="src\include\sndx\render\vbo.hpp" />
+    <ClInclude Include="src\include\sndx\render\viewport.hpp" />
     <ClInclude Include="src\include\sndx\util.hpp" />
     <ClInclude Include="src\include\sndx\util\atlasbuild.hpp" />
     <ClInclude Include="src\include\sndx\util\lines.hpp" />

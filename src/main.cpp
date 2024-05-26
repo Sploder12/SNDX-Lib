@@ -55,9 +55,17 @@ void makeNoise() {
 		.setBuffer(testbuf).play();
 }*/
 
-void window_size_callback(GLFWwindow* window, int width, int height) {
-	win.resize(width, height);
-	win.resetViewport();
+void window_refresh_callback(GLFWwindow* window) {
+	
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+	win.resize(glm::ivec2(width, height));
+	win.setViewport();
+
+
+	auto& io = ImGui::GetIO();
+	io.DisplaySize = ImVec2(width, height);
 }
 
 Texture doThing() {
@@ -139,6 +147,8 @@ Texture doThing() {
 		TextureView(tex, "Bezier");
 		return tex;
 	}
+
+	return textureFromFile("").value();
 }
 
 bool firstMouse = true;
@@ -176,12 +186,16 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	win = createWindow(600, 600, "window");
+
+	win = createWindow(1000, 0, "window");
 	
 	glfwMakeContextCurrent(win.window);
 
 	glfwSetCursorPosCallback(win.window, mouse_callback);
-	glfwSetWindowSizeCallback(win.window, window_size_callback);
+	
+	//glfwSetWindowSizeCallback(win.window, window_size_callback);
+	glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
+	glfwSetWindowRefreshCallback(win, window_refresh_callback);
 
 	glewInit();
 
@@ -196,6 +210,7 @@ int main() {
 	ImGui_ImplGlfw_InitForOpenGL(win, true);
 	ImGui_ImplOpenGL3_Init("#version 330 core");
 
+	win.setViewport();
 	glEnable(GL_DEPTH_TEST);
 
 	//doThing();
@@ -204,13 +219,25 @@ int main() {
 	auto font = loadFont(FT_context, "tmp/NotoSans-Regular.ttf", false).value();
 	font.atlas.save("notoSans");
 
+	auto texts = getTextLocations<char>(font, "What a wonderful idea", glm::vec2(0.0), glm::vec2(1.0), false);
+
 	ShaderProgram shdr = programFromFiles("tmp/model.vs", "tmp/model.fs").value();
 
-	auto m = loadModelFromFile("tmp/duck.obj");
+	auto m = loadModelFromFile("tmp/model.obj");
 	if (!m.has_value()) return 1;
 
 	Model model = m.value();
 
+	auto img = sndx::imageFromFile("tmp/c.jpg", 3);
+	if (img.has_value()) {
+		for (size_t i = 0; i < img->data.size(); ++i) {
+			if (i % 3 == 1 || i % 3 == 0) {
+				img->data[i] = 0;
+			}
+		}
+
+		img->save("o.png");
+	}
 	
 
 	shdr.use();
@@ -224,19 +251,20 @@ int main() {
 
 	//makeNoise();
 
+	
+
 	auto it = font.atlas.entries.begin();
 
 	while (!glfwWindowShouldClose(win.window)) {
-	
 
-		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
+		glClearColor(1.00f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		
 
 		
 		mdl = glm::mat4(1.0);
-		mdl = glm::translate(mdl, glm::vec3(0.0, -2.0, -7.0));
+		mdl = glm::translate(mdl, glm::vec3(0.0, -1.0, -1.0));
 		mdl = glm::rotate(mdl, yrot, glm::vec3(cos(xrot), 0.0, sin(xrot)));
 		mdl = glm::rotate(mdl, xrot, glm::vec3(0.0, -1.0, 0.0));
 		
