@@ -78,6 +78,9 @@ namespace sndx {
 				else if (cur == '"' && !escaped) {
 					return i;
 				}
+				else if (escaped) {
+					escaped = false;
+				}
 			}
 
 			return -1;
