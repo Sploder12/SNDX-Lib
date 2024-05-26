@@ -238,19 +238,22 @@ namespace sndx {
 					i += e;
 					ebegin = -1;
 				}
-				else if (cur == '"' && !hasKey) {
+				else if (cur == '"') {
 					size_t e = find_quote_end(dict.substr(i));
 					if (e == -1) [[unlikely]]
 						return out;
 
-					auto in = dict.substr(i + 1, e - 1);
-					std::stringstream ss;
-					ss << in;
-					ss >> std::quoted(key);
-					hasKey = true;
+					if (!hasKey) {
+						auto in = dict.substr(i + 1, e - 1);
+						std::stringstream ss;
+						ss << in;
+						ss >> std::quoted(key);
+						hasKey = true;
+
+						ebegin = -1;
+					}
 
 					i += e;
-					ebegin = -1;
 				}
 				else if (cur == scheme.keyDelim) {
 					if (!hasKey) [[unlikely]]
