@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtx/component_wise.hpp>
 
 #include <algorithm>
 #include <array>
@@ -10,9 +11,12 @@
 
 namespace sndx {
 
-	template <size_t n>
+	template <size_t n, class DimensionType = glm::vec3>
 	struct Intersections {
-		std::array<std::optional<glm::vec3>, n> hits;
+
+		using Dimension_T = DimensionType;
+
+		std::array<std::optional<Dimension_T>, n> hits;
 
 		[[nodiscard]]
 		int hitCount() const {
@@ -26,8 +30,8 @@ namespace sndx {
 		}
 		
 		[[nodiscard]]
-		std::vector<glm::vec3> asVector() const {
-			std::vector<glm::vec3> out{};
+		std::vector<Dimension_T> asVector() const {
+			std::vector<Dimension_T> out{};
 			out.reserve(n);
 
 			for (const auto& hit : hits) {
@@ -40,10 +44,13 @@ namespace sndx {
 		}
 	};
 
+	template <class DimensionType = glm::vec3>
 	struct AABB {
 
-		glm::vec3 ldf;
-		glm::vec3 rub;
+		using Dimension_T = DimensionType;
+
+		Dimension_T ldf;
+		Dimension_T rub;
 
 		AABB& merge(const AABB& other) {
 			ldf = glm::min(ldf, other.ldf);
@@ -53,18 +60,14 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		constexpr bool intersects(const AABB& other) const {
-			if (ldf.x <= other.rub.x && rub.x >= other.ldf.x) {
-				if (ldf.y <= other.rub.y && rub.y >= other.ldf.y) {
-					return (ldf.z <= other.rub.z && rub.z >= other.ldf.z);
-				}
-			}
+		constexpr bool intersects(const AABB<Dimension_T>& other) const {
+			auto comparisons = glm::lessThanEqual(ldf, other.rub) && glm::greaterThanEqual(rub, other.ldf);
 
-			return false;
+			return glm::all(comparisons);
 		}
 
 		[[nodiscard]]
-		constexpr bool contains(glm::vec3 p) const {
+		constexpr bool contains(const Dimension_T& p) const {
 			if (p.x <= rub.x && p.x >= ldf.x) {
 				if (p.y <= rub.y && p.y >= ldf.y) {
 					return (p.z <= rub.z && p.z >= ldf.z);
@@ -74,52 +77,60 @@ namespace sndx {
 		}
 
 		[[nodiscard]]
-		constexpr glm::vec3 dims() const {
+		constexpr Dimension_T dims() const {
 			return rub - ldf;
 		}
 
 		[[nodiscard]]
 		constexpr double area() const {
-			auto dim = dims();
-
-			return dim.x * dim.y * dim.z;
+			return glm::compMul(dims());
 		}
 
 		[[nodiscard]]
 		constexpr double surfaceArea() const {
 			auto dim = dims();
 
-			return 2.0 * (dim.x * dim.z + dim.y * dim.z + dim.x * dim.y);
+			double area = 0.0;
+
+			for (size_t i = 0; i < dim.length(); ++i) {
+				for (size_t j = 0; j < dim.length(); ++j) {
+					if (i == j) continue;
+
+					area += dim[j] * dim[i];
+				}
+			}
+
+			return area;
 		}
 
 		[[nodiscard]]
-		constexpr glm::vec3 center() const {
+		constexpr Dimension_T center() const {
 			return (ldf + rub) * 0.5f;
 		}
 
 		// adapted from https://iquilezles.org/articles/distfunctions/
 		[[nodiscard]]
-		float distance(glm::vec3 p) const {
-			glm::vec3 b = rub - center();
+		float distance(const Dimension_T& p) const {
+			auto b = rub - center();
 
 			// same as sdf article from here
-			glm::vec3 q = glm::abs(p) - b;
-			return glm::length(glm::max(q, 0.0f)) + glm::min(std::max(q.x, std::max(q.y, q.z)), 0.0f);
+			auto q = glm::abs(p) - b;
+			return glm::length(glm::max(q, 0.0f)) + glm::min(glm::compMax(q), 0.0f);
 		}
 
 		// Liang-Barsky algorithm
 		template <float epsilon = 0.00001f> [[nodiscard]]
-		Intersections<2> lineIntersections(glm::vec3 p0, glm::vec3 p1) const {
+		Intersections<2, Dimension_T> lineIntersections(const Dimension_T& p0, const Dimension_T& p1) const {
 
-			glm::vec3 d = p1 - p0;
+			auto d = p1 - p0;
 
-			glm::vec3 upBound = rub - p0;
-			glm::vec3 lowBound = ldf - p0;
+			auto upBound = rub - p0;
+			auto lowBound = ldf - p0;
 
 			float intersect0 = -INFINITY;
 			float intersect1 = INFINITY;
 
-			for (int i = 0; i < 3; ++i) {
+			for (int i = 0; i < p0.length(); ++i) {
 				if (std::abs(d[i]) <= epsilon) {
 					if (upBound[i] < 0 || lowBound[i] > 0) return {};
 				}
@@ -146,8 +157,12 @@ namespace sndx {
 		}
 	};
 
+	template <class DimensionType = glm::vec3>
 	struct SphereBB {
-		glm::vec3 pos;
+
+		using Dimension_T = DimensionType;
+
+		Dimension_T pos;
 		float radius;
 
 		// produces new sphere that tightly bounds the original 2
@@ -186,50 +201,50 @@ namespace sndx {
 
 		// adapted from https://iquilezles.org/articles/distfunctions/
 		[[nodiscard]]
-		float distance(glm::vec3 p) const {
+		float distance(const Dimension_T& p) const {
 			return glm::length(pos - p) - radius;
 		}
 
 		[[nodiscard]] // distance <= 0.0f when intersecting. The negative value doesn't make sense in the context of SDFs
-		float distance(const SphereBB& other) const {
+		float distance(const SphereBB<Dimension_T>& other) const {
 			return glm::distance(pos, other.pos) - radius - other.radius;
 		}
 
 		[[nodiscard]]
-		float distance(const AABB& aabb) const {
+		float distance(const AABB<Dimension_T>& aabb) const {
 			return aabb.distance(pos) - radius;
 		}
 
 		[[nodiscard]]
-		bool contains(glm::vec3 p) const {
+		bool contains(const Dimension_T& p) const {
 			return distance(p) <= 0.0f;
 		}
 
 		[[nodiscard]]
-		bool intersects(const SphereBB& other) const {
+		bool intersects(const SphereBB<Dimension_T>& other) const {
 			return distance(other) <= 0.0f;
 		}
 
 		[[nodiscard]]
-		bool intersects(const AABB& aabb) const {
+		bool intersects(const AABB<Dimension_T>& aabb) const {
 			return distance(aabb) <= 0.0f;
 		}
 		
 	};
 
 	// THIS WILL INCREASE THE VOLUME OF THE BB
-	[[nodiscard]]
-	constexpr AABB toAABB(const SphereBB& bb) {
-		AABB out{};
+	template <class Dimension_T = glm::vec3> [[nodiscard]]
+	constexpr AABB<Dimension_T> toAABB(const SphereBB<Dimension_T>& bb) {
+		AABB<Dimension_T> out{};
 		out.ldf = bb.pos - bb.radius;
 		out.rub = bb.pos + bb.radius;
 		return out;
 	}
 
 	// THIS WILL INCREASE THE VOLUME OF THE BB
-	[[nodiscard]]
-	inline SphereBB toSphereBB(const AABB& bb) {
-		SphereBB out{};
+	template <class Dimension_T = glm::vec3> [[nodiscard]]
+	inline SphereBB<Dimension_T> toSphereBB(const AABB<Dimension_T>& bb) {
+		SphereBB<Dimension_T> out{};
 		out.pos = bb.center();
 		out.radius = glm::distance(out.pos, bb.rub);
 		return out;

@@ -14,7 +14,7 @@ namespace sndx {
 	using Str = std::basic_string<CharT>;
 
 	[[nodiscard]]
-	inline constexpr auto strip(sv<char> str, sv<char> strips = " \t") {
+	inline constexpr auto strip(sv<char> str, sv<char> strips = " \t\r") {
 		auto first = str.find_first_not_of(strips);
 		auto last = str.find_last_not_of(strips);
 

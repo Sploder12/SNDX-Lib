@@ -43,10 +43,10 @@ namespace sndx {
 
 		std::unordered_map<std::string, Bone> bones{};
 
-		AABB getBounds() const {
-			if (vertices.empty()) return AABB{ glm::vec3(0.0f), glm::vec3(0.0f) };
+		AABB<> getBounds() const {
+			if (vertices.empty()) return AABB<>{ glm::vec3(0.0f), glm::vec3(0.0f) };
 
-			AABB out = {glm::vec3(vertices.front()), glm::vec3(vertices.front())};
+			AABB<> out = {glm::vec3(vertices.front()), glm::vec3(vertices.front())};
 
 			for (const auto& vert : vertices) {
 				const glm::vec3 p = glm::vec3(vert);

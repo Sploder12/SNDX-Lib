@@ -20,10 +20,10 @@ namespace sndx {
 		std::vector<ModelNode<VertexT, VertexLayout...>> children{};
 
 		[[nodiscard]]
-		AABB getBounds() const {
-			if (meshes.empty()) return AABB{ glm::vec3(0.0f), glm::vec3(0.0f) };
+		AABB<> getBounds() const {
+			if (meshes.empty()) return AABB<>{ glm::vec3(0.0f), glm::vec3(0.0f) };
 
-			AABB out = meshes.front().getBounds();
+			AABB<> out = meshes.front().getBounds();
 
 			for (const auto& mesh : meshes) {
 				auto tmp = mesh.getBounds();
@@ -70,7 +70,7 @@ namespace sndx {
 		std::unordered_map<std::string, size_t> loadedTextures{};
 
 		[[nodiscard]]
-		AABB getBounds() const {
+		AABB<> getBounds() const {
 			return root.getBounds();
 		}
 
