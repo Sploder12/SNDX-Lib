@@ -1,56 +1,24 @@
 #pragma once
 
-#define NOMINMAX
-#ifndef WIN32_LEAN_AND_MEAN
-
-#define WIN32_LEAN_AND_MEAN
-#include <AL/al.h>
-#include <AL/alc.h>
-#undef WIN32_LEAN_AND_MEAN
-#else 
-#include <AL/al.h>
-#include <AL/alc.h>
-#endif
+#include "al.h"
 
 #include "audiodata.hpp"
 #include "abo.hpp"
 #include "alsource.hpp"
+#include "aldevice.hpp"
 
 #include <stdexcept>
 #include <unordered_map>
 #include <array>
-
-
-
-// note because of lgpl OpenAL itself must be dynamically linked
-// I have modified my vcpkg triplet for this, you must too
 
 // https://openal.org/documentation/OpenAL_Programmers_Guide.pdf
 // https://openal.org/documentation/openal-1.1-specification.pdf
 
 namespace sndx {
 
-	inline std::vector<std::string> getAlDevices() {
-		if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") != AL_TRUE) {
-			return {};
-		}
-
-		auto devices = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
-		if (devices == nullptr || *devices == '\0') return {};
-
-		std::vector<std::string> out{};
-
-		do {
-			out.emplace_back(devices);
-			devices += out.back().size() + 1;
-		} while (*devices != '\0');
-
-		return out;
-	}
-
 	template <typename IdT = std::string>
 	struct ALContext {
-		ALCdevice* device;
+		ALDevice device;
 		ALCcontext* context;
 
 		// buffers and sources are context specific, which sucks
@@ -58,18 +26,16 @@ namespace sndx {
 		std::unordered_map<IdT, ABO> buffers;
 		std::unordered_map<IdT, ALSource> sources;
 
-		mutable std::string deviceName;
-
 		explicit ALContext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
-			device(alcOpenDevice(deviceName)), context(nullptr), buffers({}), sources({}) {
+			device(deviceName), context(nullptr), buffers({}), sources({}) {
 
-			if (device == nullptr) return;
+			if (!device.valid()) return;
 	
 			context = alcCreateContext(device, attrList);
 		}
 
 		ALContext(ALContext&& other) noexcept:
-			device(std::exchange(other.device, nullptr)), context(std::exchange(other.context, nullptr)),
+			device(std::exchange(other.device, {})), context(std::exchange(other.context, nullptr)),
 			buffers(std::exchange(other.buffers, {})), sources(std::exchange(other.sources, {})) {}
 
 		ALContext(const ALContext&) = delete;
@@ -100,12 +66,11 @@ namespace sndx {
 			}
 
 			if (context != nullptr) alcDestroyContext(context);
-
-			if (device != nullptr) alcCloseDevice(device);
 		}
 
+		[[nodiscard]]
 		bool valid() const {
-			return device != nullptr && context != nullptr;
+			return device.valid() && context != nullptr;
 		}
 
 		const auto& bind() const {
@@ -115,13 +80,7 @@ namespace sndx {
 
 		[[nodiscard]]
 		const std::string& currentDevice() const {
-			if (!device) [[unlikely]] return "";
-
-			if (deviceName == "" && alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) {
-				deviceName = std::string(alcGetString(device, ALC_DEVICE_SPECIFIER));
-			}
-
-			return deviceName;
+			return device.getName();
 		}
 
 		template <typename T> [[nodiscard]]
