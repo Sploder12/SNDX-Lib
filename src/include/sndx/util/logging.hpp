@@ -44,6 +44,8 @@ namespace sndx {
 			}
 			return *this;
 		}
+
+		virtual ~Logger() = default;
 	};
 
 	// Warning: operator<< is still raw logging

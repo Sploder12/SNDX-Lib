@@ -129,7 +129,7 @@ namespace sndx {
 			ABO out{};
 
 			if (context) [[likely]] {
-				out.setData(ALenum(data.format), std::span(data.buffer), data.freq);
+				out.setData(ALenum(data.meta.format), std::span(data.buffer), data.meta.freq);
 				buffers.emplace(id, out);
 			}
 
