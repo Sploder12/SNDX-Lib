@@ -32,7 +32,7 @@ namespace sndx {
 		}
 
 		template <typename T>
-		const ALSource& setParam(ALenum, T) const;
+		const ALSource& setParam(ALenum, T) const = delete;
 
 		template <>
 		const ALSource& setParam(ALenum param, ALfloat val) const {
@@ -53,7 +53,7 @@ namespace sndx {
 		}
 
 		template <typename T> [[nodiscard]]
-		T getParam(ALenum) const;
+		T getParam(ALenum) const = delete;
 
 		template <> [[nodiscard]]
 		float getParam(ALenum param) const {

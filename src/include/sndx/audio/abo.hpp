@@ -1,6 +1,7 @@
 #pragma once
 
 #include "al.h"
+#include "audiodata.hpp"
 
 #include <span>
 #include <chrono>
@@ -27,6 +28,11 @@ namespace sndx {
 				alBufferData(id, format, data.data(), size, freq);
 			}
 			return *this;
+		}
+
+		template <typename T>
+		ABO& setData(AudioData<T> data) {
+			return setData(ALenum(data.meta.format), std::span{ data.buffer }, data.meta.freq);
 		}
 
 		// get rid of the sources first please.

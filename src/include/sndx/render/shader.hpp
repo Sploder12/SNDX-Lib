@@ -1,7 +1,7 @@
 #pragma once
 
 #define NOMINMAX
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <array>
 #include <vector>
+#include <sstream>
 
 namespace sndx {
 	enum class ShaderType : GLenum {

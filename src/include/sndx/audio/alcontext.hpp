@@ -27,7 +27,7 @@ namespace sndx {
 		std::unordered_map<IdT, ALSource> sources;
 
 		explicit ALContext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
-			device(deviceName), context(nullptr), buffers({}), sources({}) {
+			device(deviceName), context(nullptr), buffers{}, sources{} {
 
 			if (!device.valid()) return;
 	
@@ -88,7 +88,7 @@ namespace sndx {
 			ABO out{};
 
 			if (context) [[likely]] {
-				out.setData(ALenum(data.meta.format), std::span(data.buffer), data.meta.freq);
+				out.setData(data);
 				buffers.emplace(id, out);
 			}
 

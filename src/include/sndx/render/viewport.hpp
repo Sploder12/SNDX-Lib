@@ -1,9 +1,10 @@
 #pragma once
 
 #define NOMINMAX
-#include <gl/glew.h>
+#include <GL/glew.h>
 #include <glm/glm.hpp>
 
+#include <algorithm>
 #include <optional>
 
 namespace sndx {

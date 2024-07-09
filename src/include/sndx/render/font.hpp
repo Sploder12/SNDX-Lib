@@ -10,7 +10,7 @@
 #include <ft2build.h>
 #include <freetype/freetype.h>
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 namespace sndx {
 

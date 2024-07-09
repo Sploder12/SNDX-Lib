@@ -10,7 +10,9 @@ namespace sndx {
 	
 	[[nodiscard]]
 	inline bool isALEnumExtPresent() {
-		static bool present = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT") == AL_TRUE;
+		static bool present = 
+			alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE &&
+			alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") == AL_TRUE;
 
 		return present;
 	}
@@ -32,6 +34,11 @@ namespace sndx {
 		} while (*devices != '\0');
 
 		return out;
+	}
+
+	[[nodiscard]]
+	inline std::string getDefaultAlDevice() {
+		return alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
 	}
 
 	class ALDevice {
