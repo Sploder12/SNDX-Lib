@@ -54,7 +54,13 @@ namespace sndx {
 		constexpr void resize(glm::ivec2 targetDims) {
 			if (targetDims.x <= 0 && targetDims.y <= 0) [[unlikely]] return;
 
-			int asWidth = std::max(int(targetDims.y * aspectRatio.value_or(1.0f)), 1);
+			if (!aspectRatio) {
+				offset = glm::ivec2(0);
+				dims = targetDims;
+				return;
+			}
+
+			int asWidth = std::max(int(targetDims.y * (*aspectRatio)), 1);
 
 			if (asWidth == targetDims.x) [[unlikely]] {
 				offset = glm::ivec2(0);
@@ -68,7 +74,7 @@ namespace sndx {
 				return;
 			}
 
-			int asHeight = std::max(int(targetDims.x / aspectRatio.value_or(1.0f)), 1);
+			int asHeight = std::max(int(targetDims.x / (*aspectRatio)), 1);
 
 			if (targetDims.y == 0) {
 				offset = glm::ivec2(0);

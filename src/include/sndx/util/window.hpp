@@ -33,7 +33,7 @@ namespace sndx {
 	};
 
 	[[nodiscard]]
-	inline Window createWindow(int width, int height, const char* name, float aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
+	inline Window createWindow(int width, int height, const char* name, std::optional<float> aspectRatio = 16.0f / 9.0f, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) {
 		Window out{ nullptr, glm::ivec2(width, height), aspectRatio };
 
 		GLFWwindow* win = glfwCreateWindow(out.dims.x + out.offset.x * 2, out.dims.y + out.offset.y * 2, name, monitor, share);

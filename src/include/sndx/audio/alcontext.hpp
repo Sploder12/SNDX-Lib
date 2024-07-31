@@ -95,6 +95,17 @@ namespace sndx {
 			return out;
 		}
 
+		ABO createBuffer(const IdT& id) {
+			ABO out{};
+
+			if (context) [[likely]] {
+				out.gen();
+				buffers.emplace(id, out);
+			}
+
+			return out;
+		}
+
 		// make sure you unbind the buffer from all sources!
 		bool deleteBuffer(const IdT& id) {
 			if (!context) [[unlikely]] return;

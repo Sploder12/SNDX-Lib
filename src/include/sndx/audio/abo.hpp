@@ -31,7 +31,7 @@ namespace sndx {
 		}
 
 		template <typename T>
-		ABO& setData(AudioData<T> data) {
+		ABO& setData(const AudioData<T>& data) {
 			return setData(ALenum(data.meta.format), std::span{ data.buffer }, data.meta.freq);
 		}
 

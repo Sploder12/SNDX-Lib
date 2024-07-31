@@ -24,7 +24,6 @@ Additional macros can assist in reducing warnings/errors produced by minivorbis
 
 #define WIN32_LEAN_AND_MEAN
 
-#define MINIMP3_IMPLEMENTATION
 #include <minimp3/minimp3.h>
 #include <minimp3/minimp3_ex.h>
 #undef WIN32_LEAN_AND_MEAN

@@ -26,7 +26,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	inline constexpr std::pair<sv<char>, sv<char>> splitFirst(sv<char> str, char delim, sv<char> strips = " \t") {
+	inline constexpr std::pair<sv<char>, sv<char>> splitFirst(sv<char> str, char delim, sv<char> strips = " \t\r") {
 		auto end = str.find_first_of(delim);
 		sv<char> first, second;
 
@@ -43,7 +43,7 @@ namespace sndx {
 	}
 
 	[[nodiscard]]
-	inline std::vector<sv<char>> splitStrip(sv<char> str, char delim, sv<char> strips = " \t") {
+	inline std::vector<sv<char>> splitStrip(sv<char> str, char delim, sv<char> strips = " \t\r") {
 		std::vector<sv<char>> out{};
 		str = strip(str, strips);
 		if (str == "") return out;
@@ -152,13 +152,18 @@ namespace sndx {
 				cur = chr & 0b00000111;
 			}
 			else {
-				return std::nullopt;
+				// invalid, assume extended ascii (ISO-8859-1)
+				out.push_back(Codepoint(chr));
+				continue;
 			}
 
 			cur <<= 6;
 
-			if (i + len - 1 >= str.size()) 
-				return std::nullopt;
+			if (i + len - 1 >= str.size()) {
+				// invalid, assume extended ascii (ISO-8859-1)
+				out.push_back(Codepoint(chr));
+				continue;
+			}
 
 			for (size_t j = 1; j < len; ++j) {
 				auto b = str[i + j];

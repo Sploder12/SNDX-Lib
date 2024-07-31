@@ -107,6 +107,11 @@ namespace sndx {
 			return *this;
 		}
 
+		const ALSource& detachBuffer() const {
+			setParam(AL_BUFFER, 0);
+			return *this;
+		}
+
 		const ALSource& queueBuffers(std::span<ABO> buffers) const {
 			alSourceQueueBuffers(id, (ALsizei)buffers.size(), (ALuint*)buffers.data());
 			return *this;
@@ -158,7 +163,10 @@ namespace sndx {
 		}
 
 		const ALSource& destroy() {
-			if (id != 0) alDeleteSources(1, &id);
+			if (id != 0) {
+				detachBuffer();
+				alDeleteSources(1, &id);
+			}
 
 			id = 0;
 			return *this;

@@ -1,7 +1,14 @@
 #pragma once
 
 #include <glm/glm.hpp>
+
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/component_wise.hpp>
+#undef GLM_ENABLE_EXPERIMENTAL
+#else
+#include <glm/gtx/component_wise.hpp>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -68,12 +75,9 @@ namespace sndx {
 
 		[[nodiscard]]
 		constexpr bool contains(const Dimension_T& p) const {
-			if (p.x <= rub.x && p.x >= ldf.x) {
-				if (p.y <= rub.y && p.y >= ldf.y) {
-					return (p.z <= rub.z && p.z >= ldf.z);
-				}
-			}
-			return false;
+			auto comparisons = glm::lessThanEqual(p, rub) && glm::greaterThanEqual(p, ldf);
+
+			return glm::all(comparisons);
 		}
 
 		[[nodiscard]]
