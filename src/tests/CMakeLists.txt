@@ -5,7 +5,7 @@ link_libraries(GTest::gtest GTest::gtest_main)
 
 file(GLOB_RECURSE SOURCES *.cpp)
 
-add_executable(tests ${SOURCES} "ogg.c")
+add_executable(tests ${SOURCES} "../ogg.c")
 
 target_compile_features(tests PUBLIC cxx_std_20)
 

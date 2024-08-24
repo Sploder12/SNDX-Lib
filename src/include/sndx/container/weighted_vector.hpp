@@ -5,9 +5,9 @@
 #include <optional>
 #include <stdexcept>
 
-namespace sndx {
+namespace sndx::container {
 
-	template <class DataT, typename IndexT = size_t>
+	template <class DataT, typename IndexT = size_t, template <class> class allocT = std::allocator>
 	class WeightedVector {
 	public:
 		using value_type = DataT;
@@ -25,7 +25,7 @@ namespace sndx {
 		};
 
 	protected:
-		std::vector<Entry> entries;
+		std::vector<Entry, allocT<Entry>> entries;
 		IndexT last = IndexT(0);
 		
 	public:
