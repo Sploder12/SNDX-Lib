@@ -10,7 +10,7 @@ add_executable(tests ${SOURCES} "../ogg.c")
 target_compile_features(tests PUBLIC cxx_std_20)
 
 if(MSVC)
-  target_compile_options(tests PUBLIC /W4 /WX)
+  target_compile_options(tests PUBLIC /W4 /WX /utf-8)
 else()
   target_compile_options(tests PUBLIC -Wall -Werror -Wextra -Wpedantic)
 endif()

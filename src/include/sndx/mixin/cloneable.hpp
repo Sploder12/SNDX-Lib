@@ -12,7 +12,7 @@ namespace sndx::mixin {
 	> {};
 
 	template <class T>
-	inline constexpr bool is_cloneable_v = is_cloneable<T>::value;
+	constexpr bool is_cloneable_v = is_cloneable<T>::value;
 
 	template <class Derived, class Base>
 	struct Cloneable : public Base {

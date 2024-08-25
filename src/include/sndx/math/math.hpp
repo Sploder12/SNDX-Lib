@@ -23,7 +23,7 @@ namespace sndx::math {
 
 	// returns the factorials up to (and including) factorial(n)
 	template <size_t n> [[nodiscard]]
-	inline constexpr std::array<size_t, n + 1> factorials() noexcept {
+	constexpr std::array<size_t, n + 1> factorials() noexcept {
 		static_assert(n < 123);
 
 		if constexpr (n == 0) {
@@ -45,7 +45,7 @@ namespace sndx::math {
 
 	// https://en.wikipedia.org/wiki/Binomial_coefficient
 	template <std::floating_point T = float>
-	inline constexpr size_t binomialCoefficient(size_t n, size_t k) noexcept {
+	constexpr size_t binomialCoefficient(size_t n, size_t k) noexcept {
 		assert(k <= n);
 
 		T out = T(1.0);
@@ -59,7 +59,7 @@ namespace sndx::math {
 	}
 
 	template <size_t n, std::floating_point T = float> [[nodiscard]]
-	inline constexpr std::array<T, n + 1> binomialCoefficients() noexcept {
+	constexpr std::array<T, n + 1> binomialCoefficients() noexcept {
 		constexpr auto facts = factorials<n>();
 		constexpr T top = T(facts[n]);
 
@@ -93,7 +93,7 @@ namespace sndx::math {
 
 	// returns an array of fibonacci up to (and including) n
 	template <size_t n> [[nodiscard]]
-	inline constexpr std::array<size_t, n + 1> fibonacci() noexcept {
+	constexpr std::array<size_t, n + 1> fibonacci() noexcept {
 		static_assert(n > 0);
 
 		// https://en.cppreference.com/w/cpp/algorithm/adjacent_difference
