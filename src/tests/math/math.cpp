@@ -104,3 +104,65 @@ TEST(Math, Fibonaccis) {
 		ASSERT_EQ(fibonacci(i), facts[i]);
 	}
 }
+
+template <class T>
+T min() noexcept {
+	return std::numeric_limits<T>::lowest();
+}
+
+template <class T>
+T max() noexcept {
+	return std::numeric_limits<T>::max();
+}
+
+template <class I, class O>
+void testRemapLimits() {
+	ASSERT_EQ(remap<O>(min<I>()), min<O>());
+	ASSERT_EQ(remap<O>(max<I>()), max<O>());
+
+	ASSERT_EQ(remap<I>(min<O>()), min<I>());
+	ASSERT_EQ(remap<I>(max<O>()), max<I>());
+}
+
+TEST(Math, RemapEqualSize) {
+	testRemapLimits<unsigned char, char>();
+
+	ASSERT_EQ(remap<unsigned char>('\0'), 128);
+	
+	ASSERT_EQ(remap<char>(unsigned char(0)), -128);
+	ASSERT_EQ(remap<char>(unsigned char(128)), 0);
+}
+
+TEST(Math, RemapDifferentSize) {
+	testRemapLimits<int, char>();
+	testRemapLimits<unsigned int, char>();
+	testRemapLimits<int, unsigned char>();
+	testRemapLimits<unsigned int, unsigned char>();
+
+	ASSERT_EQ(remap<char>(short(0)), 0);
+	ASSERT_EQ(remap<char>(int(0)), 0);
+
+	ASSERT_EQ(remap<short>(int(0)), 0);
+}
+
+template <class I, class O>
+void testRemapBalancedLimits() {
+	ASSERT_EQ(remapBalanced<O>(min<I>()), min<O>());
+	ASSERT_EQ(remapBalanced<O>(max<I>()), max<O>());
+
+	ASSERT_EQ(remapBalanced<I>(min<O>()), min<I>());
+	ASSERT_EQ(remapBalanced<I>(max<O>()), max<I>());
+}
+
+TEST(Math, RemapBalanced) {
+	testRemapBalancedLimits<char, int>();
+	ASSERT_EQ(remapBalanced<int>('\0'), 0);
+
+	testRemapBalancedLimits<short, int>();
+	ASSERT_EQ(remapBalanced<short>(0), 0);
+
+	ASSERT_EQ(remapBalanced<unsigned char>('\0'), 0);
+	ASSERT_EQ(remapBalanced<unsigned char>('\0', '\0', 128), 128);
+	ASSERT_EQ(remapBalanced<unsigned char>(char(127), '\0', 128), 255);
+	ASSERT_EQ(remapBalanced<char>((unsigned char)(255), (unsigned char)(128), 0), 127);
+}

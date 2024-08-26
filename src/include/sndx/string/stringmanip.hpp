@@ -35,10 +35,10 @@ namespace sndx::string {
 		return strip(sv<CharT>(str), strips);
 	}
 
-	inline constexpr sv<char> strip(std::nullptr_t, sv<char> = defaultStrip<char>) = delete;
+	constexpr sv<char> strip(std::nullptr_t, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
-	inline constexpr sv<char> strip(const char* str, sv<char> strips = defaultStrip<char>) {
+	constexpr sv<char> strip(const char* str, sv<char> strips = defaultStrip<char>) {
 		return strip(sv<char>(str), strips);
 	}
 
@@ -65,10 +65,10 @@ namespace sndx::string {
 		return stripFirst(sv<CharT>(str), delim, strips);
 	}
 
-	inline constexpr std::pair<sv<char>, sv<char>> splitFirst(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
+	constexpr std::pair<sv<char>, sv<char>> splitFirst(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
-	inline constexpr std::pair<sv<char>, sv<char>> splitFirst(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
+	constexpr std::pair<sv<char>, sv<char>> splitFirst(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
 		return splitFirst(sv<char>{str}, delim, strips);
 	}
 
@@ -105,7 +105,7 @@ namespace sndx::string {
 	inline constexpr std::vector<sv<char>> splitStrip(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
-	inline constexpr auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
+	constexpr auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
 		return splitStrip(sv<char>{str}, delim, strips);
 	}
 	
@@ -170,10 +170,10 @@ namespace sndx::string {
 		return parseEscaped(sv<CharT>{str});
 	}
 
-	inline constexpr std::string parseEscaped(nullptr_t) = delete;
+	constexpr std::string parseEscaped(nullptr_t) = delete;
 
 	[[nodiscard]]
-	inline constexpr auto parseEscaped(const char* str) noexcept {
+	constexpr auto parseEscaped(const char* str) noexcept {
 		return parseEscaped(sv<char>{str});
 	}
 
@@ -250,7 +250,7 @@ namespace sndx::string {
 	[[nodiscard]]
 	inline std::optional<std::string> encodeUTF8(sv<Codepoint> str) {
 		std::string out{};
-		out.reserve(str.size() * 4);
+		out.reserve(str.size() * 2);
 
 		for (auto codepoint : str) {
 			if (codepoint > 0x10FFFF) return std::nullopt;
@@ -262,6 +262,7 @@ namespace sndx::string {
 
 			std::array<char, 3> endBytes{};
 			
+			// gets 6 bits then appends the UTF-8 extend bits
 			static constexpr auto getLast = [](Codepoint codepoint) {
 				return char((codepoint & 0b00111111) | 0b10000000);
 			};
