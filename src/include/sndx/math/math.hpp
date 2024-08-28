@@ -6,10 +6,20 @@
 #include <numeric>
 #include <cmath>
 #include <limits>
+#include <bit>
 
 #include "lines.hpp"
 
 namespace sndx::math {
+
+	[[nodiscard]] // C++23's byteswap https://en.cppreference.com/w/cpp/numeric/byteswap
+	constexpr auto byteswap(std::integral auto v) noexcept {
+		static_assert(std::has_unique_object_representations_v<decltype(v)>);
+
+		auto val = std::bit_cast<std::array<std::byte, sizeof(decltype(v))>>(v);
+		std::reverse(val.begin(), val.end());
+		return std::bit_cast<decltype(v)>(val);
+	}
 
 	[[nodiscard]]
 	constexpr size_t factorial(size_t n) noexcept {
@@ -121,6 +131,7 @@ namespace sndx::math {
 
 	// similar to remap, but mapping skewed based on centerpoint(s)
 	// useful for audio
+	// old centerpoint should NOT be the min/max value of that type
 	template <std::floating_point T> [[nodiscard]]
 	constexpr T remapBalanced(T value, T oldCenterpoint, T newCenterpoint, T oldMin, T oldMax, T newMin, T newMax) noexcept {
 
@@ -152,8 +163,8 @@ namespace sndx::math {
 			}
 			else {
 				// flip first bit to handle signed/unsigned differences
-				auto v = value ^ (1 << ((sizeof(I) * 8) - 1));
-				return *(O*)(&v);
+				I v = value ^ (1 << ((sizeof(I) * 8) - 1));
+				return std::bit_cast<O>(v);
 			}
 		}
 		else { // many-1 mappings
@@ -169,6 +180,7 @@ namespace sndx::math {
 
 	// similar to remap, but mapping skewed based on centerpoint(s)
 	// useful for audio
+	// old centerpoint should NOT be the min/max value of that type
 	template <std::integral O, std::integral I> [[nodiscard]]
 	constexpr O remapBalanced(I value, I oldCenterpoint = 0, O newCenterpoint = 0) noexcept {
 		constexpr auto oldMax = (long double)std::numeric_limits<I>::max();

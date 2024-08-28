@@ -24,7 +24,7 @@ namespace sndx::math {
 
 	// note: ccw winding, return is not a normalized vector
 	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
-	constexpr glm::vec3 surfaceNormal(const glm::vec<3, I, Q>& p, const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& b) {
+	constexpr auto surfaceNormal(const glm::vec<3, I, Q>& p, const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& b) {
 		auto u = p - a;
 		auto v = b - a;
 

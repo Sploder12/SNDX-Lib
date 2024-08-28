@@ -102,18 +102,8 @@ namespace sndx::container {
 		}
 
 		[[nodiscard]]
-		decltype(auto) front() {
-			return entries.front();
-		}
-
-		[[nodiscard]]
 		decltype(auto) front() const {
 			return entries.front();
-		}
-
-		[[nodiscard]]
-		decltype(auto) back() {
-			return entries.back();
 		}
 
 		[[nodiscard]]
@@ -122,18 +112,8 @@ namespace sndx::container {
 		}
 
 		[[nodiscard]]
-		decltype(auto) begin() {
-			return entries.begin();
-		}
-
-		[[nodiscard]]
 		decltype(auto) begin() const {
 			return entries.begin();
-		}
-
-		[[nodiscard]]
-		decltype(auto) rbegin() {
-			return entries.rbegin();
 		}
 
 		[[nodiscard]]
@@ -142,18 +122,8 @@ namespace sndx::container {
 		}
 
 		[[nodiscard]]
-		decltype(auto) end() {
-			return entries.end();
-		}
-
-		[[nodiscard]]
 		decltype(auto) end() const {
 			return entries.end();
-		}
-
-		[[nodiscard]]
-		decltype(auto) rend() {
-			return entries.rend();
 		}
 
 		[[nodiscard]]
@@ -161,6 +131,7 @@ namespace sndx::container {
 			return entries.rend();
 		}
 
+		[[nodiscard]]
 		decltype(auto) data() {
 			return entries.data();
 		}
