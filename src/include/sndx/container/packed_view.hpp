@@ -5,6 +5,9 @@
 #include <bit>
 #include <bitset>
 #include <stdexcept>
+#include <iterator>
+
+#include "../mixin/derived_ops.hpp"
 
 namespace sndx::container {
 
@@ -20,13 +23,85 @@ namespace sndx::container {
 		size_t m_count = 0;
 
 		uint8_t m_offset = 0; // value between 0 and 7;
-
 	public:
 		static constexpr size_t s_bitsPerEntry = bits;
 		static constexpr std::endian s_endianess = endianess;
 
 		using out_type = std::bitset<s_bitsPerEntry>;
 
+		// https://en.cppreference.com/w/cpp/iterator/bidirectional_iterator
+		// yes, it's a random_access_iterator.
+		class Iterator : 
+			public sndx::mixin::Comparisons<Iterator>, 
+			public sndx::mixin::AddSub<Iterator, long long, true> {
+		public:
+			// iterator - iterator overload forces this line to be present
+			using sndx::mixin::AddSub<Iterator, long long, true>::operator-;
+			
+		public:
+			using iterator_category = std::random_access_iterator_tag;
+			using difference_type = long long;
+			using value_type = out_type;
+			using pointer = void;
+			using reference = void;
+
+			using container = PackedView<s_bitsPerEntry, s_endianess>;
+
+			friend class container;
+
+		private:
+			const container* m_container = nullptr;
+			size_t m_pos = 0;
+
+			explicit constexpr Iterator(const container& contain, size_t pos) noexcept:
+				m_container(std::addressof(contain)), m_pos(pos) {}
+
+		public:
+			explicit constexpr Iterator() noexcept = default;
+
+			constexpr Iterator& operator+=(difference_type n) noexcept {
+				m_pos += n;
+				return *this;
+			}
+
+			constexpr Iterator& operator-=(difference_type n) noexcept {
+				m_pos -= n;
+				return *this;
+			}
+
+			[[nodiscard]]
+			value_type operator*() const noexcept {
+				return (*m_container)[m_pos];
+			}
+
+			[[nodiscard]]
+			constexpr value_type operator[](difference_type pos) const noexcept {
+				return *((*this) + pos);
+			}
+
+			[[nodiscard]]
+			constexpr difference_type operator-(const Iterator& other) const noexcept {
+				return (difference_type)m_pos - (difference_type)other.m_pos;
+			}
+
+			[[nodiscard]]
+			constexpr std::strong_ordering operator<=>(const Iterator& other) const {
+				if (m_container != other.m_container)
+					throw std::logic_error("Compared Iterators of PackedView refer to different PackedViews!");
+
+				if (m_pos < other.m_pos) 
+					return std::strong_ordering::less;
+
+				if (m_pos > other.m_pos)
+					return std::strong_ordering::greater;
+
+				return std::strong_ordering::equal;
+			}
+		};
+
+		static_assert(std::random_access_iterator<Iterator>);
+
+	public:
 		explicit constexpr PackedView() noexcept = default;
 
 		constexpr PackedView(const std::byte* data, size_t count, uint8_t offset = 0) noexcept:
@@ -98,6 +173,26 @@ namespace sndx::container {
 		[[nodiscard]]
 		constexpr auto data() const noexcept {
 			return m_data;
+		}
+
+		[[nodiscard]]
+		constexpr auto begin() const noexcept {
+			return Iterator(*this, 0);
+		}
+
+		[[nodiscard]]
+		constexpr auto end() const noexcept {
+			return Iterator(*this, size());
+		}
+
+		[[nodiscard]]
+		constexpr auto rbegin() const noexcept {
+			return std::make_reverse_iterator(end());
+		}
+
+		[[nodiscard]]
+		constexpr auto rend() const noexcept {
+			return std::make_reverse_iterator(begin());
 		}
 	};
 }

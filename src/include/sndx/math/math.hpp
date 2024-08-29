@@ -123,7 +123,7 @@ namespace sndx::math {
 
 	// remaps value from old range to new range
 	// performs a inverse lerp followed by a lerp.
-	template <std::floating_point T> [[nodiscard]]
+	template <class T> [[nodiscard]]
 	constexpr T remap(T value, T oldMin, T oldMax, T newMin, T newMax) noexcept {
 		auto curPos = invLerp(oldMin, oldMax, value);
 		return lerp(newMin, newMax, curPos);

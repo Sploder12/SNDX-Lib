@@ -101,6 +101,24 @@ TEST(PackedView, Bits3Big) {
 	for (size_t i = 0; i < view.size(); ++i) {
 		ASSERT_EQ(view[i].to_ullong(), i);
 	}
+
+	std::array<std::uint8_t, 4> arrOff1{
+		0b00000010,
+		0b10011100,
+		0b10111011,
+		0b10000000
+	};
+
+	PackedView<3, std::endian::big> viewOff1((std::byte*)(arrOff1.data()), 7, 1);
+
+	ASSERT_EQ(viewOff1.size(), 7);
+	ASSERT_EQ(arrOff1.data(), (std::uint8_t*)(viewOff1.data()));
+
+	size_t i = 0;
+	for (auto v : viewOff1) {
+		ASSERT_EQ(v.to_ullong(), i);
+		++i;
+	}
 }
 
 TEST(PackedView, Bits3Little) {

@@ -23,7 +23,7 @@ namespace sndx::collision {
 		using Volume<VectorT>::Precision;
 		
 	protected:
-		Vec m_p1, m_p2;
+		Vec m_p1{}, m_p2{};
 
 		/* Unsafe Construction Methods */
 
