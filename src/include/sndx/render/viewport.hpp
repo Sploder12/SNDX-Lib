@@ -29,7 +29,7 @@ namespace sndx::render {
 		virtual ~Viewport() noexcept = default;
 
 		[[nodiscard]]
-		constexpr operator const RectT& () const {
+		constexpr operator const RectT& () const noexcept {
 			return m_rect;
 		}
 
@@ -55,9 +55,8 @@ namespace sndx::render {
 		}
 
 		virtual void resize(Vec newDims) {
-			if (glm::compMin(newDims) <= InternalT(0.0)) {
+			if (glm::compMin(newDims) <= InternalT(0.0))
 				throw std::invalid_argument("Dimensions of Viewport must be > 0");
-			}
 
 			m_rect.setPosDims(m_rect.getPosition(), newDims);
 		}
@@ -128,9 +127,8 @@ namespace sndx::render {
 		}
 
 		void resize(Vec newDims) override {
-			if (glm::compMin(newDims) <= InternalT(0.0)) {
+			if (glm::compMin(newDims) <= InternalT(0.0))
 				throw std::invalid_argument("Dimensions of Viewport must be > 0");
-			}
 
 			auto asWidth = std::max(newDims.y * m_aspectRatio, InternalT(1.0));
 

@@ -67,4 +67,7 @@ TEST(Viewport, AspectRatioViewport) {
 	ASSERT_EQ(v.getAspectRatio(), 1.0);
 	ASSERT_EQ(v.getOffset(), glm::vec2(0.0f, 0.5f));
 	ASSERT_EQ(v.getDimensions(), glm::vec2(3.0f));
+
+	[[maybe_unused]]
+	const auto& r = (const Rect<glm::vec2>&)(v);
 }
