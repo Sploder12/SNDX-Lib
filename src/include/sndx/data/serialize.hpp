@@ -21,6 +21,10 @@ namespace sndx {
 		using io_error::io_error;
 	};
 
+	struct identifier_error : public deserialize_error {
+		using deserialize_error::deserialize_error;
+	};
+
 	namespace serialize {
 		struct Serializer {
 			std::ostream m_sink;
@@ -66,6 +70,10 @@ namespace sndx {
 
 			Deserializer(std::istream& source) :
 				m_source(source.rdbuf()) {}
+
+			void swap(std::istream& other) {
+				m_source.set_rdbuf(other.rdbuf());
+			}
 
 			template <class T>
 			decltype(auto) deserialize(T& obj) {

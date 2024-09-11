@@ -26,14 +26,14 @@ namespace sndx::audio {
 		explicit constexpr ALaudioData() noexcept :
 			m_meta(), m_buffer{} {}
 
-		explicit constexpr ALaudioData(const ALaudioMeta& meta) noexcept:
+		explicit constexpr ALaudioData(const ALaudioMeta& meta) noexcept :
 			m_meta(meta), m_buffer{} {}
 
 		explicit constexpr ALaudioData(const ALaudioMeta& meta, std::vector<std::byte>&& buf) noexcept :
-			m_meta(meta), m_buffer{std::move(buf)} {}
+			m_meta(meta), m_buffer{ std::move(buf) } {}
 
 		template <std::floating_point F>
-		explicit constexpr ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf):
+		explicit constexpr ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf) :
 			m_meta(meta), m_buffer{} {
 
 			m_buffer.resize(buf.size() * getChannels() * getByteDepth(meta.m_format));
@@ -190,6 +190,4 @@ namespace sndx::audio {
 			return out;
 		}
 	};
-
-
 }

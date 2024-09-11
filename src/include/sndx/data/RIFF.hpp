@@ -47,7 +47,7 @@ namespace sndx::RIFF {
 		void deserialize(sndx::serialize::Deserializer& deserializer) {
 			deserializer.deserialize(type.data(), sizeof(type));
 			if (type != ID)
-				throw deserialize_error("RIFF not present in RIFF header");
+				throw identifier_error("RIFF not present in RIFF header");
 
 			deserializer.deserialize<std::endian::little>(size);
 			deserializer.deserialize(type.data(), sizeof(type));
@@ -159,7 +159,7 @@ namespace sndx::RIFF {
 			deserializer.deserialize(m_header);
 
 			if (m_header.type != checkID)
-				throw deserialize_error("RIFF description identifier mismatch");
+				throw identifier_error("RIFF description identifier mismatch");
 			
 			deserializeRest(deserializer);
 		}
@@ -231,7 +231,7 @@ namespace sndx::RIFF {
 			deserializer.deserialize(m_header);
 
 			if (m_header.type != checkID)
-				throw deserialize_error("RIFF description identifier mismatch");
+				throw identifier_error("RIFF description identifier mismatch");
 
 			deserializeRest(deserializer);
 		}

@@ -158,6 +158,22 @@ namespace sndx::audio {
 
 			return size;
 		}
+
+		[[nodiscard]]
+		constexpr DataFormat getDataFormat() const noexcept {
+			switch (format) {
+			case WAVE_PCM_INT:
+				return DataFormat::pcm_int;
+			case WAVE_IEE_FLOAT:
+				return DataFormat::iee_float;
+			case WAVE_A_LAW:
+				return DataFormat::a_law;
+			case WAVE_MU_LAW:
+				return DataFormat::mu_law;
+			default:
+				return DataFormat::error;
+			}
+		}
 	};
 
 	struct FACTchunk : public sndx::RIFF::Chunk {
@@ -339,49 +355,13 @@ namespace sndx::audio {
 		}
 	};
 
-	struct WAVmeta {
-		uint32_t m_sampleRate = 0;
-		uint32_t m_dataSize = 0;
-
-		uint16_t m_bitDepth = 0;
-		DataFormat m_format = DataFormat::error;
-		uint16_t m_channels = 0;
-
-		constexpr WAVmeta() noexcept = default;
-
-		constexpr WAVmeta(const FMTchunk& fmt) noexcept:
-			m_sampleRate(fmt.sampleRate),
-			m_dataSize(0),
-			m_bitDepth(fmt.bitDepth),
-			m_format(DataFormat::error),
-			m_channels(fmt.channels) {
-
-			switch (fmt.format) {
-			case WAVE_PCM_INT:
-				m_format = DataFormat::pcm_int;
-				break;
-			case WAVE_IEE_FLOAT:
-				m_format = DataFormat::iee_float;
-				break;
-			case WAVE_A_LAW:
-				m_format = DataFormat::a_law;
-				break;
-			case WAVE_MU_LAW:
-				m_format = DataFormat::mu_law;
-				break;
-			default:
-				m_format = DataFormat::error;
-			}
-		}
-	};
-
 	// a WAV file decoder.
 	// seeking functionality requires the underlying istream to be seekable
 	class WAVdecoder : public AudioDecoder {
 	protected:
 		std::istream m_stream;
 
-		WAVmeta m_meta{};
+		FMTchunk m_meta{};
 		size_t m_size = 0;
 		size_t m_pos = 0;
 		size_t m_offset = 0;
@@ -399,19 +379,17 @@ namespace sndx::audio {
 			deserializer.deserialize(head);
 
 			if (head.type != std::array<char, 4>{'W', 'A', 'V', 'E'})
-				throw deserialize_error("RIFF file is not WAVE");
+				throw identifier_error("RIFF file is not WAVE");
 
 			sndx::RIFF::ChunkHeader header;
 			deserializer.deserialize(header);
 
 			
 			if (header.id != std::array<char, 4>{'f', 'm', 't', ' '})
-				throw deserialize_error("fmt  not first subchunk in RIFF");
+				throw identifier_error("fmt  not first subchunk in RIFF");
 
-			FMTchunk fmt(header);
-			deserializer.deserialize(fmt);
-
-			m_meta = WAVmeta(fmt);
+			m_meta = FMTchunk(header);
+			deserializer.deserialize(m_meta);
 
 			do {
 				deserializer.deserialize(header);
@@ -430,7 +408,7 @@ namespace sndx::audio {
 		}
 
 		// initialize the decoder with stream at the data, known meta and size
-		explicit WAVdecoder(const std::istream& stream, const WAVmeta& meta, size_t size) :
+		explicit WAVdecoder(const std::istream& stream, const FMTchunk& meta, size_t size) :
 			m_stream(stream.rdbuf()), m_meta(meta),
 			m_size(uint32_t(size)), m_pos(0), m_offset(0), m_dirty(false) {
 
@@ -440,32 +418,37 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		const WAVmeta& getMeta() const noexcept {
+		const FMTchunk& getMeta() const noexcept {
 			return m_meta;
 		}
 
 		[[nodiscard]]
 		size_t getBitDepth() const noexcept override {
-			return getMeta().m_bitDepth;
+			return getMeta().bitDepth;
+		}
+
+		[[nodiscard]]
+		size_t getSampleAlignment() const noexcept override {
+			return getMeta().blockAlign;
 		}
 
 		[[nodiscard]]
 		size_t getChannels() const noexcept override {
-			return getMeta().m_channels;
+			return getMeta().channels;
 		}
 
 		[[nodiscard]]
 		size_t getSampleRate() const noexcept override {
-			return getMeta().m_sampleRate;
+			return getMeta().sampleRate;
 		}
 
 		[[nodiscard]]
 		DataFormat getFormat() const noexcept override {
-			return getMeta().m_format;
+			return getMeta().getDataFormat();
 		}
 
 		// returns previous position
-		size_t seek(size_t pos) noexcept {
+		size_t seek(size_t pos) noexcept override {
 			if (pos >= m_size)
 				pos = m_size;
 
@@ -488,7 +471,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		std::vector<std::byte> readBytes(size_t count) {
+		std::vector<std::byte> readRawBytes(size_t count) override {
 			auto realCount = std::min(count, size_t(m_size - m_pos));
 			
 			std::vector<std::byte> out{};
@@ -511,8 +494,67 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		std::vector<std::byte> readAll() {
-			return readBytes(m_size);
+		ALaudioData readSamples(size_t count) override {
+			switch (m_meta.format) {
+			case WAVE_PCM_INT:
+				return readPCMintSamples(count);
+			default:
+				throw std::runtime_error("Unimplemented WAVE format");
+			}
+		}
+
+	private:
+		[[nodiscard]]
+		ALaudioData readPCMintSamples(size_t count) {
+			
+			auto channels = (short)(getChannels());
+			if (channels > 2 || channels == 0)
+				throw std::runtime_error("Unsupported WAVE PCM channels format");
+
+			auto bits = (short)(getBitDepth());
+			if (bits > 64 || bits == 0)
+				throw std::runtime_error("Unsupported WAVE PCM bit depth format");
+
+			ALaudioMeta meta{};
+			meta.m_frequency = getSampleRate();
+
+			std::vector<std::byte> out{};
+
+			if (bits <= 8) {
+				meta.m_format = determineALformat(8, channels);
+
+				auto data = readRawSamples(count);
+
+				if (bits == 8) {
+					out = std::move(data);
+				}
+				else {
+					out.reserve(data.size());
+
+					long double oldMax = std::exp2(bits) - 1;
+
+					for (const auto& d : data) {
+						auto val = sndx::math::remap((long double)d, 0.0l, oldMax, 0.0l, 255.0l);
+						out.emplace_back((std::byte)(val));
+					}
+				}
+			}
+			else {
+				meta.m_format = determineALformat(16, channels);
+
+				auto data = readRawSamples(count);
+
+				if (bits == 16) {
+					out = std::move(data);
+				}
+				else {
+					//out.reserve(count * channels * 2);
+					// @TODO
+					throw std::runtime_error("Strange PCM int formats not yet implemented");
+				}
+			}
+			
+			return ALaudioData{meta, std::move(out)};
 		}
 	};
 }

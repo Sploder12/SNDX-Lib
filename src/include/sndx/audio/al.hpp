@@ -16,6 +16,53 @@
 #include <stdexcept>
 
 namespace sndx::audio {
+
+	struct AL_error : public std::runtime_error {
+		using std::runtime_error::runtime_error;
+	};
+
+	struct AL_invalid_name_error : public AL_error {
+		using AL_error::AL_error;
+	};
+
+	struct AL_invalid_enum_error : public AL_error {
+		using AL_error::AL_error;
+	};
+
+	struct AL_invalid_value_error : public AL_error {
+		using AL_error::AL_error;
+	};
+
+	struct AL_invalid_operation_error : public AL_error {
+		using AL_error::AL_error;
+	};
+
+	struct AL_OOM_error : public AL_error {
+		using AL_error::AL_error;
+	};
+
+	inline void alThrowError(ALenum err) {
+		switch (err) {
+		case AL_INVALID_NAME:
+			throw AL_invalid_name_error("A bad ID was passed to OpenAL!");
+		case AL_INVALID_ENUM:
+			throw AL_invalid_enum_error("A invalid enum was passed to OpenAL!");
+		case AL_INVALID_VALUE:
+			throw AL_invalid_value_error("Invalid OpenAL argument!");
+		case AL_INVALID_OPERATION:
+			throw AL_invalid_operation_error("Invalid OpenAL operation!");
+		case AL_OUT_OF_MEMORY:
+			throw AL_OOM_error("OpenAL ran out of memory!");
+		default:
+			break;
+		}
+	}
+
+	inline void alGetAndThrowError() {
+		alThrowError(alGetError());
+	}
+
+
 	enum class ALformat : ALenum {
 		mono8 = AL_FORMAT_MONO8,
 		mono16 = AL_FORMAT_MONO16,

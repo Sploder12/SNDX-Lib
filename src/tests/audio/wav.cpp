@@ -4,20 +4,22 @@
 
 #include "utility/stream.hpp"
 
+#include "audio/al_context.hpp"
+
 using namespace sndx::audio;
 using namespace sndx::utility;
 
 uint8_t goodHeader[] =
 	"RIFF"
-	"\x32\x0\x0\x0"
+	"\x2E\x0\x0\x0"
 	"WAVE"
 	"fmt "
 	"\x10\x0\x0\x0"
 	"\x01\x0" // PCM int
 	"\x01\x0" // 1 channel
 	"\x44\xAC\x0\x0" // 44100 hz
-	"\x0\x0\x0\x0"
-	"\x0\x0"
+	"\x44\xAC\x0\x0" // avgBytesPerSec
+	"\x01\x0" // blockAlign
 	"\x08\x0" // 8bit
 	"data"
 	"\x0A\x0\x0\x0" // 10 bytes
@@ -25,11 +27,11 @@ uint8_t goodHeader[] =
 	"\x5\x6\x7\x8\x9";
 
 TEST(WAVE, GoodHeader) {
-	MemoryIStream buf(goodHeader, sizeof(goodHeader));
+	MemoryStream buf(goodHeader, sizeof(goodHeader));
 
 	WAVdecoder dec(buf);
 
-	auto data = dec.readBytes(10);
+	auto data = dec.readRawBytes(10);
 
 	ASSERT_EQ(data.size(), 10);
 
@@ -41,7 +43,7 @@ TEST(WAVE, GoodHeader) {
 
 	dec.seek(2);
 
-	data = dec.readBytes(2);
+	data = dec.readRawBytes(2);
 	
 	ASSERT_EQ(data.size(), 2);
 	ASSERT_EQ(uint8_t(data[0]), 2);
@@ -55,7 +57,7 @@ TEST(WAVE, GoodHeader) {
 }
 
 TEST(WAVE, fullDeserialize) {
-	MemoryIStream buf(goodHeader, sizeof(goodHeader));
+	MemoryStream buf(goodHeader, sizeof(goodHeader));
 
 	sndx::serialize::Deserializer deserializer(buf);
 
@@ -76,10 +78,21 @@ TEST(WAVE, fullDeserialize) {
 	ASSERT_EQ(format.bitDepth, 8);
 	ASSERT_EQ(format.format, WAVE_PCM_INT);
 	ASSERT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
+
+	uint8_t outData[sizeof(goodHeader)] = { 0 };
+	
+	MemoryStream obuf(outData, sizeof(outData));
+	sndx::serialize::Serializer serializer(obuf);
+
+	out.serialize(serializer);
+
+	for (size_t i = 0; i < sizeof(outData); ++i) {
+		ASSERT_EQ(goodHeader[i], outData[i]);
+	}
 }
 
 TEST(WAVE, lazyDeserialize) {
-	MemoryIStream buf(goodHeader, sizeof(goodHeader));
+	MemoryStream buf(goodHeader, sizeof(goodHeader));
 
 	sndx::serialize::Deserializer deserializer(buf);
 
@@ -106,4 +119,52 @@ TEST(WAVE, lazyDeserialize) {
 	ASSERT_EQ(format.bitDepth, 8);
 	ASSERT_EQ(format.format, WAVE_PCM_INT);
 	ASSERT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
+}
+
+uint8_t badHeaderWAVE[] =
+	"RIFF"
+	"\x2E\x0\x0\x0"
+	"WAVe" // WAVE incorrect
+	"fmt "
+	"\x10\x0\x0\x0"
+	"\x01\x0" // PCM int
+	"\x01\x0" // 1 channel
+	"\x44\xAC\x0\x0" // 44100 hz
+	"\x44\xAC\x0\x0" // avgBytesPerSec
+	"\x01\x0" // blockAlign
+	"\x08\x0" // 8bit
+	"data"
+	"\x0A\x0\x0\x0" // 10 bytes
+	"\x0\x1\x2\x3\x4"
+	"\x5\x6\x7\x8\x9";
+
+uint8_t badHeaderFMT[] =
+	"RIFF"
+	"\x2E\x0\x0\x0"
+	"WAVE"
+	"fmt "
+	"\x11\x0\x0\x0" //fmt size incorrect
+	"\x01\x0" // PCM int
+	"\x01\x0" // 1 channel
+	"\x44\xAC\x0\x0" // 44100 hz
+	"\x44\xAC\x0\x0" // avgBytesPerSec
+	"\x01\x0" // blockAlign
+	"\x08\x0" // 8bit
+	"data"
+	"\x0A\x0\x0\x0" // 10 bytes
+	"\x0\x1\x2\x3\x4"
+	"\x5\x6\x7\x8\x9";
+
+TEST(WAVE, badHeader) {
+	MemoryStream buf(badHeaderWAVE, sizeof(badHeaderWAVE));
+
+	sndx::serialize::Deserializer deserializer(buf);
+
+	WAVfile file;
+	ASSERT_THROW(file.deserialize(deserializer), sndx::identifier_error);
+
+	buf = MemoryStream(badHeaderFMT, sizeof(badHeaderFMT));
+	deserializer.swap(buf);
+
+	ASSERT_THROW(file.deserialize(deserializer), sndx::deserialize_error);
 }
