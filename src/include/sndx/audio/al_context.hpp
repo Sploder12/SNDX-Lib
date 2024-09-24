@@ -17,66 +17,87 @@
 namespace sndx::audio {
 
 	template <typename IdT = std::string>
-	struct ALcontext {
-		ALdevice device;
-		ALCcontext* context;
+	class ALcontext {
+	protected:
+		ALdevice m_device;
+		ALCcontext* m_context;
 
-		// buffers and sources are context specific, which sucks
+		// buffers and sources are context specific
 		// also despite being based on OpenGL there is no "bindBuffer" etc.
-		std::unordered_map<IdT, ABO> buffers;
-		std::unordered_map<IdT, ALsource> sources;
+		std::unordered_map<IdT, ABO> m_buffers;
+		std::unordered_map<IdT, ALsource> m_sources;
 
+	public:
 		explicit ALcontext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
-			device(deviceName), context(nullptr), buffers{}, sources{} {
+			m_device(deviceName), m_context(nullptr), m_buffers{}, m_sources{} {
 
-			if (!device.valid()) return;
+			if (!m_device.valid()) return;
 
-			context = alcCreateContext(device, attrList);
+			m_context = alcCreateContext(m_device, attrList);
+		}
+
+		explicit ALcontext(ALdevice&& device, const ALCint* attrList = nullptr) :
+			m_device(std::move(device)), m_context(nullptr), m_buffers{}, m_sources{} {
+
+			if (!m_device.valid()) return;
+
+			m_context = alcCreateContext(m_device, attrList);
 		}
 
 		ALcontext(ALcontext&& other) noexcept :
-			device(std::exchange(other.device, {})), context(std::exchange(other.context, nullptr)),
-			buffers(std::exchange(other.buffers, {})), sources(std::exchange(other.sources, {})) {}
+			m_device(std::exchange(other.m_device, {})), m_context(std::exchange(other.m_context, nullptr)),
+			m_buffers(std::exchange(other.m_buffers, {})), m_sources(std::exchange(other.m_sources, {})) {}
 
 		ALcontext(const ALcontext&) = delete;
 
 		ALcontext& operator=(ALcontext&& other) noexcept {
-			std::swap(device, other.device);
-			std::swap(context, other.context);
-			std::swap(buffers, other.buffers);
-			std::swap(sources, other.sources);
+			std::swap(m_device, other.m_device);
+			std::swap(m_context, other.m_context);
+			std::swap(m_buffers, other.m_buffers);
+			std::swap(m_sources, other.m_sources);
 			return *this;
 		}
 
 		~ALcontext() {
-			sources.clear();
-			buffers.clear();
+			m_sources.clear();
+			m_buffers.clear();
 
-			if (alcGetCurrentContext() == context) {
+			if (alcGetCurrentContext() == m_context) {
 				alcMakeContextCurrent(nullptr);
 			}
 
-			if (context != nullptr) alcDestroyContext(context);
+			if (m_context != nullptr) alcDestroyContext(m_context);
+			m_context = nullptr;
 		}
 
 		[[nodiscard]]
 		bool valid() const {
-			return device.valid() && context != nullptr;
+			return m_device.valid() && m_context != nullptr;
 		}
 
 		const auto& bind() const {
-			alcMakeContextCurrent(context);
+			alcMakeContextCurrent(m_context);
 			return *this;
 		}
 
 		[[nodiscard]]
-		const std::string& currentDevice() const {
-			return device.getName();
+		ALCcontext* getContext() const {
+			return m_context;
+		}
+
+		[[nodiscard]]
+		ALdeviceHandle getDevice() const {
+			return m_device;
+		}
+
+		[[nodiscard]]
+		const std::string& getDeviceName() const {
+			return m_device.getName();
 		}
 
 		[[nodiscard]]
 		ABOhandle createBuffer(const IdT& id) {
-			auto& [it, _] = buffers.emplace(id, {});
+			auto [it, _] = m_buffers.emplace(id, ABO{});
 
 			return it->second;
 		}
@@ -84,39 +105,35 @@ namespace sndx::audio {
 		[[nodiscard]]
 		ABOhandle createBuffer(const IdT& id, const ALaudioData& data) {
 			auto handle = createBuffer(id);
-			handle.setData(data);
+			handle->setData(data);
 
 			return handle;
 		}
 
-		// make sure you unbind the buffer from all sources!
-		bool deleteBuffer(const IdT& id) {
-			if (auto it = buffers.find(id); it != buffers.end()) {
-				it->second.destroy();
-
-				buffers.erase(it);
-				return true;
-			}
-
-			return false;
+		[[nodiscard]]
+		ABOhandle getBuffer(const IdT& id) {
+			return m_buffers.at(id);
 		}
 
-		bool deleteSource(const IdT& id) {
-			if (auto it = sources.find(id); it != sources.end()) {
-				it->second.destroy();
-
-				sources.erase(it);
-				return true;
-			}
-
-			return false;
+		// make sure you unbind the buffer from all sources!
+		bool deleteBuffer(const IdT& id) {
+			return bool(m_buffers.erase(id));
 		}
 
 		[[nodiscard]]
 		ALsourceHandle createSource(const IdT& id) {
-			auto& [it, _] = sources.emplace(id, {});
+			auto [it, _] = m_sources.emplace(id, ALsource{});
 
 			return it->second;
+		}
+
+		[[nodiscard]]
+		ALsourceHandle getSource(const IdT& id) {
+			return m_sources.at(id);
+		}
+
+		bool deleteSource(const IdT& id) {
+			return bool(m_sources.erase(id));
 		}
 
 		const auto& setVolume(float gain) const {

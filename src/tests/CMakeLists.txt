@@ -19,3 +19,5 @@ enable_testing()
 
 include(GoogleTest)
 gtest_discover_tests(tests)
+
+file(COPY ./../../test_data DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

@@ -97,4 +97,6 @@ namespace sndx::audio {
 			return deviceName;
 		}
 	};
+
+	using ALdeviceHandle = sndx::mixin::Handle<ALdevice>;
 }
