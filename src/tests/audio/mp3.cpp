@@ -1,4 +1,3 @@
-
 #define MINIMP3_IMPLEMENTATION
 #include "audio/mp3.hpp"
 
@@ -7,9 +6,6 @@
 #include "utility/stream.hpp"
 
 #include <fstream>
-
-
-#include "audio/al_context.hpp"
 
 using namespace sndx::audio;
 using namespace sndx::utility;

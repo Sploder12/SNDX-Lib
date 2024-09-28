@@ -104,8 +104,8 @@ namespace sndx::audio {
 		}
 
 		size_t seek(size_t pos) noexcept override {
-			if (pos >= m_dec.samples * getSampleAlignment())
-				pos = m_dec.samples * getSampleAlignment();
+			if (pos >= m_dec.samples * getSampleAlignment() * getChannels())
+				pos = m_dec.samples * getSampleAlignment() * getChannels();
 			
 			m_dirty = true;
 
@@ -119,7 +119,7 @@ namespace sndx::audio {
 
 		[[nodiscard]]
 		bool done() const override {
-			if (m_pos >= m_dec.samples * getSampleAlignment())
+			if (m_pos >= m_dec.samples * getSampleAlignment() * getChannels())
 				return true;
 
 			return false;
@@ -127,7 +127,7 @@ namespace sndx::audio {
 
 		[[nodiscard]]
 		std::vector<std::byte> readRawBytes(size_t count) override {
-			auto realCount = std::min(count, size_t(m_dec.samples * getSampleAlignment() - m_pos));
+			auto realCount = std::min(count, size_t(m_dec.samples * getSampleAlignment() * getChannels() - m_pos));
 
 			std::vector<std::byte> out{};
 
@@ -143,11 +143,11 @@ namespace sndx::audio {
 				m_dirty = false;
 			}
 
-			size_t read = mp3dec_ex_read(&m_dec, (mp3d_sample_t*)(out.data()), count / getSampleAlignment());
-			if (read != count / getSampleAlignment() && m_dec.last_error)
+			size_t read = mp3dec_ex_read(&m_dec, (mp3d_sample_t*)(out.data()), count / getSampleAlignment() / getChannels());
+			if (read != count / getSampleAlignment() / getChannels() && m_dec.last_error)
 				throw deserialize_error("minimp3 returned read error " + std::to_string(m_dec.last_error));
 				
-			out.resize(read * getSampleAlignment());
+			out.resize(read * getSampleAlignment() * getChannels());
 			m_pos += out.size();
 
 			return out;
@@ -157,7 +157,7 @@ namespace sndx::audio {
 		ALaudioData readSamples(size_t count) override {
 			ALaudioMeta meta{ getSampleRate(), determineALformat(16, short(getChannels())) };
 			
-			return ALaudioData{std::move(meta), readRawBytes(count * getSampleAlignment())};
+			return ALaudioData{std::move(meta), readRawBytes(count * getSampleAlignment() * getChannels())};
 		}
 	};
 }
