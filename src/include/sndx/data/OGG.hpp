@@ -2,14 +2,20 @@
 
 #include <ogg/ogg.h>
 
+#include "../data/serialize.hpp"
+
 #include <stdexcept>
 #include <optional>
 #include <span>
 
-namespace sndx::OGG {
+#ifndef OGG_STREAM_READ_SIZE
+#define OGG_STREAM_READ_SIZE 4096
+#endif
+
+namespace sndx::ogg {
 	class Bitpack {
 	protected:
-		oggpack_buffer m_buffer;
+		oggpack_buffer m_buffer{};
 
 	public:
 		virtual ~Bitpack() noexcept = default;
@@ -19,7 +25,7 @@ namespace sndx::OGG {
 			return &m_buffer;
 		}
 
-		void advance(int bits = 1) {
+		void advance(int bits = 1) noexcept {
 			oggpack_adv(&m_buffer, bits);
 		}
 
@@ -109,13 +115,11 @@ namespace sndx::OGG {
 
 	class Page {
 	protected:
-		friend class Sync;
-		friend class Stream;
+		ogg_page m_page{};
 
-		ogg_page m_page;
-
-		explicit Page() noexcept = default;
 	public:
+		explicit Page() noexcept = default;
+
 		[[nodiscard]]
 		ogg_page* get() noexcept {
 			return &m_page;
@@ -169,7 +173,7 @@ namespace sndx::OGG {
 
 	class Packet {
 	protected:
-		ogg_packet m_packet;
+		ogg_packet m_packet{};
 
 	public:
 		[[nodiscard]]
@@ -180,7 +184,7 @@ namespace sndx::OGG {
 
 	class Sync {
 	protected:
-		ogg_sync_state m_sync;
+		ogg_sync_state m_sync{};
 
 	public:
 		[[nodiscard]]
@@ -205,18 +209,38 @@ namespace sndx::OGG {
 			return ogg_sync_reset(&m_sync) == 0;
 		}
 
-		template <size_t extent = std::dynamic_extent>
-		bool write(std::span<char, extent> buf) noexcept {
-			auto ptr = ogg_sync_buffer(&m_sync, buf.size());
+		// WriteFn is a function callable with std::span<char, dynamic_extent> as argument,
+		// if the return is can be converted to long, that much is repoted as witten
+		// WriteFn should attempt to write size bytes into the argument buffer
+		// returns amount written or -1 on error
+		template <class WriteFn>
+		long write(size_t size, WriteFn writeFn) {
+			auto ptr = ogg_sync_buffer(&m_sync, long(size));
 
 			if (!ptr)
-				return false;
+				return -1;
 
-			for (size_t i = 0; i < buf.size(); ++i) {
-				ptr[i] = buf[i];
+			std::span<char> buffer{ ptr, size };
+
+			using fnRet = decltype(writeFn(buffer));
+
+			if constexpr (!std::is_convertible_v<fnRet, long>) {
+				writeFn(buffer);
+				return long((ogg_sync_wrote(&m_sync, long(size)) == 0) ? size : -1);
 			}
+			else {
+				long wrote = long(std::max(fnRet(0), writeFn(buffer)));
+				return (ogg_sync_wrote(&m_sync, wrote) == 0) ? wrote : -1;
+			}
+		}
 
-			return ogg_sync_wrote(&m_sync, buf.size()) == 0;
+		template <size_t extent = std::dynamic_extent>
+		long write(std::span<char, extent> buf) noexcept {
+			return write(buf.size(), [buf](std::span<char> out) {
+				for (size_t i = 0; i < out.size(); ++i) {
+					out[i] = buf[i];
+				}
+			});
 		}
 
 		int seek(Page& page) noexcept {
@@ -234,7 +258,8 @@ namespace sndx::OGG {
 
 	class Stream {
 	protected:
-		ogg_stream_state m_stream;
+		ogg_stream_state m_stream{};
+		bool init = false;
 
 	public:
 		[[nodiscard]]
@@ -242,12 +267,26 @@ namespace sndx::OGG {
 			return &m_stream;
 		}
 
-		explicit Stream(int serialNumber) noexcept {
-			ogg_stream_init(&m_stream, serialNumber);
+		explicit Stream() noexcept = default;
+		
+		explicit Stream(int serialNumber) {
+			if (ogg_stream_init(&m_stream, serialNumber) != 0)
+				throw std::runtime_error("Could not init ogg stream");
+
+			init = true;
+		}
+
+		Stream& operator=(Stream&& other) noexcept {
+			std::swap(m_stream, other.m_stream);
+			std::swap(init, other.init);
+			return *this;
 		}
 
 		~Stream() noexcept {
-			ogg_stream_clear(&m_stream);
+			if (init) {
+				ogg_stream_clear(&m_stream);
+				init = false;
+			}
 		}
 
 		bool reset() noexcept {
@@ -327,6 +366,104 @@ namespace sndx::OGG {
 				return std::nullopt;
 
 			return out;
+		}
+	};
+
+
+	class Decoder {
+	protected:
+		std::istream m_in;
+
+		ogg::Sync m_sync{};
+		ogg::Stream m_stream;
+		ogg::Page m_curPage;
+
+		bool m_done = false;
+	public:
+
+		[[nodiscard]]
+		bool done() const noexcept {
+			return m_done;
+		}
+
+		[[nodiscard]]
+		std::optional<ogg::Packet> getNextPacket() {
+			int ret = 0;
+			while (ret == 0) {
+				auto [packet, packetRet] = m_stream.packetOut();
+				ret = packetRet;
+
+				if (ret < 0) {
+					m_done = true;
+					return std::nullopt;
+				}
+
+				if (ret != 0)
+					return packet;
+
+				// more data!
+				do {
+					auto wrote = m_sync.write(OGG_STREAM_READ_SIZE, [this](std::span<char> buf) {
+						m_in.read(buf.data(), buf.size());
+						return m_in.gcount();
+					});
+
+					if (wrote <= 0) {
+						m_done = true;
+						return std::nullopt;
+					}
+
+					auto [nextPage, pageRet] = m_sync.pageout();
+
+					if (pageRet < 0) {
+						m_done = true;
+						return std::nullopt;
+					}
+
+					if (pageRet != 0) {
+						m_curPage = std::move(nextPage);
+
+						if (!m_stream.pageIn(m_curPage)) {
+							m_done = true;
+							return std::nullopt;
+						}
+					}
+
+					break;
+				} while (true);
+			}
+
+			return std::nullopt;
+		}
+
+		explicit Decoder(std::istream& stream) :
+			m_in(stream.rdbuf()) {
+
+			while (true) {
+				auto wrote = m_sync.write(OGG_STREAM_READ_SIZE, [this](std::span<char> buf) {
+					m_in.read(buf.data(), buf.size());
+					return m_in.gcount();
+				});
+
+				if (wrote <= 0) {
+					m_done = true;
+					throw deserialize_error("Ogg not enough data");
+				}
+
+				auto [page, ret] = m_sync.pageout();
+
+				if (ret == 1) {
+					m_curPage = std::move(page);
+					break;
+				}
+			};
+
+			m_stream = Stream(m_curPage.serialNumber());
+			
+			if (!m_stream.pageIn(m_curPage)) {
+				m_done = true;
+				throw deserialize_error("First page in failed");
+			}
 		}
 	};
 }

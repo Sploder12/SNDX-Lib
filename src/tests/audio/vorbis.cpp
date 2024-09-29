@@ -16,24 +16,15 @@ using namespace sndx::utility;
 TEST(Vorbis, GoodFile) {
 	std::ifstream file("test_data/audio/good.ogg", std::ios::binary);
 
-	/*
+	ASSERT_TRUE(file.is_open());
+	
 	VorbisDecoder dec(file);
 
 	auto data = dec.readAll();
 
-	ALcontext context{};
-	context.bind();
-
-	auto src = context.createSource("finger");
-
-	auto buf = context.createBuffer("pingus", data);
-
-	src->setBuffer(*buf);
-
-	src->play();
-
-	while (src->playing()) {
-
-	}
-	*/
+	EXPECT_EQ(data.getByteSize(), 99712);
+	EXPECT_EQ(data.getFormat(), ALformat::mono16);
+	EXPECT_EQ(data.getFrequency(), 44100);
+	EXPECT_EQ(data.getChannels(), 1);
+	EXPECT_EQ(data.getSampleCount(), 99712 / 2);
 }
