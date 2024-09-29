@@ -557,4 +557,10 @@ namespace sndx::audio {
 			return ALaudioData{meta, std::move(out)};
 		}
 	};
+
+	inline const bool _wavDecoderRegisterer = []() {
+		return 
+			registerDecoder<WAVdecoder>(".wav") &&
+			registerDecoder<WAVdecoder>(".wave");
+	}();
 }

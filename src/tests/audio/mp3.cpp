@@ -11,11 +11,19 @@ using namespace sndx::audio;
 using namespace sndx::utility;
 
 TEST(MP3, GoodFile) {
-	std::ifstream file("test_data/audio/good.mp3", std::ios::binary);
+	ASSERT_TRUE(_mp3DecoderRegisterer);
 
-	MP3decoder dec(file);
+	std::ifstream file{ "test_data/audio/good.mp3", std::ios_base::binary };
 
-	auto data = dec.readAll();
+	ASSERT_TRUE(file.is_open());
+
+	auto decptr = tryCreateDecoder(".mp3", file);
+
+	ASSERT_TRUE(decptr);
+	ASSERT_TRUE(dynamic_cast<MP3decoder*>(decptr.get()));
+
+	MP3decoder* dec = dynamic_cast<MP3decoder*>(decptr.get());
+	auto data = dec->readAll();
 	
 	EXPECT_EQ(data.getByteSize(), 64512);
 	EXPECT_EQ(data.getFormat(), ALformat::mono16);

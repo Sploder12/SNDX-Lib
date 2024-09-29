@@ -360,4 +360,8 @@ namespace sndx::audio {
 			return ALaudioData{ std::move(meta), readRawBytes(count * getSampleAlignment() * getChannels()) };
 		}
 	};
+
+	inline const bool _vorbisDecoderRegisterer = [](){
+		return registerDecoder<VorbisDecoder>(".ogg");
+	}();
 }

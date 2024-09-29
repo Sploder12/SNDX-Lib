@@ -14,13 +14,19 @@ using namespace sndx::utility;
 
 
 TEST(Vorbis, GoodFile) {
-	std::ifstream file("test_data/audio/good.ogg", std::ios::binary);
+	ASSERT_TRUE(_vorbisDecoderRegisterer);
 
-	ASSERT_TRUE(file.is_open());
+	std::ifstream file{ "test_data/audio/good.ogg", std::ios_base::binary };
 	
-	VorbisDecoder dec(file);
+	ASSERT_TRUE(file.is_open());
 
-	auto data = dec.readAll();
+	auto decptr = tryCreateDecoder(".ogg", file);
+
+	ASSERT_TRUE(decptr);
+	ASSERT_TRUE(dynamic_cast<VorbisDecoder*>(decptr.get()));
+
+	VorbisDecoder* dec = dynamic_cast<VorbisDecoder*>(decptr.get());
+	auto data = dec->readAll();
 
 	EXPECT_EQ(data.getByteSize(), 99712);
 	EXPECT_EQ(data.getFormat(), ALformat::mono16);

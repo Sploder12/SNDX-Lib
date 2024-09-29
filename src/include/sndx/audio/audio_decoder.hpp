@@ -3,8 +3,13 @@
 #include <cstddef>
 #include <chrono>
 #include <vector>
+#include <istream>
+#include <fstream>
+#include <filesystem>
 
 #include "./al_audio_data.hpp"
+
+#include "../utility/registry.hpp"
 
 namespace sndx::audio {
 
@@ -19,6 +24,8 @@ namespace sndx::audio {
 
 	class AudioDecoder {
 	public:
+		typedef std::unique_ptr<AudioDecoder>(*Factory)(std::istream&);
+
 		virtual ~AudioDecoder() = default;
 
 		[[nodiscard]]
@@ -88,4 +95,57 @@ namespace sndx::audio {
 			return readSamples(std::numeric_limits<size_t>::max());
 		}
 	};
+
+	using DecoderRegistry = sndx::utility::FactoryRegistry<std::string, AudioDecoder::Factory>;
+
+	[[nodiscard]]
+	inline DecoderRegistry& getDecoderRegistry() noexcept {
+		static DecoderRegistry defaultRegistry{};
+		return defaultRegistry;
+	}
+
+	template <std::derived_from<AudioDecoder> T>
+	inline bool registerDecoder(const std::string& extension) {
+		return getDecoderRegistry().add(extension, [](std::istream& in) {
+			return std::unique_ptr<AudioDecoder>{std::make_unique<T>(in)};
+		});
+	}
+
+	inline bool removeDecoder(const std::string& extension) {
+		return getDecoderRegistry().remove(extension);
+	}
+
+	[[nodiscard]] // may throw DecoderRegistry::no_factory_error
+	inline decltype(auto) createDecoder(const std::string& extension, std::istream& stream) {
+		return getDecoderRegistry().apply(extension, stream);
+	}
+
+	[[nodiscard]]
+	inline std::unique_ptr<AudioDecoder> tryCreateDecoder(const std::string& extension, std::istream& stream) {
+		try {
+			return createDecoder(extension, stream);
+		}
+		catch (...) {
+			return nullptr;
+		}
+	}
+
+	[[nodiscard]]
+	inline std::optional<ALaudioData> readFile(const std::filesystem::path& filePath) {
+		std::ifstream file{ filePath, std::ios::binary };
+
+		if (!file.is_open())
+			return std::nullopt;
+
+		auto dec = tryCreateDecoder(filePath.extension().string(), file);
+		if (!dec)
+			return std::nullopt;
+
+		try {
+			return dec->readAll();
+		}
+		catch (...) {
+			return std::nullopt;
+		}
+	}
 }
