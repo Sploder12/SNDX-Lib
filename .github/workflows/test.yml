@@ -9,10 +9,22 @@ jobs:
             fail-fast: false
             matrix:
                 os: [windows-latest, ubuntu-latest]
+                include:
+                    - os: windows-latest
+                      preset: 'x64-release'
+                      binary: './out/build/x64-release/src/tests/tests.exe'
+                    - os: ubuntu-latest
+                      preset: 'linux-debug'
+                      binary: './out/build/linux-debug/src/tests/tests'
+                      install_opengl: true
 
         steps:
             - name: Checkout
               uses: actions/checkout@v4.2.0
+
+            - name: Install openGL
+              if: ${{ matrix.install_opengl }}
+              run: sudo apt-get install libgl-dev
 
             - uses: lukka/get-cmake@latest
             - name: Run vcpkg
@@ -22,8 +34,11 @@ jobs:
             
             - name: Run CMake
               uses: lukka/run-cmake@v10
+              with:
+                configurePreset: ${{ matrix.preset }}
+                buildPreset: ${{ matrix.preset }}
                     
             - name: Run Tests
               timeout-minutes: 1
-              run: ls
+              run: ${{ matrix.binary }}
             
