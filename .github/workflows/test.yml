@@ -44,7 +44,7 @@ jobs:
 
             - name: Compile
               run: |
-                  cd ${{build}}
+                  cd ${{ matrix.build }}
                   ninja
 
             - name: Run Tests
