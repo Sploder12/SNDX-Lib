@@ -24,7 +24,10 @@ jobs:
 
             - name: Install openGL
               if: ${{ matrix.install_opengl }}
-              run: sudo apt-get install libgl-dev
+              run: |
+                  sudo apt-get install libxmu-dev libxi-dev libgl-dev
+                  sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+                  sudo apt install libxrandr
 
             - uses: lukka/get-cmake@latest
             - name: Run vcpkg
@@ -36,7 +39,6 @@ jobs:
               uses: lukka/run-cmake@v10
               with:
                 configurePreset: ${{ matrix.preset }}
-                buildPreset: ${{ matrix.preset }}
                     
             - name: Run Tests
               timeout-minutes: 1
