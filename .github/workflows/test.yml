@@ -12,7 +12,7 @@ jobs:
                 include:
                     - os: windows-latest
                       preset: 'x64-release'
-                      binary: './out/build/x64-release/src/tests/tests.exe'
+                      binary: '.\out\build\x64-release\src\tests\tests.exe'
                     - os: ubuntu-latest
                       preset: 'linux-debug'
                       binary: './out/build/linux-debug/src/tests/tests'
@@ -27,7 +27,7 @@ jobs:
               run: |
                   sudo apt-get install libxmu-dev libxi-dev libgl-dev
                   sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
-                  sudo apt install libxrandr
+                  sudo apt install libxrandr-dev
 
             - uses: lukka/get-cmake@latest
             - name: Run vcpkg
@@ -40,6 +40,9 @@ jobs:
               with:
                 configurePreset: ${{ matrix.preset }}
                     
+            - name: Where
+              run: ls
+
             - name: Run Tests
               timeout-minutes: 1
               run: ${{ matrix.binary }}
