@@ -2,7 +2,7 @@
 
 #include "./al.hpp"
 
-#include "./al_audio_data.hpp"
+#include "./audio_data.hpp"
 
 #include "../mixin/handle.hpp"
 

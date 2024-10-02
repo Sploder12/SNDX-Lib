@@ -7,7 +7,7 @@
 #include <fstream>
 #include <filesystem>
 
-#include "./al_audio_data.hpp"
+#include "./al/audio_data.hpp"
 
 #include "../utility/registry.hpp"
 

@@ -6,12 +6,8 @@
 
 #include <fstream>
 
-
-#include "audio/al_context.hpp"
-
 using namespace sndx::audio;
 using namespace sndx::utility;
-
 
 TEST(Vorbis, GoodFile) {
 	ASSERT_TRUE(_vorbisDecoderRegisterer);

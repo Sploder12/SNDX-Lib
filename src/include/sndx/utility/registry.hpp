@@ -37,8 +37,12 @@ namespace sndx::utility {
 		decltype(auto) apply(const KeyT& key, Args&&... args) {
 			std::shared_lock lock(m_mtx);
 
-			if (auto it = m_registry.find(key); it != m_registry.end())
-				return (it->second)(std::forward<Args>(args)...);
+			if (auto it = m_registry.find(key); it != m_registry.end()) {
+				auto func = it->second;
+				lock.unlock();
+
+				return func(std::forward<Args>(args)...);
+			}
 			
 			throw no_factory_error("Factory could not be found in registry");
 		}

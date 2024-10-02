@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <chrono>
 
-#include "../math/math.hpp"
+#include "../../math/math.hpp"
 
 #include "./al.hpp"
 

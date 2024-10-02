@@ -2,10 +2,10 @@
 
 #include "./al.hpp"
 
-#include "./al_audio_data.hpp"
+#include "./audio_data.hpp"
 #include "./abo.hpp"
-#include "./al_source.hpp"
-#include "./al_device.hpp"
+#include "./source.hpp"
+#include "./device.hpp"
 
 #include <stdexcept>
 #include <unordered_map>

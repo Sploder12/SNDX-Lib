@@ -50,7 +50,7 @@ namespace sndx::render {
 			return m_rect.getPosition();
 		}
 
-		constexpr void setOffset(Vec offset) noexcept {
+		constexpr virtual void setOffset(Vec offset) noexcept {
 			m_rect.setPosDims(offset, m_rect.getSize());
 		}
 
@@ -74,6 +74,7 @@ namespace sndx::render {
 
 	template <typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
 	class AspectRatioViewport : public Viewport<InternalT, Qualifier> {
+	protected:
 		using Vec = Viewport<InternalT, Qualifier>::Vec;
 		using RectT = Viewport<InternalT, Qualifier>::RectT;
 
@@ -126,7 +127,7 @@ namespace sndx::render {
 			return tmp;
 		}
 
-		void resize(Vec newDims) override {
+		virtual void resize(Vec newDims) override {
 			if (glm::compMin(newDims) <= InternalT(0.0))
 				throw std::invalid_argument("Dimensions of Viewport must be > 0");
 
