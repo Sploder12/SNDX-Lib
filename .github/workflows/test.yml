@@ -1,0 +1,29 @@
+name: Run gtest
+run-name: Run tests by ${{ github.actor }}
+on: [push]
+jobs:
+    job:
+        name: ${{ matrix.os }}-${{ github.workflow }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [windows-latest, ubuntu-latest]
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4.2.0
+
+            - uses: lukka/get-cmake@latest
+            - name: Run vcpkg
+              uses: lukka/run-vcpkg@v11.5
+              with:
+                runVcpkgInstall: true
+            
+            - name: Run CMake
+              uses: lukka/run-cmake@v10
+                    
+            - name: Run Tests
+              timeout-minutes: 1
+              run: ls
+            
