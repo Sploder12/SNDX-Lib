@@ -39,9 +39,7 @@ jobs:
               uses: lukka/run-cmake@v10
               with:
                 configurePreset: ${{ matrix.preset }}
-                    
-            - name: Where
-              run: ls
+                configurePresetAdditionalArgs: "['--build']"
 
             - name: Run Tests
               timeout-minutes: 1
