@@ -12,12 +12,12 @@ jobs:
                 include:
                     - os: windows-latest
                       preset: 'x64-release'
-                      build: '.\out\build\${{preset}}'
-                      binary: '${{build}}\src\tests\tests.exe'
+                      build: '.\out\build\x64-release'
+                      binary: '.\out\build\x64-release\src\tests\tests.exe'
                     - os: ubuntu-latest
                       preset: 'linux-debug'
-                      build: './out/build/${{preset}}'
-                      binary: '${{build}}/src/tests/tests'
+                      build: './out/build/linux-debug'
+                      binary: './out/build/linux-debug/src/tests/tests'
                       install_opengl: true
 
         steps:
