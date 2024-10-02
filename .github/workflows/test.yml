@@ -12,10 +12,12 @@ jobs:
                 include:
                     - os: windows-latest
                       preset: 'x64-release'
-                      binary: '.\out\build\x64-release\src\tests\tests.exe'
+                      build: '.\out\build\${{preset}}'
+                      binary: '${{build}}\src\tests\tests.exe'
                     - os: ubuntu-latest
                       preset: 'linux-debug'
-                      binary: './out/build/linux-debug/src/tests/tests'
+                      build: './out/build/${{preset}}'
+                      binary: '${{build}}/src/tests/tests'
                       install_opengl: true
 
         steps:
@@ -39,7 +41,11 @@ jobs:
               uses: lukka/run-cmake@v10
               with:
                 configurePreset: ${{ matrix.preset }}
-                configurePresetAdditionalArgs: "['--build']"
+
+            - name: Compile
+              run: |
+                  cd ${{build}}
+                  ninja
 
             - name: Run Tests
               timeout-minutes: 1
