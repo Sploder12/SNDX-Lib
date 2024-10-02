@@ -23,17 +23,17 @@ namespace sndx::audio {
 
 	public:
 
-		explicit constexpr ALaudioData() noexcept :
+		explicit ALaudioData() noexcept :
 			m_meta(), m_buffer{} {}
 
-		explicit constexpr ALaudioData(const ALaudioMeta& meta) noexcept :
+		explicit ALaudioData(const ALaudioMeta& meta) noexcept :
 			m_meta(meta), m_buffer{} {}
 
-		explicit constexpr ALaudioData(const ALaudioMeta& meta, std::vector<std::byte>&& buf) noexcept :
+		explicit ALaudioData(const ALaudioMeta& meta, std::vector<std::byte>&& buf) noexcept :
 			m_meta(meta), m_buffer{ std::move(buf) } {}
 
 		template <std::floating_point F>
-		explicit constexpr ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf) :
+		explicit ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf) :
 			m_meta(meta), m_buffer{} {
 
 			m_buffer.resize(buf.size() * getChannels() * getByteDepth(meta.m_format));
@@ -57,47 +57,47 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		constexpr const ALaudioMeta& getMeta() const noexcept {
+		const ALaudioMeta& getMeta() const noexcept {
 			return m_meta;
 		}
 
 		[[nodiscard]]
-		constexpr size_t getFrequency() const noexcept {
+		size_t getFrequency() const noexcept {
 			return m_meta.m_frequency;
 		}
 
 		[[nodiscard]]
-		constexpr ALformat getFormat() const noexcept {
+		ALformat getFormat() const noexcept {
 			return m_meta.m_format;
 		}
 
 		[[nodiscard]]
-		constexpr auto getChannels() const noexcept {
+		auto getChannels() const noexcept {
 			return sndx::audio::getChannels(getFormat());
 		}
 
 		[[nodiscard]]
-		constexpr size_t getSampleCount() const noexcept {
+		size_t getSampleCount() const noexcept {
 			return m_buffer.size() / getBytesPerSample(m_meta.m_format);
 		}
 
 		[[nodiscard]]
-		constexpr auto data() const noexcept {
+		auto data() const noexcept {
 			return m_buffer.data();
 		}
 
 		[[nodiscard]]
-		constexpr auto getByteSize() const noexcept {
+		auto getByteSize() const noexcept {
 			return m_buffer.size();
 		}
 
 		[[nodiscard]]
-		constexpr std::chrono::duration<double> getLengthSeconds() const {
+		std::chrono::duration<double> getLengthSeconds() const {
 			return std::chrono::duration<double>(double(getSampleCount()) / double(getFrequency()));
 		}
 
 		[[nodiscard]]
-		constexpr size_t getBytePos(size_t sample, size_t channel) const {
+		size_t getBytePos(size_t sample, size_t channel) const {
 			if (sample >= getSampleCount())
 				throw std::out_of_range("Sample beyond sample count");
 
@@ -108,7 +108,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		constexpr long double getSample(size_t sample, size_t channel) const {
+		long double getSample(size_t sample, size_t channel) const {
 			// special mono support
 			if (getChannels() == 1)
 				channel = 0;
@@ -127,7 +127,7 @@ namespace sndx::audio {
 
 		// note: value is the value as if it were the correct type.
 		// will throw a domain error is the value is not in the bounds of the correct type
-		constexpr void setSample(size_t sample, size_t channel, long double value) {
+		void setSample(size_t sample, size_t channel, long double value) {
 			auto bytePos = getBytePos(sample, channel);
 
 			if (is8Bit(getFormat())) {
@@ -147,7 +147,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		constexpr ALaudioData asFormat(ALformat format) const {
+		ALaudioData asFormat(ALformat format) const {
 			if (format == m_meta.m_format)
 				return *this;
 

@@ -10,18 +10,6 @@
 
 namespace sndx::math {
 
-	template <class T, class F>
-	constexpr auto lerp(const T& x, const T& y, F a) noexcept {
-		return glm::mix(x, y, a);
-	}
-
-	template <class T>
-	constexpr auto invLerp(const T& x, const T& y, const T& v) noexcept {
-		assert(y != x);
-
-		return (v - x) / (y - x);
-	}
-
 	// note: ccw winding, return is not a normalized vector
 	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
 	constexpr auto surfaceNormal(const glm::vec<3, I, Q>& p, const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& b) {

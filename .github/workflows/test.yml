@@ -31,6 +31,8 @@ jobs:
                   sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
                   sudo apt install libxrandr-dev
 
+            - uses: ilammy/msvc-dev-cmd@v1.13.0
+
             - uses: lukka/get-cmake@latest
             - name: Run vcpkg
               uses: lukka/run-vcpkg@v11.5

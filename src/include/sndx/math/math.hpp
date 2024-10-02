@@ -8,7 +8,7 @@
 #include <limits>
 #include <bit>
 
-#include "lines.hpp"
+#include "./easings.hpp"
 
 namespace sndx::math {
 

@@ -10,8 +10,8 @@ namespace sndx::collision {
 	template <class VectorT = glm::vec2>
 	class Circle : public Volume<VectorT> {
 	public:
-		using Volume<VectorT>::Vec;
-		using Volume<VectorT>::Precision;
+		using Vec = Volume<VectorT>::Vec;
+		using Precision = Volume<VectorT>::Precision;
 
 	protected:
 		Vec m_pos;

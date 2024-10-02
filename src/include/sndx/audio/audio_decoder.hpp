@@ -6,6 +6,7 @@
 #include <istream>
 #include <fstream>
 #include <filesystem>
+#include <optional>
 
 #include "./al/audio_data.hpp"
 

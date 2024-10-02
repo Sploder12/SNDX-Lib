@@ -3,7 +3,21 @@
 #include <functional>
 #include <concepts>
 
+#include <glm/glm.hpp>
+
 namespace sndx::math {
+
+	template <class T, class F>
+	constexpr auto lerp(const T& x, const T& y, F a) noexcept {
+		return glm::mix(x, y, a);
+	}
+
+	template <class T>
+	constexpr auto invLerp(const T& x, const T& y, const T& v) noexcept {
+		assert(y != x);
+
+		return (v - x) / (y - x);
+	}
 
 	// taken from https://easings.net/
 
