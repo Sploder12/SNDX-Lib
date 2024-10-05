@@ -98,14 +98,14 @@ namespace sndx::string {
 	}
 
 	template <class Chr = char> [[nodiscard]]
-	constexpr auto splitStrip(Str<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
+	auto splitStrip(Str<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
 		return splitStrip(sv<Chr>{str}, delim, strips);
 	}
 
-	inline constexpr std::vector<sv<char>> splitStrip(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
+	inline std::vector<sv<char>> splitStrip(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
-	constexpr auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
+	auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
 		return splitStrip(sv<char>{str}, delim, strips);
 	}
 	
@@ -166,14 +166,14 @@ namespace sndx::string {
 	}
 
 	template <typename CharT = char> [[nodiscard]]
-	constexpr Str<CharT> parseEscaped(const Str<CharT>& str) {
+	Str<CharT> parseEscaped(const Str<CharT>& str) {
 		return parseEscaped(sv<CharT>{str});
 	}
 
-	constexpr std::string parseEscaped(nullptr_t) = delete;
+	std::string parseEscaped(nullptr_t) = delete;
 
 	[[nodiscard]]
-	constexpr auto parseEscaped(const char* str) noexcept {
+	auto parseEscaped(const char* str) noexcept {
 		return parseEscaped(sv<char>{str});
 	}
 
