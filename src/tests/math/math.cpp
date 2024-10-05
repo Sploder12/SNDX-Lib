@@ -129,8 +129,8 @@ TEST(Math, RemapEqualSize) {
 
 	EXPECT_EQ(remap<unsigned char>('\0'), 128);
 	
-	EXPECT_EQ(remap<char>(unsigned char(0)), -128);
-	EXPECT_EQ(remap<char>(unsigned char(128)), 0);
+	EXPECT_EQ(remap<char>((unsigned char)(0)), -128);
+	EXPECT_EQ(remap<char>((unsigned char)(128)), 0);
 }
 
 TEST(Math, RemapDifferentSize) {

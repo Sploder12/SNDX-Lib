@@ -12,11 +12,9 @@ jobs:
                 include:
                     - os: windows-latest
                       preset: 'x64-release'
-                      build: '.\out\build\x64-release'
                       binary: '.\out\build\x64-release\src\tests\tests.exe'
                     - os: ubuntu-latest
                       preset: 'linux-debug'
-                      build: './out/build/linux-debug'
                       binary: './out/build/linux-debug/src/tests/tests'
                       install_opengl: true
 
@@ -46,7 +44,7 @@ jobs:
 
             - name: Compile
               run: |
-                  cd ${{ matrix.build }}
+                  cd './out/build/${{ matrix.preset }}'
                   ninja
 
             - name: Run Tests

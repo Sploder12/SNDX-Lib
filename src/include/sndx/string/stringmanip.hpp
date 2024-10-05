@@ -74,7 +74,7 @@ namespace sndx::string {
 
 
 	template <class Chr = char> [[nodiscard]]
-	constexpr std::vector<sv<Chr>> splitStrip(sv<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
+	std::vector<sv<Chr>> splitStrip(sv<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
 		std::vector<sv<Chr>> out{};
 		str = strip(str, strips);
 		if (str == "") return out;
@@ -111,7 +111,7 @@ namespace sndx::string {
 	
 
 	template <typename CharT = char> [[nodiscard]]
-	constexpr Str<CharT> parseEscaped(sv<CharT> str) {
+	Str<CharT> parseEscaped(sv<CharT> str) {
 		Str<CharT> out{};
 		out.reserve(str.size());
 
@@ -181,7 +181,7 @@ namespace sndx::string {
 	using Codepoint = uint32_t;
 
 	[[nodiscard]]
-	inline constexpr Str<Codepoint> operator ""_codepoint(const char32_t* str, size_t size) {
+	inline Str<Codepoint> operator ""_codepoint(const char32_t* str, size_t size) {
 		return Str<Codepoint>{(const Codepoint*)(str), size};
 	}
 
