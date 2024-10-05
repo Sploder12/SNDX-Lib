@@ -208,9 +208,9 @@ namespace sndx::audio {
 
 		std::vector<uint8_t> data{};
 
-		explicit constexpr DATAchunk() = default;
+		explicit DATAchunk() = default;
 
-		explicit constexpr DATAchunk(const sndx::RIFF::ChunkHeader& header) {
+		explicit DATAchunk(const sndx::RIFF::ChunkHeader& header) {
 			data.resize(header.size);
 		}
 
@@ -236,7 +236,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		constexpr uint32_t getLength() const override {
+		uint32_t getLength() const override {
 			return uint32_t(4 + sizeof(uint32_t) + data.size() + (data.size() % 2 == 1));
 		}
 	};

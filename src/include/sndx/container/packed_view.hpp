@@ -47,7 +47,7 @@ namespace sndx::container {
 
 			using container = PackedView<s_bitsPerEntry, s_endianess>;
 
-			friend class container;
+			friend container;
 
 		private:
 			const container* m_container = nullptr;

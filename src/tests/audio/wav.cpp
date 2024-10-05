@@ -155,16 +155,20 @@ uint8_t badHeaderFMT[] =
 	"\x0\x1\x2\x3\x4"
 	"\x5\x6\x7\x8\x9";
 
-TEST(WAVE, badHeader) {
+TEST(WAVE, badHeaderWAVE) {
 	MemoryStream buf(badHeaderWAVE, sizeof(badHeaderWAVE));
 
 	sndx::serialize::Deserializer deserializer(buf);
 
 	WAVfile file;
 	ASSERT_THROW(file.deserialize(deserializer), sndx::identifier_error);
+}
 
-	buf = MemoryStream(badHeaderFMT, sizeof(badHeaderFMT));
-	deserializer.swap(buf);
+TEST(WAVE, badHeaderFMT) {
+	MemoryStream buf(badHeaderFMT, sizeof(badHeaderFMT));
 
+	sndx::serialize::Deserializer deserializer(buf);
+
+	WAVfile file;
 	ASSERT_THROW(file.deserialize(deserializer), sndx::deserialize_error);
 }

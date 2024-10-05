@@ -15,7 +15,7 @@ namespace sndx::render {
 		using RectT = sndx::collision::Rect<Vec>;
 
 	protected:
-		RectT m_rect;
+		RectT m_rect{};
 
 	public:
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "./audio_decoder.hpp"
-#include "../data/ogg.hpp"
+#include "../data/ogg_wrap.hpp"
 #include "../data/serialize.hpp"
 
 #include <vorbis/codec.h>
