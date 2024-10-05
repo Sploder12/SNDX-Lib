@@ -132,8 +132,8 @@ namespace sndx::collision {
 		constexpr Precision getArea() const noexcept {
 			const auto& r = getRadius();
 
-			static constexpr auto pi = std::numbers::pi_v<Precision>;
-			static constexpr auto d = this->getDimensionality();
+			constexpr auto pi = std::numbers::pi_v<Precision>;
+			constexpr auto d = this->getDimensionality();
 
 			if constexpr (d == 0) {
 				return Precision(1.0);

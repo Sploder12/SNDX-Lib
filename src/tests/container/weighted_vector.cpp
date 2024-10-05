@@ -7,13 +7,13 @@ using namespace sndx::container;
 TEST(WeightedVector, BadInsertion) {
 	WeightedVector<int, int> vec{};
 
-	ASSERT_THROW(vec.emplace_back(-1337, 0x1337), std::invalid_argument);
-	ASSERT_THROW(vec.emplace_back(-1, 0xdead), std::invalid_argument);
-	ASSERT_THROW(vec.push_back(0, 0xbeef), std::invalid_argument);
+	EXPECT_THROW(vec.emplace_back(-1337, 0x1337), std::invalid_argument);
+	EXPECT_THROW(vec.emplace_back(-1, 0xdead), std::invalid_argument);
+	EXPECT_THROW(vec.push_back(0, 0xbeef), std::invalid_argument);
 	
-	ASSERT_EQ(vec.size(), 0);
-	ASSERT_EQ(vec.count(), 0);
-	ASSERT_TRUE(vec.empty());
+	EXPECT_EQ(vec.size(), 0);
+	EXPECT_EQ(vec.count(), 0);
+	EXPECT_TRUE(vec.empty());
 }
 
 TEST(WeightedVector, LinearPush) {
@@ -28,11 +28,11 @@ TEST(WeightedVector, LinearPush) {
 	EXPECT_EQ(*vec.at(-10000), 0);
 	EXPECT_EQ(*vec.at(-1), 0);
 	EXPECT_EQ(*vec.at(0), 0);
-	ASSERT_EQ(*vec.at(1), 2);
-	ASSERT_EQ(*vec.at(500), 1000);
-	ASSERT_EQ(*vec.at(10000), 20000);
-	ASSERT_EQ(*vec.at(10000), vec.back().data);
-	ASSERT_EQ(vec.at(10001), nullptr);
+	EXPECT_EQ(*vec.at(1), 2);
+	EXPECT_EQ(*vec.at(500), 1000);
+	EXPECT_EQ(*vec.at(10000), 20000);
+	EXPECT_EQ(*vec.at(10000), vec.back().data);
+	EXPECT_EQ(vec.at(10001), nullptr);
 
 	EXPECT_EQ(vec.count(), vec.size());
 	EXPECT_EQ(vec.size(), 10001);
@@ -48,12 +48,12 @@ TEST(WeightedVector, FloatWeight) {
 	EXPECT_EQ(*vec.at(-10000.0f), 0);
 	EXPECT_EQ(*vec.at(-1.0f), 0);
 	EXPECT_EQ(*vec.at(0.0f), 0);
-	ASSERT_EQ(*vec.at(0.25f), 1);
-	ASSERT_EQ(*vec.at(0.44f), 1);
-	ASSERT_EQ(*vec.at(250.0f), 1000);
-	ASSERT_EQ(*vec.at(2500.0f), 10000);
-	ASSERT_EQ(*vec.at(2500.2f), vec.back().data);
-	ASSERT_EQ(vec.at(2500.25f), nullptr);
+	EXPECT_EQ(*vec.at(0.25f), 1);
+	EXPECT_EQ(*vec.at(0.44f), 1);
+	EXPECT_EQ(*vec.at(250.0f), 1000);
+	EXPECT_EQ(*vec.at(2500.0f), 10000);
+	EXPECT_EQ(*vec.at(2500.2f), vec.back().data);
+	EXPECT_EQ(vec.at(2500.25f), nullptr);
 
 	EXPECT_EQ(vec.count(), 10001);
 	EXPECT_EQ(vec.size(), 2500.25);
@@ -63,7 +63,7 @@ TEST(WeightedVector, PushPop) {
 	WeightedVector<int> vec{};
 
 	vec.pop_back();
-	ASSERT_EQ(vec.size(), 0);
+	EXPECT_EQ(vec.size(), 0);
 
 	for (int i = 1; i <= 10000; ++i) {
 		vec.push_back(i, i);
@@ -79,7 +79,7 @@ TEST(WeightedVector, PushPop) {
 
 		vec.pop_back();
 
-		ASSERT_EQ(vec.size(), 0);
-		ASSERT_TRUE(vec.empty());
+		EXPECT_EQ(vec.size(), 0);
+		EXPECT_TRUE(vec.empty());
 	}
 }

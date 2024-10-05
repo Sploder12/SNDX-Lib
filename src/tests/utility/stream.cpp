@@ -30,21 +30,21 @@ TEST(MemStream, Read) {
 	buf.read(outArr.data(), outArr.size() - 5);
 
 	for (size_t i = 0; i < outArr.size() - 5; ++i) {
-		ASSERT_EQ(outArr[i], readArr[i + 5]);
+		EXPECT_EQ(outArr[i], readArr[i + 5]);
 	}
 
 	buf.seekg(0);
 	buf.read(outArr.data(), outArr.size() / 2);
 
 	for (size_t i = 0; i < outArr.size() / 2; ++i) {
-		ASSERT_EQ(outArr[i], readArr[i]);
+		EXPECT_EQ(outArr[i], readArr[i]);
 	}
 
 	buf.read(outArr.data(), outArr.size() / 2 + 1);
-	ASSERT_TRUE(buf.eof());
+	EXPECT_TRUE(buf.eof());
 
 	for (size_t i = 0; i < outArr.size() / 2; ++i) {
-		ASSERT_EQ(outArr[i], readArr[i + outArr.size() / 2]);
+		EXPECT_EQ(outArr[i], readArr[i + outArr.size() / 2]);
 	}
 }
 
@@ -71,14 +71,14 @@ TEST(MemStream, Write) {
 	buf.write(readArr.data(), 5);
 
 	for (size_t i = 0; i < 5; ++i) {
-		ASSERT_EQ(outArr[i + 5], readArr[i]);
+		EXPECT_EQ(outArr[i + 5], readArr[i]);
 	}
 
 	buf.seekp(5, std::ios::cur);
 	buf.write(readArr.data(), 5);
 
 	for (size_t i = 0; i < 5; ++i) {
-		ASSERT_EQ(outArr[i + 15], readArr[i]);
+		EXPECT_EQ(outArr[i + 15], readArr[i]);
 	}
 }
 
@@ -90,17 +90,17 @@ TEST(MemStream, ReadWrite) {
 	buf.write(readArr.data(), readArr.size() / 2);
 
 	for (size_t i = 0; i < arr.size() / 2; ++i) {
-		ASSERT_EQ(arr[i], readArr[i]);
+		EXPECT_EQ(arr[i], readArr[i]);
 	}
 
 	buf.read(arr.data() + 1, arr.size() / 2);
 
 	for (size_t i = 0; i < arr.size() / 2; ++i) {
-		ASSERT_EQ(arr[i + 1], readArr[i]);
+		EXPECT_EQ(arr[i + 1], readArr[i]);
 	}
 
 	buf.write(readArr.data(), readArr.size() / 2);
 	for (size_t i = 0; i < arr.size() / 2; ++i) {
-		ASSERT_EQ(arr[i + arr.size() / 2], readArr[i]);
+		EXPECT_EQ(arr[i + arr.size() / 2], readArr[i]);
 	}
 }

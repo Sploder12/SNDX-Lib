@@ -6,16 +6,16 @@ using namespace sndx::render;
 using namespace sndx::collision;
 
 void testPixConv(const Viewport<>& v, glm::vec2 pix, glm::vec2 ndc) {
-	ASSERT_EQ(v.pixToNDC(pix), ndc);
-	ASSERT_EQ(v.NDCtoPix(ndc), pix);
+	EXPECT_EQ(v.pixToNDC(pix), ndc);
+	EXPECT_EQ(v.NDCtoPix(ndc), pix);
 }
 
 void testViewport(glm::vec2 offset, glm::vec2 scale) {
 	Viewport v{ scale, offset };
 
-	ASSERT_EQ(v.getOffset(), offset);
-	ASSERT_EQ(v.getDimensions(), glm::vec2(scale));
-	ASSERT_DOUBLE_EQ(v.getAspectRatio(), double(scale.x) / double(scale.y));
+	EXPECT_EQ(v.getOffset(), offset);
+	EXPECT_EQ(v.getDimensions(), glm::vec2(scale));
+	EXPECT_DOUBLE_EQ(v.getAspectRatio(), double(scale.x) / double(scale.y));
 
 	testPixConv(v, glm::vec2(0.0) + offset, glm::vec2(-1.0));
 	testPixConv(v, scale + offset, glm::vec2(1.0));
@@ -58,15 +58,15 @@ TEST(Viewport, AspectRatioViewport) {
 	EXPECT_THROW(v.setAlignment(glm::vec2(-0.1f)), std::invalid_argument);
 	EXPECT_THROW(v.setAlignment(glm::vec2(1.1f)), std::invalid_argument);
 
-	ASSERT_EQ(v.getAspectRatio(), 1.0);
-	ASSERT_EQ(v.getOffset(), glm::vec2(0.5f, 0.0f));
-	ASSERT_EQ(v.getDimensions(), glm::vec2(1.0f));
+	EXPECT_EQ(v.getAspectRatio(), 1.0);
+	EXPECT_EQ(v.getOffset(), glm::vec2(0.5f, 0.0f));
+	EXPECT_EQ(v.getDimensions(), glm::vec2(1.0f));
 
 	v.resize(glm::vec2(3.0f, 4.0f));
 
-	ASSERT_EQ(v.getAspectRatio(), 1.0);
-	ASSERT_EQ(v.getOffset(), glm::vec2(0.0f, 0.5f));
-	ASSERT_EQ(v.getDimensions(), glm::vec2(3.0f));
+	EXPECT_EQ(v.getAspectRatio(), 1.0);
+	EXPECT_EQ(v.getOffset(), glm::vec2(0.0f, 0.5f));
+	EXPECT_EQ(v.getDimensions(), glm::vec2(3.0f));
 
 	[[maybe_unused]]
 	const auto& r = (const Rect<glm::vec2>&)(v);

@@ -16,28 +16,28 @@ TEST(PackedView, NormalBytes) {
 
 	PackedView<sizeof(std::uint8_t) * 8> view((std::byte*)(arr.data()), arr.size());
 
-	ASSERT_EQ(view.size(), arr.size());
-	ASSERT_EQ(arr.data(), (std::uint8_t*)(view.data()));
+	EXPECT_EQ(view.size(), arr.size());
+	EXPECT_EQ(arr.data(), (std::uint8_t*)(view.data()));
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), i + 1);
+		EXPECT_EQ(view[i].to_ullong(), i + 1);
 	}
 
 	view = view.subview(3);
 
-	ASSERT_EQ(view.size(), arr.size() - 3);
-	ASSERT_EQ(arr.data() + 3, (std::uint8_t*)(view.data()));
+	EXPECT_EQ(view.size(), arr.size() - 3);
+	EXPECT_EQ(arr.data() + 3, (std::uint8_t*)(view.data()));
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), i + 1 + 3);
+		EXPECT_EQ(view[i].to_ullong(), i + 1 + 3);
 	}
 
 	view = view.subview(0, 1);
-	ASSERT_EQ(view.size(), 1);
-	ASSERT_EQ(view.at(0), 4);
+	EXPECT_EQ(view.size(), 1);
+	EXPECT_EQ(view.at(0), 4);
 
 	decltype(view)::out_type t{}; // needed because of [[nodiscard]]
-	ASSERT_THROW(t = view.at(1), std::out_of_range);
+	EXPECT_THROW(t = view.at(1), std::out_of_range);
 }
 
 TEST(PackedView, Norma16Bit) {
@@ -47,11 +47,11 @@ TEST(PackedView, Norma16Bit) {
 
 	PackedView<sizeof(std::uint16_t) * 8> view((std::byte*)(arr.data()), arr.size());
 
-	ASSERT_EQ(view.size(), arr.size());
-	ASSERT_EQ(arr.data(), (std::uint16_t*)(view.data()));
+	EXPECT_EQ(view.size(), arr.size());
+	EXPECT_EQ(arr.data(), (std::uint16_t*)(view.data()));
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), arr[i]);
+		EXPECT_EQ(view[i].to_ullong(), arr[i]);
 	}
 }
 
@@ -70,19 +70,19 @@ TEST(PackedView, Offset8Bit) {
 
 	PackedView<sizeof(std::uint8_t) * 8, std::endian::big> view((std::byte*)(arr.data()), arr.size() - 1, 3);
 
-	ASSERT_EQ(view.size(), arr.size() - 1);
-	ASSERT_EQ(arr.data(), (std::uint8_t*)(view.data()));
+	EXPECT_EQ(view.size(), arr.size() - 1);
+	EXPECT_EQ(arr.data(), (std::uint8_t*)(view.data()));
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), i + 1);
+		EXPECT_EQ(view[i].to_ullong(), i + 1);
 	}
 
 	view = view.subview(1);
 
-	ASSERT_EQ(view.size(), arr.size() - 2);
+	EXPECT_EQ(view.size(), arr.size() - 2);
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), i + 2);
+		EXPECT_EQ(view[i].to_ullong(), i + 2);
 	}
 }
 
@@ -95,11 +95,11 @@ TEST(PackedView, Bits3Big) {
 
 	PackedView<3, std::endian::big> view((std::byte*)(arr.data()), 7);
 
-	ASSERT_EQ(view.size(), 7);
-	ASSERT_EQ(arr.data(), (std::uint8_t*)(view.data()));
+	EXPECT_EQ(view.size(), 7);
+	EXPECT_EQ(arr.data(), (std::uint8_t*)(view.data()));
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), i);
+		EXPECT_EQ(view[i].to_ullong(), i);
 	}
 
 	std::array<std::uint8_t, 4> arrOff1{
@@ -111,12 +111,12 @@ TEST(PackedView, Bits3Big) {
 
 	PackedView<3, std::endian::big> viewOff1((std::byte*)(arrOff1.data()), 7, 1);
 
-	ASSERT_EQ(viewOff1.size(), 7);
-	ASSERT_EQ(arrOff1.data(), (std::uint8_t*)(viewOff1.data()));
+	EXPECT_EQ(viewOff1.size(), 7);
+	EXPECT_EQ(arrOff1.data(), (std::uint8_t*)(viewOff1.data()));
 
 	size_t i = 0;
 	for (auto v : viewOff1) {
-		ASSERT_EQ(v.to_ullong(), i);
+		EXPECT_EQ(v.to_ullong(), i);
 		++i;
 	}
 }
@@ -130,10 +130,10 @@ TEST(PackedView, Bits3Little) {
 
 	PackedView<3, std::endian::little> view((std::byte*)(arr.data()), 7);
 
-	ASSERT_EQ(view.size(), 7);
-	ASSERT_EQ(arr.data(), (std::uint8_t*)(view.data()));
+	EXPECT_EQ(view.size(), 7);
+	EXPECT_EQ(arr.data(), (std::uint8_t*)(view.data()));
 
 	for (size_t i = 0; i < view.size(); ++i) {
-		ASSERT_EQ(view[i].to_ullong(), i);
+		EXPECT_EQ(view[i].to_ullong(), i);
 	}
 }

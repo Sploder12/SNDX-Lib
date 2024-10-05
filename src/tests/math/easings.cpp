@@ -5,8 +5,8 @@
 using namespace sndx::math;
 
 void testDomain(EasingFunc<float> func) {
-	ASSERT_FLOAT_EQ(func(0.0f), 0.0f);
-	ASSERT_FLOAT_EQ(func(1.0f), 1.0f);
+	EXPECT_FLOAT_EQ(func(0.0f), 0.0f);
+	EXPECT_FLOAT_EQ(func(1.0f), 1.0f);
 }
 
 TEST(Easings, Domain) {

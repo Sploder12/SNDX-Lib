@@ -14,10 +14,10 @@ void testColinear(T a, T b, T c) {
 
 	while (std::next_permutation(arr.begin(), arr.end())) {
 		if constexpr (expected) {
-			ASSERT_TRUE(areColinear(*arr[0], *arr[1], *arr[2]));
+			EXPECT_TRUE(areColinear(*arr[0], *arr[1], *arr[2]));
 		}
 		else {
-			ASSERT_FALSE(areColinear(*arr[0], *arr[1], *arr[2]));
+			EXPECT_FALSE(areColinear(*arr[0], *arr[1], *arr[2]));
 		}
 	}
 }
@@ -75,17 +75,17 @@ TEST(Lines, Colinear2D) {
 }
 
 TEST(Lines, LinearBezier) {
-	ASSERT_DOUBLE_EQ(bezier(0.0, 1.0, 2.0), 1.0);
-	ASSERT_DOUBLE_EQ(bezier(0.5, 1.0, 2.0), 1.5);
-	ASSERT_DOUBLE_EQ(bezier(1.0, 1.0, 2.0), 2.0);
+	EXPECT_DOUBLE_EQ(bezier(0.0, 1.0, 2.0), 1.0);
+	EXPECT_DOUBLE_EQ(bezier(0.5, 1.0, 2.0), 1.5);
+	EXPECT_DOUBLE_EQ(bezier(1.0, 1.0, 2.0), 2.0);
 
-	ASSERT_EQ(bezier(0.0f, glm::vec3(1.0), glm::vec3(2.0)), glm::vec3(1.0));
-	ASSERT_EQ(bezier(0.5f, glm::vec3(1.0), glm::vec3(2.0)), glm::vec3(1.5));
-	ASSERT_EQ(bezier(1.0f, glm::vec3(1.0), glm::vec3(2.0)), glm::vec3(2.0));
+	EXPECT_EQ(bezier(0.0f, glm::vec3(1.0), glm::vec3(2.0)), glm::vec3(1.0));
+	EXPECT_EQ(bezier(0.5f, glm::vec3(1.0), glm::vec3(2.0)), glm::vec3(1.5));
+	EXPECT_EQ(bezier(1.0f, glm::vec3(1.0), glm::vec3(2.0)), glm::vec3(2.0));
 }
 
 TEST(Lines, QuadraticBezier) {
-	ASSERT_EQ(bezier(0.0f, glm::vec2(1.0), glm::vec2(1.5), glm::vec2(2.0, 1.0)), glm::vec2(1.0));
-	ASSERT_EQ(bezier(0.5f, glm::vec2(1.0), glm::vec2(1.5), glm::vec2(2.0, 1.0)), glm::vec2(1.5, 1.25));
-	ASSERT_EQ(bezier(1.0f, glm::vec2(1.0), glm::vec2(1.5), glm::vec2(2.0, 1.0)), glm::vec2(2.0, 1.0));
+	EXPECT_EQ(bezier(0.0f, glm::vec2(1.0), glm::vec2(1.5), glm::vec2(2.0, 1.0)), glm::vec2(1.0));
+	EXPECT_EQ(bezier(0.5f, glm::vec2(1.0), glm::vec2(1.5), glm::vec2(2.0, 1.0)), glm::vec2(1.5, 1.25));
+	EXPECT_EQ(bezier(1.0f, glm::vec2(1.0), glm::vec2(1.5), glm::vec2(2.0, 1.0)), glm::vec2(2.0, 1.0));
 }

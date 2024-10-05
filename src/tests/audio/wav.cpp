@@ -46,14 +46,14 @@ TEST(WAVE, GoodHeader) {
 	data = dec.readRawBytes(2);
 	
 	ASSERT_EQ(data.size(), 2);
-	ASSERT_EQ(uint8_t(data[0]), 2);
-	ASSERT_EQ(uint8_t(data[1]), 3);
+	EXPECT_EQ(uint8_t(data[0]), 2);
+	EXPECT_EQ(uint8_t(data[1]), 3);
 
-	ASSERT_FALSE(dec.done());
+	EXPECT_FALSE(dec.done());
 
 	dec.seek(10);
 	
-	ASSERT_TRUE(dec.done());
+	EXPECT_TRUE(dec.done());
 }
 
 TEST(WAVE, fullDeserialize) {
@@ -69,15 +69,15 @@ TEST(WAVE, fullDeserialize) {
 	ASSERT_EQ(data.size(), 10);
 
 	for (size_t i = 0; i < data.size(); ++i) {
-		ASSERT_EQ(data[i], i);
+		EXPECT_EQ(data[i], i);
 	}
 
 	const auto& format = out.getFormat();
 
-	ASSERT_EQ(format.channels, 1);
-	ASSERT_EQ(format.bitDepth, 8);
-	ASSERT_EQ(format.format, WAVE_PCM_INT);
-	ASSERT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
+	EXPECT_EQ(format.channels, 1);
+	EXPECT_EQ(format.bitDepth, 8);
+	EXPECT_EQ(format.format, WAVE_PCM_INT);
+	EXPECT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
 
 	uint8_t outData[sizeof(goodHeader)] = { 0 };
 	
@@ -87,7 +87,7 @@ TEST(WAVE, fullDeserialize) {
 	out.serialize(serializer);
 
 	for (size_t i = 0; i < sizeof(outData); ++i) {
-		ASSERT_EQ(goodHeader[i], outData[i]);
+		EXPECT_EQ(goodHeader[i], outData[i]);
 	}
 }
 
@@ -107,7 +107,7 @@ TEST(WAVE, lazyDeserialize) {
 	ASSERT_EQ(data.size(), 10);
 
 	for (size_t i = 0; i < data.size(); ++i) {
-		ASSERT_EQ(data[i], i);
+		EXPECT_EQ(data[i], i);
 	}
 
 	auto fmtChunkPtr = out.getChunk<FMTchunk>(deserializer);
@@ -115,10 +115,10 @@ TEST(WAVE, lazyDeserialize) {
 
 	const auto& format = *fmtChunkPtr;
 
-	ASSERT_EQ(format.channels, 1);
-	ASSERT_EQ(format.bitDepth, 8);
-	ASSERT_EQ(format.format, WAVE_PCM_INT);
-	ASSERT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
+	EXPECT_EQ(format.channels, 1);
+	EXPECT_EQ(format.bitDepth, 8);
+	EXPECT_EQ(format.format, WAVE_PCM_INT);
+	EXPECT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
 }
 
 uint8_t badHeaderWAVE[] =

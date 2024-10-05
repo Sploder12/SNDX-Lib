@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <concepts>
 #include <cstdint>
+#include <cstring>
 
 #include "../utility/endian.hpp"
 
@@ -14,9 +15,10 @@ namespace sndx::RIFF {
 	[[nodiscard]]
 	inline uint32_t idToRawID(std::array<char, 4> id) {
 		uint32_t out;
-		memcpy_s(&out, sizeof(out), id.data(), id.size());
+		std::memcpy(&out, id.data(), sizeof(out));
 
 		return out;
+		static_assert(sizeof(out) == id.size());
 	}
 
 	struct ChunkHeader {
