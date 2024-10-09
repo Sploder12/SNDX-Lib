@@ -20,5 +20,10 @@ namespace sndx::mixin {
 		T& operator*() const noexcept {
 			return m_obj;
 		}
+
+		[[nodiscard]]
+		decltype(auto) get() const {
+			return m_obj.get();
+		}
 	};
 }

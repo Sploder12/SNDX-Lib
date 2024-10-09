@@ -28,10 +28,15 @@ namespace sndx::render {
 		template <class... Args>
 		Window(GLFWwindow* window, int width, int height, Args&&... args) :
 			m_viewport{ Vec{width, height}, std::forward<Args>(args)... }, m_window{ window } {
-		
+
+			if (!m_window)
+				throw std::runtime_error("Could not create glfwWindow");
+
 			int fwidth, fheight;
 			glfwGetFramebufferSize(m_window, &fwidth, &fheight);
 			setViewportSize(Vec{ fwidth, fheight });
+
+			glfwSetWindowUserPointer(m_window, this);
 		}
 
 		template <class... Args>
@@ -42,19 +47,25 @@ namespace sndx::render {
 
 		template <class... Args>
 		Window(const char* title, int width, int height, GLFWmonitor* monitor, GLFWwindow* share, Args&&... args) :
-			m_viewport{ Vec{width, height}, std::forward<Args>(args)... }, m_window{nullptr} {
-		
-			m_window = glfwCreateWindow(width, height, title, monitor, share);
-			if (!m_window)
-				throw std::runtime_error("Could not create glfwWindow");
-
-			int fwidth, fheight;
-			glfwGetFramebufferSize(m_window, &fwidth, &fheight);
-			setViewportSize(Vec{ fwidth, fheight });
-		}
+			Window(glfwCreateWindow(width, height, title, monitor, share), width, height, std::forward<Args>(args)...) {}
 
 		template <class... Args>
 		Window(std::nullptr_t, int, int, GLFWmonitor*, GLFWwindow*, Args&&...) = delete;
+
+		Window(Window&& other) noexcept :
+			m_window(std::exchange(other.m_window, nullptr)),
+			m_viewport(other.m_viewport) {
+
+			glfwSetWindowUserPointer(m_window, this);
+		}
+
+		Window& operator=(Window&& other) noexcept {
+			std::swap(m_viewport, other.m_viewport);
+			std::swap(m_window, other.m_window);
+
+			glfwSetWindowUserPointer(m_window, this);
+			glfwSetWindowUserPointer(other.m_window, nullptr);
+		}
 
 		~Window() noexcept {
 			if (m_window) {
@@ -70,14 +81,14 @@ namespace sndx::render {
 		void bind() const noexcept {
 			glfwMakeContextCurrent(m_window);
 		}
-	
+
 		void setViewport() const noexcept {
 			glfwMakeContextCurrent(m_window);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 			const auto& offset = m_viewport.getOffset();
 			const auto& dims = m_viewport.getDimensions();
-			
+
 			glViewport(GLint(offset.x), GLint(offset.y), GLsizei(dims.x), GLsizei(dims.y));
 		}
 

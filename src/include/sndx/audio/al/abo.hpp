@@ -19,9 +19,8 @@ namespace sndx::audio {
 		}
 
 		void gen() {
-			if (m_id == 0) {
+			if (m_id == 0)
 				alGenBuffers(1, &m_id);
-			}
 		}
 
 	public:
