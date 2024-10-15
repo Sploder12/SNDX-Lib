@@ -1,10 +1,11 @@
 #pragma once
 
+#include "../window_backend.hpp"
+
 #define NOMINMAX
-#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "./viewport.hpp"
+#include "../../render/viewport.hpp"
 
 #include <type_traits>
 #include <string>
@@ -13,20 +14,23 @@
 #include <optional>
 #include <unordered_map>
 
-namespace sndx::render {
-	// this class does not own the window!
+
+namespace sndx::input {
 	template <template <typename, glm::qualifier> class ViewportT, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
-		requires (std::is_base_of_v<Viewport<InternalT, Qualifier>, ViewportT<InternalT, Qualifier>>)
-	class Window {
+		requires (std::is_base_of_v<sndx::render::Viewport<InternalT, Qualifier>, ViewportT<InternalT, Qualifier>>)
+	class WindowGLFW : Window<WindowGLFW<ViewportT, InternalT, Qualifier>> {
 	protected:
+		friend Window<WindowGLFW<ViewportT, InternalT, Qualifier>>;
+
 		ViewportT<InternalT, Qualifier> m_viewport;
 		GLFWwindow* m_window = nullptr;
 
+	public:
 		using Viewport = decltype(m_viewport);
 		using Vec = Viewport::Vec;
 
 		template <class... Args>
-		Window(GLFWwindow* window, int width, int height, Args&&... args) :
+		WindowGLFW(GLFWwindow* window, int width, int height, Args&&... args) :
 			m_viewport{ Vec{width, height}, std::forward<Args>(args)... }, m_window{ window } {
 
 			if (!m_window)
@@ -40,34 +44,33 @@ namespace sndx::render {
 		}
 
 		template <class... Args>
-		Window(std::nullptr_t, int, int, Args&&...) = delete;
+		WindowGLFW(std::nullptr_t, int, int, Args&&...) = delete;
 
-		friend class WindowBuilder;
 	public:
-
 		template <class... Args>
-		Window(const char* title, int width, int height, GLFWmonitor* monitor, GLFWwindow* share, Args&&... args) :
+		WindowGLFW(const char* title, int width, int height, GLFWmonitor* monitor, GLFWwindow* share, Args&&... args) :
 			Window(glfwCreateWindow(width, height, title, monitor, share), width, height, std::forward<Args>(args)...) {}
 
 		template <class... Args>
-		Window(std::nullptr_t, int, int, GLFWmonitor*, GLFWwindow*, Args&&...) = delete;
+		WindowGLFW(std::nullptr_t, int, int, GLFWmonitor*, GLFWwindow*, Args&&...) = delete;
 
-		Window(Window&& other) noexcept :
+		WindowGLFW(WindowGLFW&& other) noexcept :
 			m_window(std::exchange(other.m_window, nullptr)),
 			m_viewport(other.m_viewport) {
 
 			glfwSetWindowUserPointer(m_window, this);
 		}
 
-		Window& operator=(Window&& other) noexcept {
+		WindowGLFW& operator=(WindowGLFW&& other) noexcept {
 			std::swap(m_viewport, other.m_viewport);
 			std::swap(m_window, other.m_window);
 
 			glfwSetWindowUserPointer(m_window, this);
 			glfwSetWindowUserPointer(other.m_window, nullptr);
+			return *this;
 		}
 
-		~Window() noexcept {
+		~WindowGLFW() noexcept {
 			if (m_window) {
 				glfwDestroyWindow(m_window);
 				m_window = nullptr;
@@ -78,48 +81,41 @@ namespace sndx::render {
 			return m_window;
 		}
 
+	protected:
 		void bind() const noexcept {
 			glfwMakeContextCurrent(m_window);
 		}
 
-		void setViewport() const noexcept {
-			glfwMakeContextCurrent(m_window);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-			const auto& offset = m_viewport.getOffset();
-			const auto& dims = m_viewport.getDimensions();
-
-			glViewport(GLint(offset.x), GLint(offset.y), GLsizei(dims.x), GLsizei(dims.y));
+		template <class ViewportCallback>
+		void updateViewport(ViewportCallback&& callback) const noexcept {
+			callback(*this, m_viewport.getOffset(), m_viewport.getDimensions());
 		}
 
-		void setViewportOffset(Vec offset) noexcept {
+		void setViewportOffset(const Vec& offset) noexcept {
 			m_viewport.setOffset(offset);
-			setViewport();
 		}
 
-		void setViewportSize(Vec newDims) {
+		void setViewportSize(const Vec& newDims) {
 			m_viewport.resize(newDims);
-			setViewport();
 		}
 
-		void setPosition(int x, int y) noexcept {
-			glfwSetWindowPos(m_window, x, y);
+		void setPosition(const Vec& pos) noexcept {
+			glfwSetWindowPos(m_window, int(pos.x), int(pos.y));
 		}
 
-		void resize(int width, int height) {
-			if (width <= 0 || height <= 0)
-				throw std::invalid_argument("Window dims cannot be less than 1");
-
-			glfwSetWindowSize(m_window, width, height);
+		template <class ViewportCallback>
+		void resize(const Vec& dims, ViewportCallback&& callback) {
+			glfwSetWindowSize(m_window, int(dims.x), int(dims.y));
 
 			int fwidth, fheight;
 			glfwGetFramebufferSize(m_window, &fwidth, &fheight);
 
-			resizeViewport(Vec{ fwidth, fheight });
+			setViewportSize(Vec{ fwidth, fheight });
+			updateViewport(std::forward<ViewportCallback>(callback));
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getPos() const noexcept {
+		glm::ivec2 getPosition() const noexcept {
 			glm::ivec2 out{};
 			glfwGetWindowPos(m_window, &out.x, &out.y);
 			return out;
@@ -148,11 +144,12 @@ namespace sndx::render {
 		}
 	};
 
-	class WindowHints {
+	class WindowHintsGLFW final: public WindowHints<WindowHintsGLFW> {
 	protected:
+		friend WindowHints<WindowHintsGLFW>;
+
 		std::unordered_map<int, int> m_hints{};
 
-	public:
 		static void restoreDefaults() noexcept {
 			glfwDefaultWindowHints();
 		}
@@ -186,86 +183,30 @@ namespace sndx::render {
 		}
 	};
 
-	class WindowBuilder {
+	class WindowBuilderGLFW final: public WindowBuilder<WindowBuilderGLFW> {
 	protected:
-		std::string m_title{};
-
-		int m_width = 1;
-		int m_height = 1;
-
-		std::optional<int> m_xpos{}, m_ypos{};
+		friend WindowBuilder<WindowBuilderGLFW>;
 
 		GLFWmonitor* m_monitor = nullptr;
 		GLFWwindow* m_share = nullptr;
 		GLFWcursor* m_cursor = nullptr;
 
 	public:
-		WindowBuilder() noexcept = default;
+		WindowBuilderGLFW() noexcept = default;
 
-		WindowBuilder& setTitle(std::string_view title) noexcept {
-			m_title = title;
-			return *this;
-		}
-
-		WindowBuilder& setMonitor(GLFWmonitor* monitor = nullptr) noexcept {
+		WindowBuilderGLFW& setMonitor(GLFWmonitor* monitor = nullptr) noexcept {
 			m_monitor = monitor;
 			return *this;
 		}
 
-		WindowBuilder& setShare(GLFWwindow* share = nullptr) noexcept {
+		WindowBuilderGLFW& setShare(GLFWwindow* share = nullptr) noexcept {
 			m_share = share;
 			return *this;
 		}
 
-		WindowBuilder& setCursor(GLFWcursor* cursor = nullptr) noexcept {
+		WindowBuilderGLFW& setCursor(GLFWcursor* cursor = nullptr) noexcept {
 			m_cursor = cursor;
 			return *this;
-		}
-
-		WindowBuilder& setX(std::optional<int> x = std::nullopt) noexcept {
-			m_xpos = x;
-			return *this;
-		}
-
-		WindowBuilder& setY(std::optional<int> y = std::nullopt) noexcept {
-			m_ypos = y;
-			return *this;
-		}
-
-		WindowBuilder& setWidth(int width) noexcept {
-			m_width = std::max(width, 1);
-			return *this;
-		}
-
-		WindowBuilder& setHeight(int height) noexcept {
-			m_height = std::max(height, 1);
-			return *this;
-		}
-
-
-		[[nodiscard]]
-		std::string_view getTitle() const noexcept {
-			return m_title;
-		}
-
-		[[nodiscard]]
-		auto getX() const noexcept {
-			return m_xpos;
-		}
-
-		[[nodiscard]]
-		auto getY() const noexcept {
-			return m_ypos;
-		}
-
-		[[nodiscard]]
-		auto getWidth() const noexcept {
-			return m_width;
-		}
-
-		[[nodiscard]]
-		auto getHeight() const noexcept {
-			return m_height;
 		}
 
 		[[nodiscard]]
@@ -303,15 +244,15 @@ namespace sndx::render {
 
 				if (visible)
 					glfwShowWindow(window);
+				}
+
+				return Window<ViewportT, InternalT, Qualifier>{window, m_width, m_height, std::forward<Args>(args)...};
 			}
 
-			return Window<ViewportT, InternalT, Qualifier>{window, m_width, m_height, std::forward<Args>(args)...};
-		} 
-
 		template <template <typename, glm::qualifier> class ViewportT, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp, class... Args> [[nodiscard]]
-		auto build(const WindowHints& hints, Args&&... args) const {
+		auto build(const WindowHintsGLFW& hints, Args&&... args) const {
 			hints.apply();
 			return build(hints.getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE, std::forward<Args>(args)...);
-		} 
+		}
 	};
 }

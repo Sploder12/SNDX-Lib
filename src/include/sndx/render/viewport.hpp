@@ -74,7 +74,7 @@ namespace sndx::render {
 
 	template <typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
 	class AspectRatioViewport : public Viewport<InternalT, Qualifier> {
-	protected:
+	public:
 		using Vec = Viewport<InternalT, Qualifier>::Vec;
 		using RectT = Viewport<InternalT, Qualifier>::RectT;
 

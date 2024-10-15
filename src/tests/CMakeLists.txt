@@ -1,7 +1,7 @@
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 find_package(GTest CONFIG REQUIRED)
 
-link_libraries(GTest::gtest GTest::gtest_main)
+link_libraries(GTest::gmock_main)
 
 file(GLOB_RECURSE SOURCES *.cpp)
 
