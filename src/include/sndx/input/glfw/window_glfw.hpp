@@ -14,55 +14,41 @@
 #include <optional>
 #include <unordered_map>
 
-
 namespace sndx::input {
-	template <template <typename, glm::qualifier> class ViewportT, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
-		requires (std::is_base_of_v<sndx::render::Viewport<InternalT, Qualifier>, ViewportT<InternalT, Qualifier>>)
-	class WindowGLFW : Window<WindowGLFW<ViewportT, InternalT, Qualifier>> {
+	class WindowGLFW : Window<WindowGLFW> {
 	protected:
-		friend Window<WindowGLFW<ViewportT, InternalT, Qualifier>>;
+		friend Window<WindowGLFW>;
 
-		ViewportT<InternalT, Qualifier> m_viewport;
 		GLFWwindow* m_window = nullptr;
-
+		
 	public:
-		using Viewport = decltype(m_viewport);
-		using Vec = Viewport::Vec;
-
 		template <class... Args>
-		WindowGLFW(GLFWwindow* window, int width, int height, Args&&... args) :
-			m_viewport{ Vec{width, height}, std::forward<Args>(args)... }, m_window{ window } {
+		WindowGLFW(GLFWwindow* window) :
+			m_window{ window } {
 
 			if (!m_window)
 				throw std::runtime_error("Could not create glfwWindow");
-
-			int fwidth, fheight;
-			glfwGetFramebufferSize(m_window, &fwidth, &fheight);
-			setViewportSize(Vec{ fwidth, fheight });
 
 			glfwSetWindowUserPointer(m_window, this);
 		}
 
 		template <class... Args>
-		WindowGLFW(std::nullptr_t, int, int, Args&&...) = delete;
-
+		WindowGLFW(std::nullptr_t) = delete;
 	public:
 		template <class... Args>
-		WindowGLFW(const char* title, int width, int height, GLFWmonitor* monitor, GLFWwindow* share, Args&&... args) :
-			Window(glfwCreateWindow(width, height, title, monitor, share), width, height, std::forward<Args>(args)...) {}
+		WindowGLFW(const char* title, int width, int height, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) :
+			WindowGLFW(glfwCreateWindow(width, height, title, monitor, share)) {}
 
 		template <class... Args>
-		WindowGLFW(std::nullptr_t, int, int, GLFWmonitor*, GLFWwindow*, Args&&...) = delete;
+		WindowGLFW(std::nullptr_t, int, int, GLFWmonitor* = nullptr, GLFWwindow* = nullptr) = delete;
 
 		WindowGLFW(WindowGLFW&& other) noexcept :
-			m_window(std::exchange(other.m_window, nullptr)),
-			m_viewport(other.m_viewport) {
+			m_window(std::exchange(other.m_window, nullptr)) {
 
 			glfwSetWindowUserPointer(m_window, this);
 		}
 
 		WindowGLFW& operator=(WindowGLFW&& other) noexcept {
-			std::swap(m_viewport, other.m_viewport);
 			std::swap(m_window, other.m_window);
 
 			glfwSetWindowUserPointer(m_window, this);
@@ -82,74 +68,60 @@ namespace sndx::input {
 		}
 
 	protected:
-		void bind() const noexcept {
+		void bindImpl() const noexcept {
 			glfwMakeContextCurrent(m_window);
 		}
 
-		template <class ViewportCallback>
-		void updateViewport(ViewportCallback&& callback) const noexcept {
-			callback(*this, m_viewport.getOffset(), m_viewport.getDimensions());
+		void setPositionImpl(const glm::ivec2& pos) noexcept {
+			glfwSetWindowPos(m_window, pos.x, pos.y);
 		}
 
-		void setViewportOffset(const Vec& offset) noexcept {
-			m_viewport.setOffset(offset);
+		void resizeImpl(const glm::ivec2& dims) {
+			glfwSetWindowSize(m_window, dims.x, dims.y);
 		}
 
-		void setViewportSize(const Vec& newDims) {
-			m_viewport.resize(newDims);
+		void focusWindowImpl() {
+			glfwFocusWindow(m_window);
 		}
 
-		void setPosition(const Vec& pos) noexcept {
-			glfwSetWindowPos(m_window, int(pos.x), int(pos.y));
+		void requestAttentionImpl() {
+			glfwRequestWindowAttention(m_window);
 		}
 
-		template <class ViewportCallback>
-		void resize(const Vec& dims, ViewportCallback&& callback) {
-			glfwSetWindowSize(m_window, int(dims.x), int(dims.y));
+		void setVisibilityImpl(bool visible) {
+			if (visible) glfwShowWindow(m_window);
+			else glfwHideWindow(m_window);
+		}
 
-			int fwidth, fheight;
-			glfwGetFramebufferSize(m_window, &fwidth, &fheight);
-
-			setViewportSize(Vec{ fwidth, fheight });
-			updateViewport(std::forward<ViewportCallback>(callback));
+		void tryCloseImpl() {
+			glfwSetWindowShouldClose(m_window, GLFW_TRUE);
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getPosition() const noexcept {
+		glm::ivec2 getPositionImpl() const noexcept {
 			glm::ivec2 out{};
 			glfwGetWindowPos(m_window, &out.x, &out.y);
 			return out;
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getSize() const noexcept {
+		glm::ivec2 getSizeImpl() const noexcept {
 			glm::ivec2 out{};
 			glfwGetWindowSize(m_window, &out.x, &out.y);
 			return out;
 		}
 
 		[[nodiscard]]
-		const auto& getViewport() const noexcept {
-			return m_viewport;
-		}
-
-		[[nodiscard]]
-		Vec pixToNDC(Vec in) const noexcept {
-			return m_viewport.pixToNDC(in);
-		}
-
-		[[nodiscard]]
-		Vec NDCtoPix(const Vec& ndc) const noexcept {
-			return m_viewport.NDCtoPix(ndc);
+		bool isVisibleImpl() const noexcept {
+			return glfwGetWindowAttrib(m_window, GLFW_VISIBLE) == GLFW_TRUE;
 		}
 	};
 
-	class WindowHintsGLFW final: public WindowHints<WindowHintsGLFW> {
+	class WindowHintsGLFW {
 	protected:
-		friend WindowHints<WindowHintsGLFW>;
-
 		std::unordered_map<int, int> m_hints{};
 
+	public:
 		static void restoreDefaults() noexcept {
 			glfwDefaultWindowHints();
 		}
@@ -191,8 +163,17 @@ namespace sndx::input {
 		GLFWwindow* m_share = nullptr;
 		GLFWcursor* m_cursor = nullptr;
 
+		WindowHintsGLFW* m_hints = nullptr;
+
 	public:
-		WindowBuilderGLFW() noexcept = default;
+		WindowBuilderGLFW& copySettings(const WindowBuilderGLFW& other) {
+			m_monitor = other.m_monitor;
+			m_share = other.m_share;
+			m_cursor = other.m_cursor;
+			m_hints = other.m_hints;
+
+			return this->copyBaseSettings(other);
+		}
 
 		WindowBuilderGLFW& setMonitor(GLFWmonitor* monitor = nullptr) noexcept {
 			m_monitor = monitor;
@@ -206,6 +187,11 @@ namespace sndx::input {
 
 		WindowBuilderGLFW& setCursor(GLFWcursor* cursor = nullptr) noexcept {
 			m_cursor = cursor;
+			return *this;
+		}
+
+		WindowBuilderGLFW& setHints(WindowHintsGLFW* hints = nullptr) noexcept {
+			m_hints = hints;
 			return *this;
 		}
 
@@ -224,35 +210,37 @@ namespace sndx::input {
 			return m_cursor;
 		}
 
-		template <template <typename, glm::qualifier> class ViewportT, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp, class... Args> [[nodiscard]]
-		auto build(bool visible = true, Args&&... args) const {
-			if (m_xpos || m_ypos) {
+		[[nodiscard]]
+		auto getHints() const noexcept {
+			return m_hints;
+		}
+
+	protected:
+		[[nodiscard]]
+		auto buildImpl() const {
+			bool visible = m_hints && m_hints->getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE;
+			if (!visible || this->m_xpos || this->m_ypos) {
 				glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 			}
 
-			auto window = glfwCreateWindow(m_width, m_height, m_title.c_str(), m_monitor, m_share);
+			auto window = glfwCreateWindow(this->m_width, this->m_height, this->m_title.c_str(), m_monitor, m_share);
 			if (!window)
 				throw std::runtime_error("Could not create glfwWindow");
 
 			if (m_cursor)
 				glfwSetCursor(window, m_cursor);
 
-			if (m_xpos || m_ypos) {
+			if (this->m_xpos || this->m_ypos) {
 				int sx, sy;
 				glfwGetWindowPos(window, &sx, &sy);
-				glfwSetWindowPos(window, m_xpos.value_or(sx), m_ypos.value_or(sy));
+				glfwSetWindowPos(window, this->m_xpos.value_or(sx), this->m_ypos.value_or(sy));
 
-				if (visible)
+				if (visible) {
 					glfwShowWindow(window);
 				}
-
-				return Window<ViewportT, InternalT, Qualifier>{window, m_width, m_height, std::forward<Args>(args)...};
 			}
 
-		template <template <typename, glm::qualifier> class ViewportT, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp, class... Args> [[nodiscard]]
-		auto build(const WindowHintsGLFW& hints, Args&&... args) const {
-			hints.apply();
-			return build(hints.getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE, std::forward<Args>(args)...);
+			return WindowGLFW{ window };
 		}
 	};
 }
