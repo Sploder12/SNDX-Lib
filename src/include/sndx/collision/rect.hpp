@@ -16,11 +16,15 @@ namespace sndx::collision {
 
 
 	// A Rectangle as described by two points.
-	template <class VectorT = glm::vec2>
-	class Rect : public Volume<VectorT> {
+	template <Vector VectorT = glm::vec2>
+	class Rect {
 	public:
-		using Vec = Volume<VectorT>::Vec;
-		using Precision = Volume<VectorT>::Precision;
+		using Vec = VectorT;
+		using Precision = Vec::value_type;
+
+		static constexpr size_t dimensionality() noexcept {
+			return Vec::length();
+		}
 		
 	protected:
 		Vec m_p1{}, m_p2{};
@@ -45,8 +49,6 @@ namespace sndx::collision {
 	public:
 
 		/* Safe Construction Methods */
-
-		constexpr Rect(const Rect&) = default;
 
 		// implicit Vec conversions are bad!
 		template <class A, class B>
@@ -136,7 +138,7 @@ namespace sndx::collision {
 
 		// get the dimensions of the Rect
 		[[nodiscard]]
-		constexpr Vec getSize() const noexcept override {
+		constexpr Vec getSize() const noexcept {
 			return getP2() - getP1();
 		}
 
@@ -148,7 +150,7 @@ namespace sndx::collision {
 
 		// get the center point of the Rect
 		[[nodiscard]]
-		constexpr Vec getCenter() const noexcept override {
+		constexpr Vec getCenter() const noexcept {
 			return glm::mix(getP1(), getP2(), Precision(0.5));
 		}
 
@@ -173,7 +175,7 @@ namespace sndx::collision {
 
 		// returns true if the point is contained by the Rect
 		[[nodiscard]]
-		constexpr bool contains(const Vec& point) const noexcept override {
+		constexpr bool contains(const Vec& point) const noexcept {
 			auto comparisons = glm::lessThanEqual(point, getP2()) && glm::greaterThanEqual(point, getP1());
 
 			return glm::all(comparisons);
@@ -188,7 +190,7 @@ namespace sndx::collision {
 		// get the signed distance from a point
 		// adapted from https://iquilezles.org/articles/distfunctions/
 		[[nodiscard]]
-		constexpr Precision getDistance(const Vec& point) const noexcept override {
+		constexpr Precision distance(const Vec& point) const noexcept {
 			auto size = getSize() * Precision(0.5);
 			auto tpoint = point - getPosition() - size;
 
@@ -197,11 +199,16 @@ namespace sndx::collision {
 		}
 	};
 
-	template <size_t Dimensionality, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
-	using RectND = Rect<glm::vec<Dimensionality, InternalT, Qualifier>>;
+	template <size_t n, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
+	using RectND = Rect<glm::vec<n, InternalT, Qualifier>>;
 
 	using Rect1D = RectND<1>;
 	using Rect2D = RectND<2>;
 	using Rect3D = RectND<3>;
 	using Rect4D = RectND<4>;
+
+	static_assert(VolumeN<Rect1D, 1>);
+	static_assert(VolumeN<Rect2D, 2>);
+	static_assert(VolumeN<Rect3D, 3>);
+	static_assert(VolumeN<Rect4D, 4>);
 }

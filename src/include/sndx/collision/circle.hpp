@@ -7,11 +7,15 @@
 
 namespace sndx::collision {
 	// A Circle as described by a point and radius.
-	template <class VectorT = glm::vec2>
-	class Circle : public Volume<VectorT> {
+	template <Vector VectorT = glm::vec2>
+	class Circle {
 	public:
-		using Vec = Volume<VectorT>::Vec;
-		using Precision = Volume<VectorT>::Precision;
+		using Vec = VectorT;
+		using Precision = Vec::value_type;
+
+		static constexpr size_t dimensionality() noexcept {
+			return Vec::length();
+		}
 
 	protected:
 		Vec m_pos;
@@ -123,7 +127,7 @@ namespace sndx::collision {
 
 		// get the dimensions of the Circle
 		[[nodiscard]]
-		constexpr Vec getSize() const noexcept override {
+		constexpr Vec getSize() const noexcept {
 			return Vec{getRadius()};
 		}
 
@@ -155,7 +159,7 @@ namespace sndx::collision {
 
 		// get the center point of the Circle
 		[[nodiscard]]
-		constexpr Vec getCenter() const noexcept override {
+		constexpr Vec getCenter() const noexcept {
 			return getPosition();
 		}
 
@@ -165,7 +169,7 @@ namespace sndx::collision {
 		// returns true if there exists a point which is contained by both Volumes
 		template <class Volume> [[nodiscard]]
 		constexpr bool overlaps(const Volume& other) const noexcept {
-			return this->getDistance(other) <= Precision(0.0);
+			return this->distance(other) <= Precision(0.0);
 		}
 
 		// returns true if the other Circle is fully contained by this Circle
@@ -179,17 +183,22 @@ namespace sndx::collision {
 			return centerDist <= deltaRad;
 		}
 
+		[[nodiscard]]
+		constexpr bool contains(const Vec& other) const noexcept {
+			return distance(other) <= Precision(0.0);
+		}
+
 		// get the signed distance from a point
 		[[nodiscard]]
-		constexpr Precision getDistance(const Vec& point) const noexcept override {
+		constexpr Precision distance(const Vec& point) const noexcept {
 			return glm::distance(getPosition(), point) - getRadius();
 		}
 
 		// get the signed distance from another Volume,
 		// negative distances are valid but strange
 		template <class Volume> [[nodiscard]]
-		constexpr Precision getDistance(const Volume& other) const noexcept {
-			return other.getDistance(getPosition()) - getRadius();
+		constexpr Precision distance(const Volume& other) const noexcept {
+			return other.distance(getPosition()) - getRadius();
 		}
 	};
 
@@ -200,4 +209,9 @@ namespace sndx::collision {
 	using Circle2D = CircleND<2>;
 	using Circle3D = CircleND<3>;
 	using Circle4D = CircleND<4>;
+
+	static_assert(VolumeN<Circle1D, 1>);
+	static_assert(VolumeN<Circle2D, 2>);
+	static_assert(VolumeN<Circle3D, 3>);
+	static_assert(VolumeN<Circle4D, 4>);
 }

@@ -21,7 +21,7 @@ TYPED_TEST(RectTest, Points) {
 	EXPECT_FLOAT_EQ(r.getArea(), 1.0f);
 
 	EXPECT_TRUE(r.contains(r.getCenter()));
-	EXPECT_FLOAT_EQ(r.getDistance(r.getCenter()), -0.5f);
+	EXPECT_FLOAT_EQ(r.distance(r.getCenter()), -0.5f);
 
 	EXPECT_TRUE(r.overlaps(r));
 	EXPECT_TRUE(r.contains(r));
@@ -32,7 +32,7 @@ TYPED_TEST(RectTest, Points) {
 	EXPECT_FALSE(r.contains(TypeParam{ 1.1f }));
 
 	if constexpr (std::is_same_v<TypeParam, glm::vec3>) {
-		static_assert(r.getDimensionality() == 3);
+		static_assert(r.dimensionality() == 3);
 
 		EXPECT_FALSE(r.contains(glm::vec3{ 1.1f, 0.0f, 0.0f }));
 		EXPECT_FALSE(r.contains(glm::vec3{ 0.0f, 1.1f, 0.0f }));
@@ -41,12 +41,12 @@ TYPED_TEST(RectTest, Points) {
 		EXPECT_FALSE(r.contains(glm::vec3{ 0.0f, -1.1f, 0.0f }));
 		EXPECT_FALSE(r.contains(glm::vec3{ 0.0f, 0.0f, -1.1f }));
 
-		EXPECT_FLOAT_EQ(r.getDistance(glm::vec3{ 2.0f, 1.0f, 1.0f }), 1.0f);
-		EXPECT_FLOAT_EQ(r.getDistance(glm::vec3{ -1.0f, 1.0f, 1.0f }), 1.0f);
+		EXPECT_FLOAT_EQ(r.distance(glm::vec3{ 2.0f, 1.0f, 1.0f }), 1.0f);
+		EXPECT_FLOAT_EQ(r.distance(glm::vec3{ -1.0f, 1.0f, 1.0f }), 1.0f);
 	}
 
-	EXPECT_FLOAT_EQ(r.getDistance(TypeParam{}), 0.0f);
-	EXPECT_FLOAT_EQ(r.getDistance(TypeParam{1.0f}), 0.0f);
+	EXPECT_FLOAT_EQ(r.distance(TypeParam{}), 0.0f);
+	EXPECT_FLOAT_EQ(r.distance(TypeParam{1.0f}), 0.0f);
 }
 
 TEST(Rect, VolumeCollision) {
@@ -56,7 +56,7 @@ TEST(Rect, VolumeCollision) {
 	Circle2D c{ glm::vec2(0.5f), 0.5f };
 
 	EXPECT_TRUE(r.contains(c));
-	EXPECT_LE(c.getDistance(r), 0.0);
+	EXPECT_LE(c.distance(r), 0.0);
 	EXPECT_TRUE(c.overlaps(r));
 
 	Rect2D o{ glm::vec2(0.5f), glm::vec2(1.5f) };

@@ -2,45 +2,35 @@
 
 #include <glm/glm.hpp>
 
-namespace sndx::collision {
-	template <class VectorT = glm::vec2>
-	struct Volume {
+namespace sndx {
 
-		using Vec = VectorT;
-		using Precision = Vec::value_type;
+	template <class T>
+	concept Vector = requires(const T& vector) {
+		{ T::length() } -> std::convertible_to<size_t>;
+		T::length() > 0;
 
-		// Number of dimensions of the volume
-		static constexpr size_t s_dimensionality = Vec::length();
+		{ vector[0] } -> std::convertible_to<float>;
+	};
 
-		constexpr virtual ~Volume() noexcept = default;
+	template <class T, size_t n>
+	concept VectorN = Vector<T> && requires() {
+		T::length() == n;
+	};
 
+	template <class T>
+	concept Volume = requires(const T& t) {
+		{ T::dimensionality() } -> std::convertible_to<size_t>;
+		T::dimensionality() > 0;
 
-		/* Info Methods */
+		{ t.getSize() } -> VectorN<T::dimensionality()>;
+		{ t.getCenter() } -> VectorN<T::dimensionality()>;
+		{ t.getArea() } -> std::convertible_to<float>;
+		{ t.contains(t.getCenter()) } -> std::convertible_to<bool>;
+		{ t.distance(t.getCenter()) } -> std::convertible_to<bool>;
+	};
 
-		[[nodiscard]]
-		static constexpr size_t getDimensionality() noexcept {
-			return s_dimensionality;
-		}
-
-		// get the dimensions of the volume
-		[[nodiscard]]
-		constexpr virtual Vec getSize() const noexcept = 0;
-
-		// get the center point of the volume
-		[[nodiscard]]
-		constexpr virtual Vec getCenter() const noexcept = 0;
-
-
-		/* Collision Related Methods */
-
-		// get the signed distance from a point
-		[[nodiscard]]
-		constexpr virtual Precision getDistance(const Vec& point) const noexcept = 0;
-
-		// returns true if the point is contained by the volume
-		[[nodiscard]]
-		constexpr virtual bool contains(const Vec& point) const noexcept {
-			return this->getDistance(point) <= Precision(0.0);
-		}
+	template <class T, size_t n>
+	concept VolumeN = Volume<T> && requires() {
+		T::dimensionality() == n;
 	};
 }

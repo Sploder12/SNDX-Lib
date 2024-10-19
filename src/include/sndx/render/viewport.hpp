@@ -8,21 +8,22 @@
 
 namespace sndx::render {
 
-	template <typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
+	template <VectorN<2> VecT = glm::vec2>
 	class Viewport {
 	public:
-		using Vec = glm::vec<2, InternalT, Qualifier>;
-		using RectT = sndx::collision::Rect<Vec>;
+		using Vec = VecT;
+		using RectT = sndx::collision::Rect<VecT>;
+		using Precision = RectT::Precision;
 
 	protected:
 		RectT m_rect{};
 
 	public:
 
-		explicit Viewport(Vec dims, Vec offset = Vec(InternalT(0.0))):
+		explicit Viewport(Vec dims, Vec offset = Vec(Precision(0.0))):
 			m_rect(offset, offset + dims) {
 			
-			if (glm::compMin(dims) <= InternalT(0.0))
+			if (glm::compMin(dims) <= Precision(0.0))
 				throw std::invalid_argument("Dimensions of Viewport must be > 0");
 		}
 
@@ -55,7 +56,7 @@ namespace sndx::render {
 		}
 
 		virtual void resize(Vec newDims) {
-			if (glm::compMin(newDims) <= InternalT(0.0))
+			if (glm::compMin(newDims) <= Precision(0.0))
 				throw std::invalid_argument("Dimensions of Viewport must be > 0");
 
 			m_rect.setPosDims(m_rect.getPosition(), newDims);
@@ -72,19 +73,20 @@ namespace sndx::render {
 		}
 	};
 
-	template <typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
-	class AspectRatioViewport : public Viewport<InternalT, Qualifier> {
+	template <VectorN<2> VecT = glm::vec2>
+	class AspectRatioViewport : public Viewport<VecT> {
 	public:
-		using Vec = Viewport<InternalT, Qualifier>::Vec;
-		using RectT = Viewport<InternalT, Qualifier>::RectT;
+		using Vec = Viewport<VecT>::Vec;
+		using RectT = Viewport<VecT>::RectT;
+		using Precision = Viewport<VecT>::Precision;
 
 	protected:
-		Vec m_alignment = Vec(InternalT(0.5));
-		InternalT m_aspectRatio;
+		Vec m_alignment = Vec(Precision(0.5));
+		Precision m_aspectRatio;
 
 	public:
-		explicit AspectRatioViewport(Vec dims, InternalT aspectRatio, Vec alignment = Vec(InternalT(0.5))):
-			Viewport<InternalT, Qualifier>(dims), m_alignment{}, m_aspectRatio(1.0) {
+		explicit AspectRatioViewport(Vec dims, Precision aspectRatio, Vec alignment = Vec(Precision(0.5))):
+			Viewport<Vec>(dims), m_alignment{}, m_aspectRatio(1.0) {
 
 			setAspectRatio(aspectRatio);
 			setAlignment(alignment);
@@ -96,14 +98,14 @@ namespace sndx::render {
 			return m_aspectRatio;
 		}
 
-		double setAspectRatio(InternalT aspectRatio) {
-			if (aspectRatio <= InternalT(0.0))
+		double setAspectRatio(Precision aspectRatio) {
+			if (aspectRatio <= Precision(0.0))
 				throw std::invalid_argument("Aspect Ratio must be > 0.0");
 
 			return std::exchange(m_aspectRatio, aspectRatio);
 		}
 
-		double setAspectRatio(InternalT aspectRatio, Vec dims) {
+		double setAspectRatio(Precision aspectRatio, Vec dims) {
 			auto tmp = setAspectRatio(aspectRatio);
 			resize(dims);
 
@@ -111,10 +113,10 @@ namespace sndx::render {
 		}
 
 		Vec setAlignment(Vec alignment) {
-			if (glm::compMin(alignment) < InternalT(0.0))
+			if (glm::compMin(alignment) < Precision(0.0))
 				throw std::invalid_argument("Alignment must be above or equal to 0.0");
 
-			if (glm::compMax(alignment) > InternalT(1.0))
+			if (glm::compMax(alignment) > Precision(1.0))
 				throw std::invalid_argument("Alignment must be below or equal to 1.0");
 
 			return std::exchange(m_alignment, alignment);
@@ -128,26 +130,26 @@ namespace sndx::render {
 		}
 
 		virtual void resize(Vec newDims) override {
-			if (glm::compMin(newDims) <= InternalT(0.0))
+			if (glm::compMin(newDims) <= Precision(0.0))
 				throw std::invalid_argument("Dimensions of Viewport must be > 0");
 
-			auto asWidth = std::max(newDims.y * m_aspectRatio, InternalT(1.0));
+			auto asWidth = std::max(newDims.y * m_aspectRatio, Precision(1.0));
 
 			if (asWidth == newDims.x) {
-				this->m_rect.setPosDims(Vec(InternalT(0.0)), newDims);
+				this->m_rect.setPosDims(Vec(Precision(0.0)), newDims);
 				return;
 			}
 
-			auto asHeight = std::max(newDims.x / m_aspectRatio, InternalT(1.0));
+			auto asHeight = std::max(newDims.x / m_aspectRatio, Precision(1.0));
 
 			if (newDims.x > asWidth) {
 				auto padding = (newDims.x - asWidth) * m_alignment.x;
-				this->m_rect.setPosDims(Vec(padding, InternalT(0.0)), Vec(asWidth, newDims.y));
+				this->m_rect.setPosDims(Vec(padding, Precision(0.0)), Vec(asWidth, newDims.y));
 				return;
 			}
 
 			auto padding = (newDims.y - asHeight) * m_alignment.y;
-			this->m_rect.setPosDims(Vec(InternalT(0.0), padding), Vec(newDims.x, asHeight));
+			this->m_rect.setPosDims(Vec(Precision(0.0), padding), Vec(newDims.x, asHeight));
 		}
 	};
 }
