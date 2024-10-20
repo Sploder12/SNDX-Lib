@@ -9,22 +9,21 @@
 
 #include <type_traits>
 #include <string>
-#include <string_view>
 #include <stdexcept>
 #include <optional>
 #include <unordered_map>
 
 namespace sndx::input {
 	class WindowGLFW : public Window<WindowGLFW> {
-	protected:
 		friend Window;
+		friend class WindowBuilderGLFW;
 
+		std::string m_title{};
 		GLFWwindow* m_window = nullptr;
-		
-	public:
-		template <class... Args>
-		explicit WindowGLFW(GLFWwindow* window) :
-			m_window{ window } {
+
+		explicit WindowGLFW(std::nullptr_t, const char* = "") = delete;
+		explicit WindowGLFW(GLFWwindow* window, const char* title = "") :
+			m_title{title}, m_window{ window } {
 
 			if (!m_window)
 				throw std::runtime_error("Could not create glfwWindow");
@@ -32,14 +31,10 @@ namespace sndx::input {
 			glfwSetWindowUserPointer(m_window, this);
 		}
 
-		template <class... Args>
-		WindowGLFW(std::nullptr_t) = delete;
 	public:
-		template <class... Args>
 		WindowGLFW(const char* title, int width, int height, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) :
-			WindowGLFW(glfwCreateWindow(width, height, title, monitor, share)) {}
+			WindowGLFW(glfwCreateWindow(width, height, title ? title : "", monitor, share), title ? title : "") {}
 
-		template <class... Args>
 		WindowGLFW(std::nullptr_t, int, int, GLFWmonitor* = nullptr, GLFWwindow* = nullptr) = delete;
 
 		WindowGLFW(WindowGLFW&& other) noexcept :
@@ -67,7 +62,7 @@ namespace sndx::input {
 			return m_window;
 		}
 
-	protected:
+	private:
 		void bindImpl() const noexcept {
 			glfwMakeContextCurrent(m_window);
 		}
@@ -93,6 +88,11 @@ namespace sndx::input {
 			else glfwHideWindow(m_window);
 		}
 
+		decltype(auto) setTitleImpl(const std::string& newTitle) {
+			glfwSetWindowTitle(m_window, newTitle.c_str());
+			return std::exchange(m_title, newTitle);
+		}
+
 		void tryCloseImpl() {
 			glfwSetWindowShouldClose(m_window, GLFW_TRUE);
 		}
@@ -115,10 +115,14 @@ namespace sndx::input {
 		bool isVisibleImpl() const noexcept {
 			return glfwGetWindowAttrib(m_window, GLFW_VISIBLE) == GLFW_TRUE;
 		}
+
+		[[nodiscard]]
+		const std::string& getTitleImpl() const noexcept {
+			return m_title;
+		}
 	};
 
 	class WindowHintsGLFW {
-	protected:
 		std::unordered_map<int, int> m_hints{};
 
 	public:
@@ -156,8 +160,7 @@ namespace sndx::input {
 	};
 
 	class WindowBuilderGLFW final: public WindowBuilder<WindowBuilderGLFW> {
-	protected:
-		friend WindowBuilder<WindowBuilderGLFW>;
+		friend WindowBuilder;
 
 		GLFWmonitor* m_monitor = nullptr;
 		GLFWwindow* m_share = nullptr;
@@ -172,7 +175,7 @@ namespace sndx::input {
 			m_cursor = other.m_cursor;
 			m_hints = other.m_hints;
 
-			return this->copyBaseSettings(other);
+			return copyBaseSettings(other);
 		}
 
 		WindowBuilderGLFW& setMonitor(GLFWmonitor* monitor = nullptr) noexcept {
@@ -215,10 +218,10 @@ namespace sndx::input {
 			return m_hints;
 		}
 
-	protected:
+	private:
 		[[nodiscard]]
 		auto buildImpl() const {
-			bool visible = m_hints && m_hints->getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE;
+			bool visible = !m_hints || m_hints->getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE;
 			if (!visible || this->m_xpos || this->m_ypos) {
 				glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 			}
@@ -240,7 +243,7 @@ namespace sndx::input {
 				}
 			}
 
-			return WindowGLFW{ window };
+			return WindowGLFW{ window, m_title.c_str() };
 		}
 	};
 }

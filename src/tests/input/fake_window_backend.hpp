@@ -19,12 +19,14 @@ public:
 public:
 	glm::vec2 m_pos{}, m_size{};
 
+	std::string m_title{};
 	int hint{};
 	int m_fake{};
 	bool m_visible = false;
 	mutable int m_binds = 0;
 
-	FakeWindow(int width, int height, int fake, bool visible) {
+	FakeWindow(std::string_view title, int width, int height, int fake, bool visible) {
+		m_title = title;
 		m_fake = fake;
 		m_visible = visible;
 		hint = 0x1337;
@@ -71,18 +73,22 @@ private:
 	bool isVisibleImpl() const noexcept {
 		return m_visible;
 	}
+
+	const std::string& getTitleImpl() const noexcept {
+		return m_title;
+	}
 };
 
 class FakeWindowBuilder : public WindowBuilder<FakeWindowBuilder> {
 protected:
-	friend WindowBuilder<FakeWindowBuilder>;
+	friend WindowBuilder;
 
 	bool m_visible = false;
 	int m_fake{};
 
 	[[nodiscard]]
 	FakeWindow buildImpl() const {
-		return FakeWindow(getWidth(), getHeight(), m_fake, m_visible);
+		return {getTitle(), getWidth(), getHeight(), m_fake, m_visible};
 	}
 
 public:

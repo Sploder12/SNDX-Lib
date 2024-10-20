@@ -51,6 +51,10 @@ namespace sndx::input {
 			static_cast<Backend*>(this)->setVisibilityImple(visible);
 		}
 
+		decltype(auto) setTitle(const std::string& newTitle) {
+			return static_cast<Backend*>(this)->setTitleImpl(newTitle);
+		}
+
 		void tryClose() {
 			static_cast<Backend*>(this)->tryCloseImpl();
 		}
@@ -68,6 +72,11 @@ namespace sndx::input {
 		[[nodiscard]]
 		bool isVisible() const {
 			return static_cast<const Backend*>(this)->isVisibleImpl();
+		}
+
+		[[nodiscard]]
+		const std::string& getTitle() const {
+			return static_cast<const Backend*>(this)->getTitleImpl();
 		}
 	};
 
@@ -88,7 +97,7 @@ namespace sndx::input {
 			m_height = other.m_height;
 			m_xpos = other.m_xpos;
 			m_ypos = other.m_ypos;
-			return *this;
+			return static_cast<Backend&>(*this);
 		}
 
 	public:

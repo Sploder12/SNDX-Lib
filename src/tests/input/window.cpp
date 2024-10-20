@@ -17,6 +17,7 @@ TEST(Window, TestBuilder) {
 
 	FakeWindow window = builder.build();
 
+	EXPECT_EQ(window.getTitle(), "Title");
 	EXPECT_TRUE(window.m_visible);
 	EXPECT_EQ(window.hint, 0x1337);
 	EXPECT_EQ(window.m_fake, 37);
@@ -24,11 +25,12 @@ TEST(Window, TestBuilder) {
 }
 
 TEST(Window, TestWindow) {
-	FakeWindow fakeWindow{ 10, 20, 30, true };
+	FakeWindow fakeWindow{ "test", 10, 20, 30, true };
 
 	fakeWindow.bind();
 	fakeWindow.setPosition(glm::vec2{ 13.0f, 37.0f });
 
+	EXPECT_EQ(fakeWindow.getTitle(), "test");
 	EXPECT_EQ(fakeWindow.getPosition(), (glm::vec2{ 13.0f, 37.0f }));
 	EXPECT_EQ(fakeWindow.getSize(), (glm::vec2{10, 20}));
 
