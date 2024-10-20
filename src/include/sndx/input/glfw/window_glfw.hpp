@@ -15,15 +15,15 @@
 #include <unordered_map>
 
 namespace sndx::input {
-	class WindowGLFW : Window<WindowGLFW> {
+	class WindowGLFW : public Window<WindowGLFW> {
 	protected:
-		friend Window<WindowGLFW>;
+		friend Window;
 
 		GLFWwindow* m_window = nullptr;
 		
 	public:
 		template <class... Args>
-		WindowGLFW(GLFWwindow* window) :
+		explicit WindowGLFW(GLFWwindow* window) :
 			m_window{ window } {
 
 			if (!m_window)

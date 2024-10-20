@@ -4,7 +4,7 @@
 
 #include "./audio_data.hpp"
 
-#include "../mixin/handle.hpp"
+#include "../../mixin/handle.hpp"
 
 namespace sndx::audio {
 	class ABO {
@@ -24,9 +24,7 @@ namespace sndx::audio {
 		}
 
 	public:
-		explicit ABO() :
-			m_id(0) {
-
+		explicit ABO() {
 			gen();
 		}
 
@@ -58,9 +56,7 @@ namespace sndx::audio {
 		}
 
 		ABO& setData(const ALaudioData& data) {
-			auto size = ALsizei(data.getByteSize());
-
-			if (size > 0) {
+			if (auto size = ALsizei(data.getByteSize()); size > 0) {
 				gen();
 				alBufferData(m_id, ALenum(data.getFormat()), data.data(), size, ALsizei(data.getFrequency()));
 			}

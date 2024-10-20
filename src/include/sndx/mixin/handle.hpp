@@ -6,7 +6,7 @@ namespace sndx::mixin {
 
 	template <class T>
 	class Handle {
-	protected:
+	private:
 		std::reference_wrapper<T> m_obj;
 
 	public:

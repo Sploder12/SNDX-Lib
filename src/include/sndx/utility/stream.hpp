@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 
 namespace sndx::utility {
@@ -51,7 +52,7 @@ namespace sndx::utility {
 			return ch;
 		}
 
-		int_type pbackfail(int_type chr = traits_type::eof()) {
+		int_type pbackfail(int_type chr = traits_type::eof()) override {
 			if (gptr() == eback() || (chr != traits_type::eof() && chr != gptr()[-1]))
 				return traits_type::eof();
 

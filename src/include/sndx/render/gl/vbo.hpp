@@ -4,6 +4,8 @@
 
 #include <glm/glm.hpp>
 
+#include <utility>
+
 #include "../../mixin/handle.hpp"
 
 namespace sndx::render {
@@ -17,7 +19,7 @@ namespace sndx::render {
 	template <typename T>
 	using is_GLnormalized = std::bool_constant <
 		requires (T) {
-		std::same_as<T::normalized, std::bool_constant<true>>;
+		std::same_as<typename T::normalized, std::bool_constant<true>>;
 	} > ;
 
 	template <typename T>
@@ -225,7 +227,7 @@ namespace sndx::render {
 
 		template <class Cur, class... LinearContainers>
 		void subData(GLenum target, long long offset, const Cur& data, const LinearContainers&... others) const {
-			using vtype = Cur::value_type;
+			using vtype = typename Cur::value_type;
 
 			static_assert(sizeof(vtype) == sizeof(DataT));
 
@@ -243,7 +245,7 @@ namespace sndx::render {
 			VBO{} {}
 
 		explicit TypedVBO(VBO&& other) :
-			m_id(std::exchange(other.m_id, 0)) {}
+			VBO(std::exchange(other.m_id, 0)) {}
 
 		template <class... LinearContainers>
 		void setData(GLenum target = GL_ARRAY_BUFFER, const LinearContainers&... datas) {

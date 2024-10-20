@@ -4,6 +4,7 @@
 
 #include <bit>
 #include <bitset>
+#include <cstdint>
 #include <stdexcept>
 #include <iterator>
 

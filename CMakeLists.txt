@@ -1,7 +1,7 @@
 ﻿# CMakeList.txt : CMake project for SNDXlib, include source and define
 # project specific logic here.
 #
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.14)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)

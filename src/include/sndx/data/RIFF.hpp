@@ -43,8 +43,7 @@ namespace sndx::RIFF {
 		std::array<char, 4> type{};
 
 		explicit RIFFheader() = default;
-		explicit RIFFheader(std::array<char, 4> id) :
-			size(0), type(id) {}
+		explicit RIFFheader(std::array<char, 4> id) : type(id) {}
 
 		void deserialize(sndx::serialize::Deserializer& deserializer) {
 			deserializer.deserialize(type.data(), sizeof(type));
@@ -70,13 +69,13 @@ namespace sndx::RIFF {
 	struct Chunk {
 		virtual ~Chunk() = default;
 
-		// static std::array<char, 4> ID = ~;
+		// ex: `static std::array<char, 4> ID = ~;`
 
 		virtual void deserialize(sndx::serialize::Deserializer&) = 0;
 		virtual void serialize(sndx::serialize::Serializer& serializer) const = 0;
 		virtual uint32_t getLength() const = 0;
 
-		typedef std::unique_ptr<Chunk>(*Factory)(sndx::serialize::Deserializer&, const ChunkHeader&);
+		using Factory = std::unique_ptr<Chunk> (*)(sndx::serialize::Deserializer&, const ChunkHeader&);
 
 		[[nodiscard]]
 		static std::unique_ptr<Chunk> create(sndx::serialize::Deserializer& deserializer, const ChunkHeader& header) {

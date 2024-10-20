@@ -25,7 +25,7 @@ namespace sndx::audio {
 
 	class AudioDecoder {
 	public:
-		typedef std::unique_ptr<AudioDecoder>(*Factory)(std::istream&);
+		using Factory = std::unique_ptr<AudioDecoder> (*)(std::istream&);
 
 		virtual ~AudioDecoder() = default;
 
@@ -106,7 +106,7 @@ namespace sndx::audio {
 	}
 
 	template <std::derived_from<AudioDecoder> T>
-	inline bool registerDecoder(const std::string& extension) {
+	bool registerDecoder(const std::string& extension) {
 		return getDecoderRegistry().add(extension, [](std::istream& in) {
 			return std::unique_ptr<AudioDecoder>{std::make_unique<T>(in)};
 		});

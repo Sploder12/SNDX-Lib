@@ -23,18 +23,17 @@ namespace sndx::audio {
 
 	public:
 
-		explicit ALaudioData() noexcept :
-			m_meta(), m_buffer{} {}
+		explicit ALaudioData() noexcept = default;
 
 		explicit ALaudioData(const ALaudioMeta& meta) noexcept :
-			m_meta(meta), m_buffer{} {}
+			m_meta(meta) {}
 
 		explicit ALaudioData(const ALaudioMeta& meta, std::vector<std::byte>&& buf) noexcept :
 			m_meta(meta), m_buffer{ std::move(buf) } {}
 
 		template <std::floating_point F>
 		explicit ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf) :
-			m_meta(meta), m_buffer{} {
+			m_meta(meta) {
 
 			m_buffer.resize(buf.size() * getChannels() * getByteDepth(meta.m_format));
 
@@ -116,11 +115,11 @@ namespace sndx::audio {
 			auto bytePos = getBytePos(sample, channel);
 
 			if (is8Bit(m_meta.m_format)) {
-				uint8_t* ptr = (uint8_t*)(m_buffer.data() + bytePos);
+				auto ptr = reinterpret_cast<const uint8_t*>(m_buffer.data() + bytePos);
 				return (long double)(*ptr);
 			}
 			else {
-				int16_t* ptr = (int16_t*)(m_buffer.data() + bytePos);
+				auto ptr = reinterpret_cast<const int16_t*>(m_buffer.data() + bytePos);
 				return (long double)(*ptr);
 			}
 		}

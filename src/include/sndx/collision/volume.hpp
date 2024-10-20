@@ -26,7 +26,7 @@ namespace sndx {
 		{ t.getCenter() } -> VectorN<T::dimensionality()>;
 		{ t.getArea() } -> std::convertible_to<float>;
 		{ t.contains(t.getCenter()) } -> std::convertible_to<bool>;
-		{ t.distance(t.getCenter()) } -> std::convertible_to<bool>;
+		{ t.distance(t.getCenter()) } -> std::convertible_to<float>;
 	};
 
 	template <class T, size_t n>

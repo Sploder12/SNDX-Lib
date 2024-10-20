@@ -15,11 +15,13 @@ namespace sndx::utility {
 
 	template <std::endian endianess = std::endian::native> [[nodiscard]]
 	constexpr auto fromEndianess(std::integral auto value) noexcept {
-		static_assert(
-			std::endian::native == std::endian::little || 
-			std::endian::native == std::endian::big);
+		using enum std::endian;
 
-		if constexpr (endianess == std::endian::native) {
+		static_assert(
+			native == little ||
+			native == big);
+
+		if constexpr (endianess == native) {
 			return value;
 		}
 		else {

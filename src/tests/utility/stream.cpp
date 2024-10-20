@@ -20,7 +20,7 @@ std::array<char, 40> readArr = {
 TEST(MemStream, Read) {
 	std::array<char, 40> outArr{ 0 };
 
-	MemoryStream buf((uint8_t*)(readArr.data()), readArr.size());
+	MemoryStream buf(reinterpret_cast<uint8_t*>(readArr.data()), readArr.size());
 
 	buf.read(outArr.data(), outArr.size());
 
@@ -51,7 +51,7 @@ TEST(MemStream, Read) {
 TEST(MemStream, Write) {
 	std::array<char, 40> outArr{ 0 };
 
-	MemoryStream buf((uint8_t*)(outArr.data()), outArr.size());
+	MemoryStream buf(reinterpret_cast<uint8_t*>(outArr.data()), outArr.size());
 
 	buf.write(readArr.data(), readArr.size());
 
@@ -85,7 +85,7 @@ TEST(MemStream, Write) {
 TEST(MemStream, ReadWrite) {
 	std::array<char, 40> arr{ 0 };
 
-	MemoryStream buf((uint8_t*)(arr.data()), arr.size());
+	MemoryStream buf(reinterpret_cast<uint8_t*>(arr.data()), arr.size());
 
 	buf.write(readArr.data(), readArr.size() / 2);
 

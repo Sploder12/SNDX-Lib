@@ -21,7 +21,7 @@ TEST(Vorbis, GoodFile) {
 	ASSERT_TRUE(decptr);
 	ASSERT_TRUE(dynamic_cast<VorbisDecoder*>(decptr.get()));
 
-	VorbisDecoder* dec = dynamic_cast<VorbisDecoder*>(decptr.get());
+	auto* dec = dynamic_cast<VorbisDecoder*>(decptr.get());
 	auto data = dec->readAll();
 
 	EXPECT_EQ(data.getByteSize(), 99712);

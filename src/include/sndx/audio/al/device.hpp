@@ -5,14 +5,17 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <utility>
+
+#include "../../mixin/handle.hpp"
 
 namespace sndx::audio {
 
 	[[nodiscard]]
 	inline bool isALEnumExtPresent() {
 		static bool present =
-			alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE &&
-			alcIsExtensionPresent(NULL, "ALC_ENUMERATE_ALL_EXT") == AL_TRUE;
+			alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT") == AL_TRUE &&
+			alcIsExtensionPresent(nullptr, "ALC_ENUMERATE_ALL_EXT") == AL_TRUE;
 
 		return present;
 	}
@@ -23,7 +26,7 @@ namespace sndx::audio {
 			return {};
 		}
 
-		auto devices = alcGetString(NULL, ALC_ALL_DEVICES_SPECIFIER);
+		auto devices = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
 		if (devices == nullptr || *devices == '\0') return {};
 
 		std::vector<std::string> out{};
@@ -38,7 +41,7 @@ namespace sndx::audio {
 
 	[[nodiscard]]
 	inline std::string getDefaultAlDevice() {
-		return alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+		return alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER);
 	}
 
 	class ALdevice {
@@ -55,7 +58,7 @@ namespace sndx::audio {
 			return device;
 		}
 
-		operator const ALCdevice* () const {
+		operator ALCdevice const* () const {
 			return device;
 		}
 

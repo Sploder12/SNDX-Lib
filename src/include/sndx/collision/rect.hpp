@@ -39,11 +39,11 @@ namespace sndx::collision {
 		}
 
 		// constructs a Rect from two points, does not verify preconditions
-		explicit constexpr Rect(const Vec& p1, const Vec& p2, nullptr_t) noexcept :
+		explicit constexpr Rect(const Vec& p1, const Vec& p2, std::nullptr_t) noexcept :
 			m_p1{ p1 }, m_p2{ p2 } {}
 
 		// constructs a Rect from dimensions, always positioned at 0.0, does not verify preconditions
-		explicit constexpr Rect(const Vec& dims, nullptr_t) :
+		explicit constexpr Rect(const Vec& dims, std::nullptr_t) :
 			m_p1{ Precision(0.0) }, m_p2{ dims } {}
 
 	public:
@@ -55,9 +55,7 @@ namespace sndx::collision {
 		Rect(const A&, const B&) = delete;
 
 		// constructs a Rect from two points
-		constexpr Rect(const Vec& p1, const Vec& p2) noexcept:
-			m_p1{}, m_p2{} {
-
+		constexpr Rect(const Vec& p1, const Vec& p2) noexcept {
 			setPoints(p1, p2);
 		}
 
@@ -72,9 +70,7 @@ namespace sndx::collision {
 
 		// constructs a Rect from another volume
 		template <class Volume>
-		explicit constexpr Rect(const Volume& volume) noexcept :
-			m_p1{}, m_p2{} {
-
+		explicit constexpr Rect(const Volume& volume) noexcept {
 			auto hsize = volume.getSize() * Precision(0.5);
 			const auto& center = volume.getCenter();
 			setRawPoints(center - hsize, center + hsize);

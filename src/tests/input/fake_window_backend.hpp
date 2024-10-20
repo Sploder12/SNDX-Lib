@@ -14,7 +14,7 @@ using namespace sndx::input;
 
 class FakeWindow : public Window<FakeWindow> {
 public:
-	friend Window<FakeWindow>;
+	friend Window;
 
 public:
 	glm::vec2 m_pos{}, m_size{};

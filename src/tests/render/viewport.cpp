@@ -69,5 +69,5 @@ TEST(Viewport, AspectRatioViewport) {
 	EXPECT_EQ(v.getDimensions(), glm::vec2(3.0f));
 
 	[[maybe_unused]]
-	const auto& r = (const Rect<glm::vec2>&)(v);
+	const auto& r = static_cast<const Rect<glm::vec2>&>(v);
 }

@@ -22,8 +22,8 @@ namespace sndx::audio {
 		static constexpr std::array<char, 4> ID = { 'f', 'm', 't', ' ' };
 
 		struct ExtendedNone {
-			void deserialize(sndx::serialize::Deserializer&) {};
-			void serialize(sndx::serialize::Serializer&) const {};
+			static void deserialize(const sndx::serialize::Deserializer&) {};
+			static void serialize(const sndx::serialize::Serializer&) {};
 
 			static constexpr uint32_t size() noexcept {
 				return 0 + 16;
@@ -31,7 +31,7 @@ namespace sndx::audio {
 		};
 
 		struct Extended0 {
-			void deserialize(sndx::serialize::Deserializer& deserializer) {
+			static void deserialize(sndx::serialize::Deserializer& deserializer) {
 				uint16_t size;
 				deserializer.deserialize<std::endian::little>(size);
 
@@ -39,7 +39,7 @@ namespace sndx::audio {
 					throw deserialize_error("Extended0 didn't have size 0");
 			};
 
-			void serialize(sndx::serialize::Serializer& serializer) const noexcept {
+			static void serialize(sndx::serialize::Serializer& serializer) noexcept {
 				serializer.serialize<std::endian::little>(static_cast<uint16_t>(0));
 			};
 
@@ -120,17 +120,15 @@ namespace sndx::audio {
 			deserializer.deserialize<std::endian::little>(blockAlign);
 			deserializer.deserialize<std::endian::little>(bitDepth);
 
-			std::visit([&deserializer](auto&& arg) {
-				deserializer.deserialize(arg);
+			std::visit([&deserializer]<typename T>(T&& arg) {
+				deserializer.deserialize(std::forward<T>(arg));
 			}, ext);
 		};
 
 		void serialize(sndx::serialize::Serializer& serializer) const override {
 			serializer.serialize("fmt ", 4);
 		
-			std::visit([&serializer](auto&& arg) {
-				using T = std::decay_t<decltype(arg)>;
-
+			std::visit([&serializer]<typename T>(const T&) {
 				serializer.serialize<std::endian::little>(static_cast<uint32_t>(T::size()));
 			}, ext);
 				
@@ -141,8 +139,8 @@ namespace sndx::audio {
 			serializer.serialize<std::endian::little>(blockAlign);
 			serializer.serialize<std::endian::little>(bitDepth);
 
-			std::visit([&serializer](auto&& arg) {
-				serializer.serialize(arg);
+			std::visit([&serializer]<typename T>(T&& arg) {
+				serializer.serialize(std::forward<T>(arg));
 			}, ext);
 		};
 
@@ -150,9 +148,7 @@ namespace sndx::audio {
 		constexpr uint32_t getLength() const override {
 			uint32_t size = 4 + sizeof(uint32_t);
 
-			std::visit([&size](auto&& arg) {
-				using T = std::decay_t<decltype(arg)>;
-
+			std::visit([&size]<typename T>(const T&) {
 				size += static_cast<uint32_t>(T::size());
 			}, ext);
 
@@ -183,8 +179,7 @@ namespace sndx::audio {
 
 		explicit constexpr FACTchunk() = default;
 
-		explicit constexpr FACTchunk(const sndx::RIFF::ChunkHeader&) noexcept:
-			sampleLength(0) {};
+		explicit constexpr FACTchunk(const sndx::RIFF::ChunkHeader&) noexcept {};
 
 		void deserialize(sndx::serialize::Deserializer& deserializer) override {
 			deserializer.deserialize<std::endian::little>(sampleLength);
@@ -300,7 +295,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		const DATAchunk& getData() {
+		const DATAchunk& getData() const {
 			if (!m_data) [[unlikely]]
 				throw std::runtime_error("WAV file data not defined");
 
@@ -308,7 +303,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		const FMTchunk& getFormat() {
+		const FMTchunk& getFormat() const {
 			if (!m_fmt) [[unlikely]]
 				throw std::runtime_error("WAV file format not defined");
 
@@ -369,8 +364,7 @@ namespace sndx::audio {
 
 	public:
 		explicit WAVdecoder(std::istream& stream) :
-			m_stream(stream.rdbuf()), m_meta{}, 
-			m_size(0), m_pos(0), m_offset(0), m_dirty(false) {
+			m_stream(stream.rdbuf()) {
 
 			sndx::serialize::Deserializer deserializer{ stream };
 			bool seekable = true;
@@ -410,7 +404,7 @@ namespace sndx::audio {
 		// initialize the decoder with stream at the data, known meta and size
 		explicit WAVdecoder(const std::istream& stream, const FMTchunk& meta, size_t size) :
 			m_stream(stream.rdbuf()), m_meta(meta),
-			m_size(uint32_t(size)), m_pos(0), m_offset(0), m_dirty(false) {
+			m_size(uint32_t(size)) {
 
 			m_offset = uint32_t(m_stream.tellg());
 

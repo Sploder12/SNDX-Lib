@@ -24,15 +24,13 @@ namespace sndx::container {
 			}
 		};
 
-	protected:
-		std::vector<Entry, allocT<Entry>> entries;
+	private:
+		std::vector<Entry, allocT<Entry>> entries{};
 		IndexT last = IndexT(0);
 		
 	public:
-		WeightedVector() :
-			entries{}, last(IndexT(0)) {}
+		WeightedVector() = default;
 
-		
 		template<class... Ts>
 		decltype(auto) emplace_back(const IndexT& weight, Ts&&... data) {
 			if (weight <= IndexT(0.0)) [[unlikely]] {

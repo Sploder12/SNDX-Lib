@@ -13,7 +13,7 @@ namespace sndx::render {
 	public:
 		using Vec = VecT;
 		using RectT = sndx::collision::Rect<VecT>;
-		using Precision = RectT::Precision;
+		using Precision = typename RectT::Precision;
 
 	protected:
 		RectT m_rect{};
@@ -76,21 +76,21 @@ namespace sndx::render {
 	template <VectorN<2> VecT = glm::vec2>
 	class AspectRatioViewport : public Viewport<VecT> {
 	public:
-		using Vec = Viewport<VecT>::Vec;
-		using RectT = Viewport<VecT>::RectT;
-		using Precision = Viewport<VecT>::Precision;
+		using Vec = typename Viewport<VecT>::Vec;
+		using RectT = typename Viewport<VecT>::RectT;
+		using Precision = typename Viewport<VecT>::Precision;
 
 	protected:
 		Vec m_alignment = Vec(Precision(0.5));
-		Precision m_aspectRatio;
+		Precision m_aspectRatio{1.0};
 
 	public:
 		explicit AspectRatioViewport(Vec dims, Precision aspectRatio, Vec alignment = Vec(Precision(0.5))):
-			Viewport<Vec>(dims), m_alignment{}, m_aspectRatio(1.0) {
+			Viewport<Vec>(dims), m_alignment{} {
 
 			setAspectRatio(aspectRatio);
 			setAlignment(alignment);
-			resize(dims);
+			AspectRatioViewport::resize(dims);
 		}
 
 		[[nodiscard]]

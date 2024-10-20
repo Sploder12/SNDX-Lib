@@ -29,7 +29,7 @@ namespace sndx {
 		struct Serializer {
 			std::ostream m_sink;
 
-			Serializer(std::ostream& sink) :
+			explicit Serializer(std::ostream& sink) :
 				m_sink(sink.rdbuf()) {}
 
 			template <class T>

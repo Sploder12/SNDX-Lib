@@ -16,7 +16,7 @@ TEST(AL_Audio_Data, AudioData) {
 	EXPECT_EQ(data.getSample(1, 0), 0xff);
 	EXPECT_EQ(data.getSample(2, 0), 0xff);
 
-	long double v = 0.0l;
+	long double v = 0.0L;
 	ASSERT_THROW(v = data.getSample(3, 0), std::out_of_range);
 
 	auto conv = data.asFormat(ALformat::stereo16);

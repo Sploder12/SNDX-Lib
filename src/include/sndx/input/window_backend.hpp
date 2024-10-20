@@ -81,7 +81,6 @@ namespace sndx::input {
 
 		std::optional<int> m_xpos{}, m_ypos{};
 
-	protected:
 		template <class OtherBuilder>
 		Backend& copyBaseSettings(const OtherBuilder& other) {
 			m_title = other.m_title;

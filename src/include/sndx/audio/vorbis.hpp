@@ -196,7 +196,7 @@ namespace sndx::audio {
 			}
 
 			[[nodiscard]]
-			std::vector<std::span<float>> lapout(Info& info) noexcept {
+			std::vector<std::span<float>> lapout(const Info& info) noexcept {
 				float** pcm;
 				auto samples = vorbis_synthesis_lapout(&m_state, &pcm);
 
@@ -211,7 +211,7 @@ namespace sndx::audio {
 			}
 
 			[[nodiscard]]
-			std::vector<std::span<float>> out(Info& info) noexcept {
+			std::vector<std::span<float>> out(const Info& info) noexcept {
 				float** pcm;
 				auto samples = vorbis_synthesis_pcmout(&m_state, &pcm);
 
@@ -318,15 +318,13 @@ namespace sndx::audio {
 				if (!opckt)
 					return out;
 
-				if (m_block.decode(*opckt)) {
-					if (!m_state.blockIn(m_block))
-						return out;
-				}
+				if (m_block.decode(*opckt) && !m_state.blockIn(m_block))
+					return out;
 
 				while (true) {
 					auto data = m_state.out(m_info);
 
-					if (data.size() > 0 && data[0].size() > 0) {
+					if (!data.empty() && data[0].size() > 0) {
 						for (size_t i = 0; i < data[0].size(); ++i) {
 							for (size_t c = 0; c < data.size(); ++c) {
 								int val = int(std::floor(data[c][i] * 32767.0f + 0.5f));

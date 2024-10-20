@@ -2,7 +2,7 @@
 
 #include "./al.hpp"
 
-#include "../mixin/handle.hpp"
+#include "../../mixin/handle.hpp"
 
 #include "./abo.hpp"
 
@@ -35,9 +35,7 @@ namespace sndx::audio {
 		}
 
 	public:
-		explicit ALsource() :
-			m_id(0) {
-
+		explicit ALsource() {
 			gen();
 		}
 

@@ -165,7 +165,6 @@ namespace sndx::ogg {
 			return ogg_page_pageno(&m_page);
 		}
 
-		[[nodiscard]]
 		void setChecksum() noexcept {
 			return ogg_page_checksum_set(&m_page);
 		}
@@ -456,7 +455,7 @@ namespace sndx::ogg {
 					m_curPage = std::move(page);
 					break;
 				}
-			};
+			}
 
 			m_stream = Stream(m_curPage.serialNumber());
 			

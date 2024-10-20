@@ -7,7 +7,7 @@
 
 using namespace sndx::math;
 
-template <bool expected, class T> [[nodiscard]]
+template <bool expected, class T>
 void testColinear(T a, T b, T c) {
 	std::array<T*, 3> arr{ &a, &b, &c };
 	std::sort(arr.begin(), arr.end());

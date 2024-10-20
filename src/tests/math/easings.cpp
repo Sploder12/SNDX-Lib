@@ -4,7 +4,7 @@
 
 using namespace sndx::math;
 
-void testDomain(EasingFunc<float> func) {
+void testDomain(const EasingFunc<float>& func) {
 	EXPECT_FLOAT_EQ(func(0.0f), 0.0f);
 	EXPECT_FLOAT_EQ(func(1.0f), 1.0f);
 }

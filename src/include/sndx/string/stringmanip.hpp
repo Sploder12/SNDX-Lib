@@ -6,6 +6,7 @@
 #include <optional>
 #include <array>
 #include <cassert>
+#include <cstdint>
 
 namespace sndx::string {
 	template <typename CharT = char>
@@ -65,7 +66,7 @@ namespace sndx::string {
 		return stripFirst(sv<CharT>(str), delim, strips);
 	}
 
-	constexpr std::pair<sv<char>, sv<char>> splitFirst(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
+	constexpr std::pair<sv<char>, sv<char>> splitFirst(std::nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
 	constexpr std::pair<sv<char>, sv<char>> splitFirst(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
@@ -102,7 +103,7 @@ namespace sndx::string {
 		return splitStrip(sv<Chr>{str}, delim, strips);
 	}
 
-	inline std::vector<sv<char>> splitStrip(nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
+	inline std::vector<sv<char>> splitStrip(std::nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
 	auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
@@ -170,11 +171,11 @@ namespace sndx::string {
 		return parseEscaped(sv<CharT>{str});
 	}
 
-	std::string parseEscaped(nullptr_t) = delete;
+	std::string parseEscaped(std::nullptr_t) = delete;
 
 	[[nodiscard]]
-	auto parseEscaped(const char* str) noexcept {
-		return parseEscaped(sv<char>{str});
+	inline auto parseEscaped(const char* str) noexcept {
+		return parseEscaped(sv{str});
 	}
 
 

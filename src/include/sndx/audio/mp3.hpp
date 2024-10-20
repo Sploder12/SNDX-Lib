@@ -52,8 +52,7 @@ namespace sndx::audio {
 
 	public:
 		explicit MP3decoder(std::istream& stream) :
-			m_stream(stream.rdbuf()), m_buffer{},
-			m_dec{}, m_pos(0), m_dirty(false) {
+			m_stream(stream.rdbuf()) {
 		
 			stream.seekg(0, std::ios::end);
 			size_t size = stream.tellg();
@@ -67,7 +66,7 @@ namespace sndx::audio {
 			}
 		}
 
-		~MP3decoder() {
+		~MP3decoder() override {
 			mp3dec_ex_close(&m_dec);
 		}
 

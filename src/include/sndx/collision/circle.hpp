@@ -11,13 +11,13 @@ namespace sndx::collision {
 	class Circle {
 	public:
 		using Vec = VectorT;
-		using Precision = Vec::value_type;
+		using Precision = typename Vec::value_type;
 
 		static constexpr size_t dimensionality() noexcept {
 			return Vec::length();
 		}
 
-	protected:
+	private:
 		Vec m_pos;
 		Precision m_radius;
 
@@ -30,7 +30,7 @@ namespace sndx::collision {
 		}
 
 		// constructs a circle from a point and radius, does not verify preconditions
-		explicit constexpr Circle(const Vec& pos, Precision radius, nullptr_t) noexcept :
+		explicit constexpr Circle(const Vec& pos, Precision radius, std::nullptr_t) noexcept :
 			m_pos(pos), m_radius(radius) {}
 
 	public:
@@ -105,7 +105,7 @@ namespace sndx::collision {
 			// pretty proud of this even if it fails when one sphere contains the entirety of the other
 			auto dir = (pos - otherPos) / centerDist; // normalized direction
 			auto outPos = ((pos + radius * dir) + (otherPos - otherRadius * dir)) * Precision(0.5);
-			auto outRadius = (centerDist + radius + other.radius) * Precision(0.5);
+			auto outRadius = (centerDist + radius + other.m_radius) * Precision(0.5);
 
 			return Circle{ outPos, outRadius, nullptr };
 		}
@@ -121,7 +121,7 @@ namespace sndx::collision {
 
 		// get the radius
 		[[nodiscard]]
-		constexpr const Precision getRadius() const noexcept {
+		constexpr Precision getRadius() const noexcept {
 			return m_radius;
 		}
 
@@ -137,7 +137,7 @@ namespace sndx::collision {
 			const auto& r = getRadius();
 
 			constexpr auto pi = std::numbers::pi_v<Precision>;
-			constexpr auto d = this->getDimensionality();
+			constexpr auto d = Circle<VectorT>::dimensionality();
 
 			if constexpr (d == 0) {
 				return Precision(1.0);

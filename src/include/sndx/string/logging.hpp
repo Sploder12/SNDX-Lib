@@ -85,7 +85,7 @@ namespace sndx::string {
 
 		void removeLogger(LoggerT& logger) {
 			std::unique_lock lock(contextMtx);
-			loggers.erase(std::remove(loggers.begin(), loggers.end(), &logger));
+			loggers.erase(std::ranges::remove(loggers, &logger));
 		}
 
 		void log(std::basic_string_view<CharT> msg) {

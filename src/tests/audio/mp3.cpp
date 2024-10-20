@@ -22,7 +22,7 @@ TEST(MP3, GoodFile) {
 	ASSERT_TRUE(decptr);
 	ASSERT_TRUE(dynamic_cast<MP3decoder*>(decptr.get()));
 
-	MP3decoder* dec = dynamic_cast<MP3decoder*>(decptr.get());
+	auto* dec = dynamic_cast<MP3decoder*>(decptr.get());
 	auto data = dec->readAll();
 	
 	EXPECT_EQ(data.getByteSize(), 64512);

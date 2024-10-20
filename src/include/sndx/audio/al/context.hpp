@@ -18,18 +18,18 @@ namespace sndx::audio {
 
 	template <typename IdT = std::string>
 	class ALcontext {
-	protected:
+	private:
 		ALdevice m_device;
-		ALCcontext* m_context;
+		ALCcontext* m_context{nullptr};
 
 		// buffers and sources are context specific
 		// also despite being based on OpenGL there is no "bindBuffer" etc.
-		std::unordered_map<IdT, ABO> m_buffers;
-		std::unordered_map<IdT, ALsource> m_sources;
+		std::unordered_map<IdT, ABO> m_buffers{};
+		std::unordered_map<IdT, ALsource> m_sources{};
 
 	public:
 		explicit ALcontext(const ALCchar* deviceName = nullptr, const ALCint* attrList = nullptr) :
-			m_device(deviceName), m_context(nullptr), m_buffers{}, m_sources{} {
+			m_device(deviceName) {
 
 			if (!m_device.valid()) return;
 
@@ -37,7 +37,7 @@ namespace sndx::audio {
 		}
 
 		explicit ALcontext(ALdevice&& device, const ALCint* attrList = nullptr) :
-			m_device(std::move(device)), m_context(nullptr), m_buffers{}, m_sources{} {
+			m_device(std::move(device)) {
 
 			if (!m_device.valid()) return;
 
@@ -45,7 +45,7 @@ namespace sndx::audio {
 		}
 
 		ALcontext(ALcontext&& other) noexcept :
-			m_device(std::exchange(other.m_device, {})), m_context(std::exchange(other.m_context, nullptr)),
+			m_device(std::exchange(other.m_device, ALdevice{})), m_context(std::exchange(other.m_context, nullptr)),
 			m_buffers(std::exchange(other.m_buffers, {})), m_sources(std::exchange(other.m_sources, {})) {}
 
 		ALcontext(const ALcontext&) = delete;
@@ -86,7 +86,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		ALdeviceHandle getDevice() const {
+		ALdeviceHandle getDevice() {
 			return m_device;
 		}
 
