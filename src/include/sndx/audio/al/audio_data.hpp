@@ -17,12 +17,11 @@ namespace sndx::audio {
 	};
 
 	class ALaudioData {
-	protected:
+	private:
 		ALaudioMeta m_meta{};
 		std::vector<std::byte> m_buffer{};
 
 	public:
-
 		explicit ALaudioData() noexcept = default;
 
 		explicit ALaudioData(const ALaudioMeta& meta) noexcept :
@@ -44,7 +43,7 @@ namespace sndx::audio {
 			for (size_t i = 0; i < buf.size(); ++i) {
 				long double val = buf[i];
 
-				auto newVal = sndx::math::remapBalanced(val,
+				auto newVal = math::remapBalanced(val,
 					0.0l, newCenter,
 					-1.0l, 1.0l,
 					newMin, newMax);
@@ -72,7 +71,7 @@ namespace sndx::audio {
 
 		[[nodiscard]]
 		auto getChannels() const noexcept {
-			return sndx::audio::getChannels(getFormat());
+			return audio::getChannels(getFormat());
 		}
 
 		[[nodiscard]]
@@ -177,7 +176,7 @@ namespace sndx::audio {
 				}
 
 				for (size_t c = 0; c < out.getChannels(); ++c) {
-					auto newValue = sndx::math::remapBalanced(val[c],
+					auto newValue = math::remapBalanced(val[c],
 						oldCenter, newCenter,
 						oldMin, oldMax,
 						newMin, newMax);

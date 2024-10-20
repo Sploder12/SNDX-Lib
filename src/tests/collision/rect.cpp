@@ -82,3 +82,9 @@ TEST(Rect, VolumeCollision) {
 	EXPECT_FALSE(o.contains(x));
 	EXPECT_FALSE(o.overlaps(x));
 }
+
+TEST(Rect, ErrorWhenNegativeDims) {
+	static constexpr auto size = glm::vec2(-1.0f);
+
+	EXPECT_THROW(Rect2D{ size }, std::invalid_argument);
+}

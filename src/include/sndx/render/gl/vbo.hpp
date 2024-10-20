@@ -310,13 +310,13 @@ namespace sndx::render {
 	};
 
 	template <class... Layout>
-	class TypedVBOhandle : public sndx::mixin::Handle<TypedVBO<Layout...>> {
+	class TypedVBOhandle : public mixin::Handle<TypedVBO<Layout...>> {
 	protected:
 		GLenum m_target;
 
 	public:
 		using VBOt = TypedVBO<Layout...>;
-		using HandleT = sndx::mixin::Handle<VBOt>;
+		using HandleT = mixin::Handle<VBOt>;
 
 		constexpr operator GLuint() const {
 			return this->get();

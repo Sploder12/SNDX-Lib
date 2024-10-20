@@ -86,5 +86,5 @@ namespace sndx::audio {
 
 	static_assert(sizeof(ABO) == sizeof(ALuint));
 
-	using ABOhandle = sndx::mixin::Handle<ABO>;
+	using ABOhandle = mixin::Handle<ABO>;
 }

@@ -101,5 +101,5 @@ namespace sndx::audio {
 		}
 	};
 
-	using ALdeviceHandle = sndx::mixin::Handle<ALdevice>;
+	using ALdeviceHandle = mixin::Handle<ALdevice>;
 }

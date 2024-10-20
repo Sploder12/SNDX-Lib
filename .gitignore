@@ -371,3 +371,4 @@ Intel*
 
 # Jetbrains IDEs
 .idea/
+cmake-build-*/

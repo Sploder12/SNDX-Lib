@@ -331,7 +331,7 @@ namespace sndx::audio {
 
 								val = glm::clamp(val, -32768, 32767);
 
-								val = sndx::utility::fromEndianess<std::endian::little>(val);
+								val = utility::fromEndianess<std::endian::little>(val);
 
 								auto bytes = std::bit_cast<std::array<std::byte, 2>>(int16_t(val));
 								out.emplace_back(bytes[0]);

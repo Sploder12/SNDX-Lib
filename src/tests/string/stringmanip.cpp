@@ -65,6 +65,7 @@ TEST(StringManip, SplitStrip) {
 TEST(StringManip, ParseEscaped) {
 
 	EXPECT_EQ(parseEscaped(""), "");
+	EXPECT_EQ(parseEscaped("\\"), "\\");
 	EXPECT_EQ(parseEscaped("apple"), "apple");
 
 	EXPECT_EQ(parseEscaped("\tap\vple\r"), "\tap\vple\r");

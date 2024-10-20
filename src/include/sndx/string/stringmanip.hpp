@@ -16,7 +16,7 @@ namespace sndx::string {
 	using Str = std::basic_string<CharT>;
 
 	template <typename CharT = char>
-	static constexpr sv<CharT> defaultStrip = sv<CharT>{" \t\r"};
+	constexpr sv<CharT> defaultStrip = sv<CharT>{" \t\r"};
 
 	
 	template <class Chr = char> [[nodiscard]]

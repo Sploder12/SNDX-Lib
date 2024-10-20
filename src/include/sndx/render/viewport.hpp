@@ -12,7 +12,7 @@ namespace sndx::render {
 	class Viewport {
 	public:
 		using Vec = VecT;
-		using RectT = sndx::collision::Rect<VecT>;
+		using RectT = collision::Rect<VecT>;
 		using Precision = typename RectT::Precision;
 
 	protected:
@@ -64,12 +64,12 @@ namespace sndx::render {
 
 		[[nodiscard]]
 		constexpr Vec pixToNDC(Vec in) const noexcept {
-			return sndx::math::remap(in, m_rect.getP1(), m_rect.getP2(), Vec(-1.0), Vec(1.0));
+			return math::remap(in, m_rect.getP1(), m_rect.getP2(), Vec(-1.0), Vec(1.0));
 		}
 
 		[[nodiscard]]
 		constexpr Vec NDCtoPix(const Vec& ndc) const noexcept {
-			return sndx::math::remap(ndc, Vec(-1.0), Vec(1.0), m_rect.getP1(), m_rect.getP2());
+			return math::remap(ndc, Vec(-1.0), Vec(1.0), m_rect.getP1(), m_rect.getP2());
 		}
 	};
 
@@ -80,7 +80,7 @@ namespace sndx::render {
 		using RectT = typename Viewport<VecT>::RectT;
 		using Precision = typename Viewport<VecT>::Precision;
 
-	protected:
+	private:
 		Vec m_alignment = Vec(Precision(0.5));
 		Precision m_aspectRatio{1.0};
 

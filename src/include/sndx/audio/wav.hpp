@@ -5,7 +5,6 @@
 #include "../utility/endian.hpp"
 #include "../data/RIFF.hpp"
 
-#include <iostream>
 #include <variant>
 #include <array>
 #include <concepts>
@@ -18,12 +17,12 @@ namespace sndx::audio {
 	static constexpr uint16_t WAVE_MU_LAW = 7;
 	static constexpr uint16_t WAVE_EXTENSIBLE = 0xFFFE;
 
-	struct FMTchunk : public sndx::RIFF::Chunk {
+	struct FMTchunk : public RIFF::Chunk {
 		static constexpr std::array<char, 4> ID = { 'f', 'm', 't', ' ' };
 
 		struct ExtendedNone {
-			static void deserialize(const sndx::serialize::Deserializer&) {};
-			static void serialize(const sndx::serialize::Serializer&) {};
+			static void deserialize(const serialize::Deserializer&) {};
+			static void serialize(const serialize::Serializer&) {};
 
 			static constexpr uint32_t size() noexcept {
 				return 0 + 16;
@@ -31,7 +30,7 @@ namespace sndx::audio {
 		};
 
 		struct Extended0 {
-			static void deserialize(sndx::serialize::Deserializer& deserializer) {
+			static void deserialize(serialize::Deserializer& deserializer) {
 				uint16_t size;
 				deserializer.deserialize<std::endian::little>(size);
 
@@ -39,7 +38,7 @@ namespace sndx::audio {
 					throw deserialize_error("Extended0 didn't have size 0");
 			};
 
-			static void serialize(sndx::serialize::Serializer& serializer) noexcept {
+			static void serialize(serialize::Serializer& serializer) noexcept {
 				serializer.serialize<std::endian::little>(static_cast<uint16_t>(0));
 			};
 
@@ -55,7 +54,7 @@ namespace sndx::audio {
 
 			static constexpr uint16_t dataSize = sizeof(validBitsPerSample) + sizeof(channelMask) + sizeof(guid);
 
-			void deserialize(sndx::serialize::Deserializer& deserializer) {
+			void deserialize(serialize::Deserializer& deserializer) {
 				uint16_t size;
 				deserializer.deserialize<std::endian::little>(size);
 
@@ -67,7 +66,7 @@ namespace sndx::audio {
 				deserializer.deserialize(guid, sizeof(guid));
 			};
 
-			void serialize(sndx::serialize::Serializer& serializer) const {
+			void serialize(serialize::Serializer& serializer) const {
 				serializer.serialize<std::endian::little>(dataSize);
 
 				serializer.serialize<std::endian::little>(validBitsPerSample);
@@ -91,7 +90,7 @@ namespace sndx::audio {
 
 		explicit constexpr FMTchunk() = default;
 
-		explicit constexpr FMTchunk(const sndx::RIFF::ChunkHeader& header) {
+		explicit constexpr FMTchunk(const RIFF::ChunkHeader& header) {
 			switch (header.size) {
 			case ExtendedNone::size():
 				ext = ExtendedNone();
@@ -112,7 +111,7 @@ namespace sndx::audio {
 			return blockAlign / channels;
 		}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) override {
+		void deserialize(serialize::Deserializer& deserializer) override {
 			deserializer.deserialize<std::endian::little>(format);
 			deserializer.deserialize<std::endian::little>(channels);
 			deserializer.deserialize<std::endian::little>(sampleRate);
@@ -125,7 +124,7 @@ namespace sndx::audio {
 			}, ext);
 		};
 
-		void serialize(sndx::serialize::Serializer& serializer) const override {
+		void serialize(serialize::Serializer& serializer) const override {
 			serializer.serialize("fmt ", 4);
 		
 			std::visit([&serializer]<typename T>(const T&) {
@@ -172,20 +171,20 @@ namespace sndx::audio {
 		}
 	};
 
-	struct FACTchunk : public sndx::RIFF::Chunk {
+	struct FACTchunk : public RIFF::Chunk {
 		static constexpr std::array<char, 4> ID = { 'f', 'a', 'c', 't' };
 
 		uint32_t sampleLength = 0;
 
 		explicit constexpr FACTchunk() = default;
 
-		explicit constexpr FACTchunk(const sndx::RIFF::ChunkHeader&) noexcept {};
+		explicit constexpr FACTchunk(const RIFF::ChunkHeader&) noexcept {};
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) override {
+		void deserialize(serialize::Deserializer& deserializer) override {
 			deserializer.deserialize<std::endian::little>(sampleLength);
 		}
 
-		void serialize(sndx::serialize::Serializer& serializer) const override {
+		void serialize(serialize::Serializer& serializer) const override {
 			serializer.serialize("fact", 4);
 			serializer.serialize<std::endian::little>(static_cast<uint32_t>(sizeof(sampleLength)));
 
@@ -198,18 +197,18 @@ namespace sndx::audio {
 		}
 	};
 
-	struct DATAchunk : public sndx::RIFF::Chunk {
+	struct DATAchunk : public RIFF::Chunk {
 		static constexpr std::array<char, 4> ID = { 'd', 'a', 't', 'a' };
 
 		std::vector<uint8_t> data{};
 
 		explicit DATAchunk() = default;
 
-		explicit DATAchunk(const sndx::RIFF::ChunkHeader& header) {
+		explicit DATAchunk(const RIFF::ChunkHeader& header) {
 			data.resize(header.size);
 		}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) override {
+		void deserialize(serialize::Deserializer& deserializer) override {
 			deserializer.deserialize(data.data(), data.size());
 
 			uint8_t padding = 0;
@@ -217,7 +216,7 @@ namespace sndx::audio {
 				deserializer.deserialize(padding);
 		}
 
-		void serialize(sndx::serialize::Serializer& serializer) const override {
+		void serialize(serialize::Serializer& serializer) const override {
 			serializer.serialize("data", 4);
 			serializer.serialize<std::endian::little>(static_cast<uint32_t>(data.size()));
 
@@ -237,9 +236,9 @@ namespace sndx::audio {
 	};
 
 	inline const bool _subchunkRegisterer = []() {
-		sndx::RIFF::Chunk::registerChunkType<FMTchunk>();
-		sndx::RIFF::Chunk::registerChunkType<DATAchunk>();
-		sndx::RIFF::Chunk::registerChunkType<FACTchunk>();
+		RIFF::Chunk::registerChunkType<FMTchunk>();
+		RIFF::Chunk::registerChunkType<DATAchunk>();
+		RIFF::Chunk::registerChunkType<FACTchunk>();
 		return true;
 	}();
 
@@ -248,26 +247,24 @@ namespace sndx::audio {
 		static constexpr std::array<char, 4> ID = {'W', 'A', 'V', 'E'};
 
 	private:
-		sndx::RIFF::File m_file{ ID };
+		RIFF::File m_file{ ID };
 
 		FMTchunk* m_fmt = nullptr;
 		DATAchunk* m_data = nullptr;
 
 	public:
 		[[nodiscard]]
-		sndx::RIFF::Chunk* getChunk(std::array<char, 4> id) {
-			if (id == FMTchunk::ID) {
+		RIFF::Chunk* getChunk(std::array<char, 4> id) {
+			if (id == FMTchunk::ID)
 				return m_fmt;
-			}
-			else if (id == DATAchunk::ID) {
+
+			if (id == DATAchunk::ID)
 				return m_data;
-			}
-			else {
-				return m_file.getChunk(id);
-			}
+
+			return m_file.getChunk(id);
 		}
 
-		template <std::derived_from<sndx::RIFF::Chunk> T> [[nodiscard]]
+		template <std::derived_from<RIFF::Chunk> T> [[nodiscard]]
 		T* getChunk() {
 			if constexpr (std::is_same_v<T, FMTchunk>) {
 				return m_fmt;
@@ -280,7 +277,7 @@ namespace sndx::audio {
 			}
 		}
 
-		template <std::derived_from<sndx::RIFF::Chunk> T>
+		template <std::derived_from<RIFF::Chunk> T>
 		bool emplaceChunk(const T& chunk) {
 			auto& [it, success] = m_file.emplaceChunk(chunk);
 
@@ -310,7 +307,7 @@ namespace sndx::audio {
 			return *m_fmt;
 		}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) {
+		void deserialize(serialize::Deserializer& deserializer) {
 			m_file.deserialize(deserializer, ID);
 
 			m_fmt = m_file.getChunk<FMTchunk>();
@@ -320,7 +317,7 @@ namespace sndx::audio {
 				throw deserialize_error("WAVE file missing fmt  or data");
 		}
 
-		void serialize(sndx::serialize::Serializer& serializer) const {
+		void serialize(serialize::Serializer& serializer) const {
 
 			if (!m_fmt || !m_data)
 				throw serialize_error("WAVE file missing fmt  or data");
@@ -337,8 +334,8 @@ namespace sndx::audio {
 			serializer.serialize(*m_fmt);
 
 			for (const auto& [id, chunk] : chunks) {
-				if (id == sndx::RIFF::idToRawID(FMTchunk::ID) ||
-					id == sndx::RIFF::idToRawID(DATAchunk::ID)) {
+				if (id == RIFF::idToRawID(FMTchunk::ID) ||
+					id == RIFF::idToRawID(DATAchunk::ID)) {
 					
 					continue;
 				}
@@ -353,7 +350,6 @@ namespace sndx::audio {
 	// a WAV file decoder.
 	// seeking functionality requires the underlying istream to be seekable
 	class WAVdecoder : public AudioDecoder {
-	protected:
 		std::istream m_stream;
 
 		FMTchunk m_meta{};
@@ -366,16 +362,16 @@ namespace sndx::audio {
 		explicit WAVdecoder(std::istream& stream) :
 			m_stream(stream.rdbuf()) {
 
-			sndx::serialize::Deserializer deserializer{ stream };
+			serialize::Deserializer deserializer{ stream };
 			bool seekable = true;
 
-			sndx::RIFF::RIFFheader head;
+			RIFF::RIFFheader head;
 			deserializer.deserialize(head);
 
 			if (head.type != std::array<char, 4>{'W', 'A', 'V', 'E'})
 				throw identifier_error("RIFF file is not WAVE");
 
-			sndx::RIFF::ChunkHeader header;
+			RIFF::ChunkHeader header;
 			deserializer.deserialize(header);
 
 			
@@ -528,8 +524,8 @@ namespace sndx::audio {
 					long double oldMax = std::exp2(bits) - 1;
 
 					for (const auto& d : data) {
-						auto val = sndx::math::remap((long double)d, 0.0l, oldMax, 0.0l, 255.0l);
-						out.emplace_back((std::byte)(val));
+						auto val = math::remap((long double)d, 0.0l, oldMax, 0.0l, 255.0l);
+						out.emplace_back(static_cast<std::byte>(val));
 					}
 				}
 			}

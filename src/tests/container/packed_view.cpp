@@ -45,7 +45,7 @@ TEST(PackedView, Norma16Bit) {
 
 	std::iota(arr.begin(), arr.end(), 1337);
 
-	PackedView<sizeof(std::uint16_t) * 8> view((std::byte*)(arr.data()), arr.size());
+	const PackedView<sizeof(std::uint16_t) * 8> view((std::byte*)(arr.data()), arr.size());
 
 	EXPECT_EQ(view.size(), arr.size());
 	EXPECT_EQ(arr.data(), (std::uint16_t*)(view.data()));
@@ -93,7 +93,7 @@ TEST(PackedView, Bits3Big) {
 		0b01110111,
 	};
 
-	PackedView<3, std::endian::big> view((std::byte*)(arr.data()), 7);
+	const PackedView<3, std::endian::big> view((std::byte*)(arr.data()), 7);
 
 	EXPECT_EQ(view.size(), 7);
 	EXPECT_EQ(arr.data(), (std::uint8_t*)(view.data()));
@@ -109,7 +109,7 @@ TEST(PackedView, Bits3Big) {
 		0b10000000
 	};
 
-	PackedView<3, std::endian::big> viewOff1((std::byte*)(arrOff1.data()), 7, 1);
+	const PackedView<3, std::endian::big> viewOff1((std::byte*)(arrOff1.data()), 7, 1);
 
 	EXPECT_EQ(viewOff1.size(), 7);
 	EXPECT_EQ(arrOff1.data(), (std::uint8_t*)(viewOff1.data()));
@@ -128,7 +128,7 @@ TEST(PackedView, Bits3Little) {
 		0b11111010,
 	};
 
-	PackedView<3, std::endian::little> view((std::byte*)(arr.data()), 7);
+	const PackedView<3, std::endian::little> view((std::byte*)(arr.data()), 7);
 
 	EXPECT_EQ(view.size(), 7);
 	EXPECT_EQ(arr.data(), (std::uint8_t*)(view.data()));
@@ -136,4 +136,14 @@ TEST(PackedView, Bits3Little) {
 	for (size_t i = 0; i < view.size(); ++i) {
 		EXPECT_EQ(view[i].to_ullong(), i);
 	}
+}
+
+TEST(PackedView, SubviewThrowsWhenOutOfRange) {
+	std::byte data{0xff};
+	const PackedView<sizeof(data) * 8> view(&data, sizeof(data));
+
+	const auto emptyView = view.subview(view.size());
+	EXPECT_EQ(emptyView.size(), 0);
+
+	EXPECT_THROW((std::ignore = view.subview(view.size() + 1)), std::out_of_range);
 }

@@ -97,7 +97,7 @@ namespace sndx::audio {
 		}
 	};
 
-	using DecoderRegistry = sndx::utility::FactoryRegistry<std::string, AudioDecoder::Factory>;
+	using DecoderRegistry = utility::FactoryRegistry<std::string, AudioDecoder::Factory>;
 
 	[[nodiscard]]
 	inline DecoderRegistry& getDecoderRegistry() noexcept {

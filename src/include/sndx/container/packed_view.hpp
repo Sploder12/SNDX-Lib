@@ -33,13 +33,12 @@ namespace sndx::container {
 		// https://en.cppreference.com/w/cpp/iterator/bidirectional_iterator
 		// yes, it's a random_access_iterator.
 		class Iterator : 
-			public sndx::mixin::Comparisons<Iterator>, 
-			public sndx::mixin::AddSub<Iterator, long long, true> {
+			public mixin::Comparisons<Iterator>,
+			public mixin::AddSub<Iterator, long long, true> {
 		public:
 			// iterator - iterator overload forces this line to be present
-			using sndx::mixin::AddSub<Iterator, long long, true>::operator-;
-			
-		public:
+			using mixin::AddSub<Iterator, long long, true>::operator-;
+
 			using iterator_category = std::random_access_iterator_tag;
 			using difference_type = long long;
 			using value_type = out_type;

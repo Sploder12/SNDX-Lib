@@ -71,3 +71,13 @@ TEST(Viewport, AspectRatioViewport) {
 	[[maybe_unused]]
 	const auto& r = static_cast<const Rect<glm::vec2>&>(v);
 }
+
+TEST(Viewport, ResizeThrowsOnBadSize) {
+	constexpr auto size = glm::vec2(1.0f);
+	constexpr auto badSize = glm::vec2(0.0f);
+	Viewport v{ size };
+	AspectRatioViewport arv{ size, 1.0f };
+
+	EXPECT_THROW(v.resize(badSize), std::invalid_argument);
+	EXPECT_THROW(arv.resize(badSize), std::invalid_argument);
+}

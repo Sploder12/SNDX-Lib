@@ -207,5 +207,5 @@ namespace sndx::audio {
 
 	static_assert(sizeof(ALsource) == sizeof(ALuint));
 
-	using ALsourceHandle = sndx::mixin::Handle<ALsource>;
+	using ALsourceHandle = mixin::Handle<ALsource>;
 }

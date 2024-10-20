@@ -25,12 +25,12 @@ namespace sndx::RIFF {
 		std::array<char, 4> id = { 0 };
 		uint32_t size = 0;
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) {
+		void deserialize(serialize::Deserializer& deserializer) {
 			deserializer.deserialize(id.data(), sizeof(id));
 			deserializer.deserialize<std::endian::little>(size);
 		}
 
-		void serialize(sndx::serialize::Serializer& serializer) const {
+		void serialize(serialize::Serializer& serializer) const {
 			serializer.serialize(id.data(), sizeof(id));
 			serializer.serialize<std::endian::little>(size);
 		}
@@ -45,7 +45,7 @@ namespace sndx::RIFF {
 		explicit RIFFheader() = default;
 		explicit RIFFheader(std::array<char, 4> id) : type(id) {}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) {
+		void deserialize(serialize::Deserializer& deserializer) {
 			deserializer.deserialize(type.data(), sizeof(type));
 			if (type != ID)
 				throw identifier_error("RIFF not present in RIFF header");
@@ -54,7 +54,7 @@ namespace sndx::RIFF {
 			deserializer.deserialize(type.data(), sizeof(type));
 		}
 
-		void serialize(sndx::serialize::Serializer& serializer) const {
+		void serialize(serialize::Serializer& serializer) const {
 			serializer.serialize("RIFF", 4);
 			serializer.serialize<std::endian::little>(size);
 			serializer.serialize(type.data(), sizeof(type));
@@ -71,14 +71,14 @@ namespace sndx::RIFF {
 
 		// ex: `static std::array<char, 4> ID = ~;`
 
-		virtual void deserialize(sndx::serialize::Deserializer&) = 0;
-		virtual void serialize(sndx::serialize::Serializer& serializer) const = 0;
+		virtual void deserialize(serialize::Deserializer&) = 0;
+		virtual void serialize(serialize::Serializer& serializer) const = 0;
 		virtual uint32_t getLength() const = 0;
 
-		using Factory = std::unique_ptr<Chunk> (*)(sndx::serialize::Deserializer&, const ChunkHeader&);
+		using Factory = std::unique_ptr<Chunk> (*)(serialize::Deserializer&, const ChunkHeader&);
 
 		[[nodiscard]]
-		static std::unique_ptr<Chunk> create(sndx::serialize::Deserializer& deserializer, const ChunkHeader& header) {
+		static std::unique_ptr<Chunk> create(serialize::Deserializer& deserializer, const ChunkHeader& header) {
 			uint32_t rawID = idToRawID(header.id);
 
 			const auto& map = getChunkMap();
@@ -94,7 +94,7 @@ namespace sndx::RIFF {
 		static void registerChunkType() {
 			auto& map = getChunkMap();
 
-			map.emplace(idToRawID(T::ID), [](sndx::serialize::Deserializer& deserializer, const ChunkHeader& header) {
+			map.emplace(idToRawID(T::ID), [](serialize::Deserializer& deserializer, const ChunkHeader& header) {
 				std::unique_ptr<T> chunk = std::make_unique<T>(header);
 				deserializer.deserialize(*chunk);
 				return std::unique_ptr<Chunk>(std::move(chunk));
@@ -109,16 +109,14 @@ namespace sndx::RIFF {
 	};
 
 	class File {
-	private:
 		RIFFheader m_header{};
-
 		std::unordered_map<uint32_t, std::unique_ptr<Chunk>> m_chunks{};
 
 	public:
 		explicit File() = default;
 
 		explicit File(std::array<char, 4> id) :
-			m_header(id), m_chunks{} {}
+			m_header(id) {}
 
 		[[nodiscard]]
 		const RIFFheader& getHeader() const noexcept {
@@ -151,12 +149,12 @@ namespace sndx::RIFF {
 			return m_chunks;
 		}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer) {
+		void deserialize(serialize::Deserializer& deserializer) {
 			deserializer.deserialize(m_header);
 			deserializeRest(deserializer);
 		}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer, std::array<char, 4> checkID) {
+		void deserialize(serialize::Deserializer& deserializer, std::array<char, 4> checkID) {
 			deserializer.deserialize(m_header);
 
 			if (m_header.type != checkID)
@@ -165,7 +163,7 @@ namespace sndx::RIFF {
 			deserializeRest(deserializer);
 		}
 
-		void serialize(sndx::serialize::Serializer& serializer) const {
+		void serialize(serialize::Serializer& serializer) const {
 			RIFFheader tmp = m_header;
 
 			tmp.size = sizeof(tmp.type);
@@ -181,7 +179,7 @@ namespace sndx::RIFF {
 		}
 
 	private:
-		void deserializeRest(sndx::serialize::Deserializer& deserializer) {
+		void deserializeRest(serialize::Deserializer& deserializer) {
 			size_t read = 8;
 			bool seekable = true;
 
@@ -223,12 +221,12 @@ namespace sndx::RIFF {
 		std::unordered_map<uint32_t, LazyChunk> m_chunks{};
 
 	public:
-		void deserialize(sndx::serialize::Deserializer& deserializer) {
+		void deserialize(serialize::Deserializer& deserializer) {
 			deserializer.deserialize(m_header);
 			deserializeRest(deserializer);
 		}
 
-		void deserialize(sndx::serialize::Deserializer& deserializer, std::array<char, 4> checkID) {
+		void deserialize(serialize::Deserializer& deserializer, std::array<char, 4> checkID) {
 			deserializer.deserialize(m_header);
 
 			if (m_header.type != checkID)
@@ -238,7 +236,7 @@ namespace sndx::RIFF {
 		}
 
 		[[nodiscard]]
-		Chunk* getChunk(std::array<char, 4> id, sndx::serialize::Deserializer& deserializer) {
+		Chunk* getChunk(std::array<char, 4> id, serialize::Deserializer& deserializer) {
 			uint32_t rawID = idToRawID(id);
 
 			if (auto it = m_chunks.find(rawID); it != m_chunks.end()) {
@@ -257,12 +255,12 @@ namespace sndx::RIFF {
 		}
 
 		template <std::derived_from<Chunk> T> [[nodiscard]]
-		T* getChunk(sndx::serialize::Deserializer& deserializer) {
+		T* getChunk(serialize::Deserializer& deserializer) {
 			return static_cast<T*>(getChunk(T::ID, deserializer));
 		}
 
 	private:
-		void deserializeRest(sndx::serialize::Deserializer& deserializer) {
+		void deserializeRest(serialize::Deserializer& deserializer) {
 			size_t read = 8;
 			bool seekable = true;
 

@@ -125,19 +125,15 @@ namespace sndx::math {
 	// old centerpoint should NOT be the min/max value of that type
 	template <std::floating_point T> [[nodiscard]]
 	constexpr T remapBalanced(T value, T oldCenterpoint, T newCenterpoint, T oldMin, T oldMax, T newMin, T newMax) noexcept {
-
-		if (value > oldCenterpoint) {
+		if (value > oldCenterpoint)
 			return remap(value, oldCenterpoint, oldMax, newCenterpoint, newMax);
-		}
-		else if (value < oldCenterpoint) {
+		if (value < oldCenterpoint)
 			return remap(value, oldMin, oldCenterpoint, newMin, newCenterpoint);
-		}
-		else {
-			return newCenterpoint;
-		}
+
+		return newCenterpoint;
 	}
 
-	// remaps value from it's type to the output type.
+	// remaps value from its type to the output type.
 	// since signed types are not centered on 0, beware that 0 may not map to 0
 	// but generally, narrowing will preserve 0s.
 	template <std::integral O, std::integral I> [[nodiscard]]

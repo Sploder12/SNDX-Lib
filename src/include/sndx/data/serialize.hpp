@@ -61,7 +61,7 @@ namespace sndx {
 
 			template <std::endian endianess>
 			decltype(auto) serialize(const std::integral auto& val) {
-				return serialize(sndx::utility::fromEndianess<endianess>(val));
+				return serialize(utility::fromEndianess<endianess>(val));
 			}
 		};
 
@@ -95,7 +95,7 @@ namespace sndx {
 			template <std::endian endianess>
 			auto deserialize(std::integral auto& obj) {
 				deserialize(obj);
-				obj = sndx::utility::fromEndianess<endianess>(obj);
+				obj = utility::fromEndianess<endianess>(obj);
 			}
 
 
