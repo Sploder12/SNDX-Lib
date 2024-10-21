@@ -48,7 +48,7 @@ namespace sndx::input {
 		}
 
 		void setVisibility(bool visible) {
-			static_cast<Backend*>(this)->setVisibilityImple(visible);
+			static_cast<Backend*>(this)->setVisibilityImpl(visible);
 		}
 
 		decltype(auto) setTitle(const std::string& newTitle) {

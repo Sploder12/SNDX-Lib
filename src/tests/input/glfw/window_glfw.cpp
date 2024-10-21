@@ -8,8 +8,24 @@ using namespace sndx::collision;
 class GLFWwindowTest : public ::testing::Test {
 public:
     void SetUp() override {
-        if (glfwInit() != GLFW_TRUE)
-            GTEST_SKIP() << "Failed to initialize GLFW, can't test on this platform.";
+        // it's important to check if we even can test,
+        // some platforms like GitHub runners can't test GLFW
+        if (glfwInit() != GLFW_TRUE) {
+            const char* what = "";
+            glfwGetError(&what);
+            GTEST_SKIP() << "Failed to initialize GLFW: " << what;
+        }
+
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        if (auto win = glfwCreateWindow(640, 480, "Verify Window", nullptr, nullptr); !win) {
+            const char* what = "";
+            glfwGetError(&what);
+            GTEST_SKIP() << "Failed to create GLFW window: " << what;
+        }
+        else {
+            glfwDestroyWindow(win);
+        }
+        WindowHintsGLFW::restoreDefaults();
 
         m_testBuilder.setTitle("test").setX(0).setY(1).setWidth(320).setHeight(240);
     }
@@ -44,6 +60,8 @@ private:
 };
 
 TEST_F(GLFWwindowTest, BadSizeWindowThrows) {
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
     EXPECT_THROW((WindowGLFW{"", 0, 0}), std::runtime_error);
     EXPECT_THROW((WindowGLFW{"", 1, 0}), std::runtime_error);
     EXPECT_THROW((WindowGLFW{"", 0, 1}), std::runtime_error);
@@ -53,6 +71,7 @@ TEST_F(GLFWwindowTest, BadSizeWindowThrows) {
 TEST_F(GLFWwindowTest, BuilderBuilds) {
     WindowBuilderGLFW builder{getBuilder()};
 
+    WindowHintsGLFW::restoreDefaults();
     WindowHintsGLFW hints{};
     hints.setHint(GLFW_VISIBLE, GLFW_FALSE);
 
@@ -61,4 +80,29 @@ TEST_F(GLFWwindowTest, BuilderBuilds) {
     auto window = builder.build();
 
     verifyBuiltWindow(window, builder);
+}
+
+TEST_F(GLFWwindowTest, CanTransform) {
+    WindowHintsGLFW::restoreDefaults();
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    WindowGLFW window{"", 400, 300};
+
+    window.setVisibility(true);
+    EXPECT_TRUE(window.isVisible());
+
+    window.setVisibility(false);
+    EXPECT_FALSE(window.isVisible());
+
+    window.setTitle("test");
+    EXPECT_EQ(window.getTitle(), "test");
+
+    window.setPosition(glm::ivec2(10, 20));
+    EXPECT_EQ(window.getPosition(), glm::ivec2(10, 20));
+
+    window.resize(glm::ivec2(450, 290));
+    EXPECT_EQ(window.getSize(), glm::ivec2(450, 290));
+
+    EXPECT_FALSE(glfwWindowShouldClose(window));
+    window.tryClose();
+    EXPECT_TRUE(glfwWindowShouldClose(window));
 }
