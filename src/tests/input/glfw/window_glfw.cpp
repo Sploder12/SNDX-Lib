@@ -9,7 +9,7 @@ class GLFWwindowTest : public ::testing::Test {
 public:
     void SetUp() override {
         // it's important to check if we even can test,
-        // some platforms like GitHub runners can't test GLFW
+        // headless platforms like GitHub runners can't test GLFW
         if (glfwInit() != GLFW_TRUE) {
             const char* what = "";
             glfwGetError(&what);

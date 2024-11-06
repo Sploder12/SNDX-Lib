@@ -46,8 +46,8 @@ namespace sndx::input {
 		WindowGLFW& operator=(WindowGLFW&& other) noexcept {
 			std::swap(m_window, other.m_window);
 
-			glfwSetWindowUserPointer(m_window, this);
 			glfwSetWindowUserPointer(other.m_window, nullptr);
+			glfwSetWindowUserPointer(m_window, this);
 			return *this;
 		}
 
