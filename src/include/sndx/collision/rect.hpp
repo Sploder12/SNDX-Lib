@@ -88,9 +88,8 @@ namespace sndx::collision {
 
 		// sets the points of the Rect based off a position and dimensions
 		constexpr Rect& setPosDims(const Vec& pos, const Vec& dims) {
-			if (glm::compMin(dims) < Precision(0.0)) {
+			if (glm::compMin(dims) < Precision(0.0))
 				throw std::invalid_argument("Dimensions of Rect must be >= 0.");
-			}
 
 			m_p1 = pos;
 			m_p2 = m_p1 + dims;

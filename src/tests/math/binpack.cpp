@@ -14,7 +14,7 @@ TEST(Binpack, TrivialPacking) {
 
 	ASSERT_TRUE(packer.add("a", 10, 5));
 
-	auto trivial_out = packer.pack(10);
+ 	auto trivial_out = packer.pack(10);
 	
 	EXPECT_EQ(trivial_out.neededHeight, 5);
 	EXPECT_EQ(trivial_out.neededWidth, 10);
@@ -103,4 +103,13 @@ TEST(Binpack, PaddingPads) {
 	EXPECT_NE(aX, bX);
 	EXPECT_TRUE(aX == 0 || aX == 1 + 20);
 	EXPECT_TRUE(bX == 0 || bX == 10 + 20);
+}
+
+TEST(Binpack, invalid_packing_throws) {
+	BinPacker packer{};
+
+	ASSERT_TRUE(packer.add("a", 10, 5));
+	
+	EXPECT_THROW(auto ign = packer.pack(0), std::invalid_argument);
+	EXPECT_THROW(auto ign = packer.pack(1), std::invalid_argument);
 }

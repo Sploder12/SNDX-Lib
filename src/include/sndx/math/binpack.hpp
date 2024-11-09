@@ -12,7 +12,6 @@
 
 namespace sndx::math {
 
-
 	template <bool horizontal = true, class IdT = std::string>
 	class BinPacker {
 	private:
@@ -63,6 +62,11 @@ namespace sndx::math {
 				occupied += entry.getSecondaryDim() + padding;
 				entries.emplace_back(id, std::addressof(entry));
 			}
+
+			[[nodiscard]]
+			bool tryAddEntry(const IdT& id, const Entry& entry, size_t padding = 0) noexcept {
+				return canAddEntry(entry) && (addEntry(id, entry, padding), true);
+			}
 		};
 
 		std::multiset<Entry, std::greater<Entry>> m_entries{};
@@ -81,6 +85,10 @@ namespace sndx::math {
 			}
 
 			return false;
+		}
+
+		void reserve(size_t size) noexcept {
+			m_ids.reserve(size);
 		}
 
 		struct Packing {
@@ -102,6 +110,16 @@ namespace sndx::math {
 			auto contains(const IdT& id) const noexcept {
 				return positions.contains(id);
 			}
+
+			[[nodiscard]]
+			auto width() const noexcept {
+				return neededWidth;
+			}
+
+			[[nodiscard]]
+			auto height() const noexcept {
+				return neededHeight;
+			}
 		};
 
 		// uses a modified Next-Fit Decreasing Height/Width algorithm.
@@ -114,15 +132,7 @@ namespace sndx::math {
 
 			out.positions.reserve(m_entries.size());
 
-			size_t shelfSecondary = dimConstraint;
-			size_t shelfPrimary = m_entries.cbegin()->getPrimaryDim();
-
-			size_t neededPrimary = 0;
-			size_t neededSecondary = 0;
-
 			std::vector<Shelf> shelves{};
-			Shelf currentShelf{ shelfPrimary, shelfSecondary };
-
 			for (const auto& [id, entry_it] : m_ids) {
 				const auto& entry = *entry_it;
 
@@ -131,48 +141,22 @@ namespace sndx::math {
 
 				bool added = false;
 				for (auto& prevShelf : shelves) {
-					if (prevShelf.canAddEntry(entry)) {
-						prevShelf.addEntry(id, entry, padding);
-						added = true;
-					}
+					added = prevShelf.tryAddEntry(id, entry, padding);
+					if (added)
+						break;
 				}
 
 				if (!added) {
-					if (currentShelf.canAddEntry(entry))
-						currentShelf.addEntry(id, entry, padding);
-					else {
-						neededSecondary = std::max(neededSecondary, currentShelf.occupied);
-						neededPrimary += currentShelf.dims.getPrimaryDim() + padding;
-						shelves.emplace_back(std::move(currentShelf));
-						shelfPrimary = entry.getPrimaryDim();
-						currentShelf = Shelf{ shelfPrimary, shelfSecondary };
-						currentShelf.addEntry(id, entry, padding);
-					}
+					shelves.emplace_back(entry.getPrimaryDim(), dimConstraint);
+					shelves.back().addEntry(id, entry, padding);
 				}
 			}
 
-			if (!currentShelf.entries.empty()) {
-				neededSecondary = std::max(neededSecondary, currentShelf.occupied);
-				neededPrimary += currentShelf.dims.getPrimaryDim() + padding;
-				shelves.emplace_back(std::move(currentShelf));
-			}
-
-			neededPrimary -= padding;
-			neededSecondary -= padding;
-
-			if constexpr (horizontal) {
-				out.neededHeight = neededPrimary;
-				out.neededWidth = neededSecondary;
-			}
-			else {
-				out.neededWidth = neededPrimary;
-				out.neededHeight = neededSecondary;
-			}
-
+			size_t neededSecondary = 0;
 			size_t primary = 0;
-			size_t secondary = 0;
-
 			for (const auto& shelf : shelves) {
+				size_t secondary = 0;
+
 				for (auto& [id, entry] : shelf.entries) {
 					if constexpr (horizontal) {
 						out.positions.emplace(std::move(id), glm::vec<2, size_t>{secondary, primary});
@@ -185,7 +169,22 @@ namespace sndx::math {
 				}
 
 				primary += shelf.dims.getPrimaryDim() + padding;
-				secondary = 0;
+				neededSecondary = std::max(neededSecondary, secondary);
+			}
+
+			if (primary >= padding)
+				primary -= padding;
+
+			if (neededSecondary >= padding)
+				neededSecondary -= padding;
+
+			if constexpr (horizontal) {
+				out.neededHeight = primary;
+				out.neededWidth = neededSecondary;
+			}
+			else {
+				out.neededWidth = primary;
+				out.neededHeight = neededSecondary;
 			}
 
 			return out;

@@ -30,7 +30,7 @@ namespace sndx::render {
 		virtual ~Viewport() noexcept = default;
 
 		[[nodiscard]]
-		constexpr operator const RectT& () const noexcept {
+		explicit constexpr operator const RectT& () const noexcept {
 			return m_rect;
 		}
 
