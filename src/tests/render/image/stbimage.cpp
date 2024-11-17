@@ -5,6 +5,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 using namespace sndx::render;
 
 std::filesystem::path test_data_path{ L"test_data/visual/rgbbw_test_img📷.png" };
@@ -109,4 +112,65 @@ TEST_F(STBimageTest, LoadsRGBApngFlipped) {
 	EXPECT_EQ(img->at<4>(100, 99), (Vec{ 0, 0, 255, 255 }));
 	EXPECT_EQ(img->at<4>(150, 99), (Vec{ 0, 0, 0, 255 }));
 	EXPECT_EQ(img->at<4>(190, 99), (Vec{ 255, 255, 255, 255 }));
+}
+
+void testSaveWorks(const std::filesystem::path& path, bool flip) {
+	ImageData img{ 2, 2, 3, {
+		std::byte(0xff), std::byte(0x0), std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0x0),
+		std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0xff), std::byte(0xff), std::byte(0xff)
+	}};
+
+	ASSERT_TRUE(saveImageFile(path, img, STBimageSaver{ flip }));
+	ASSERT_TRUE(std::filesystem::exists(path));
+
+	auto reloaded = STBimageLoader{ flip }.loadFromFile(path, 3);
+
+	std::filesystem::remove(path);
+	ASSERT_TRUE(reloaded.has_value());
+
+	EXPECT_EQ(img.width(), reloaded->width());
+	EXPECT_EQ(img.height(), reloaded->height());
+	EXPECT_EQ(img.channels(), reloaded->channels());
+
+	ASSERT_EQ(img.pixels(), reloaded->pixels());
+
+	for (size_t y = 0; y < img.height(); ++y) {
+		for (size_t x = 0; x < img.width(); ++x) {
+			for (size_t c = 0; c < img.channels(); ++c) {
+				auto a = uint8_t(img.at(x, y, c));
+				auto b = uint8_t(reloaded->at(x, y, c));
+
+				auto delta = std::max(a, b) - std::min(a, b);
+				EXPECT_LE(delta, 1);
+			}
+		}
+	}
+}
+
+TEST_F(STBimageTest, SavesRGBpng) {
+	const auto& dir = std::filesystem::temp_directory_path();
+	auto path = dir / "sndx" / "SaveRGBpng.png";
+
+	testSaveWorks(path, false);
+}
+
+TEST_F(STBimageTest, SavesRGBjpg) {
+	const auto& dir = std::filesystem::temp_directory_path();
+	auto path = dir / "sndx" / "SaveRGBjpg.jpg";
+
+	testSaveWorks(path, false);
+}
+
+TEST_F(STBimageTest, SavesRGBjpeg) {
+	const auto& dir = std::filesystem::temp_directory_path();
+	auto path = dir / "sndx" / "SaveRGBjpeg.jpeg";
+
+	testSaveWorks(path, true);
+}
+
+TEST_F(STBimageTest, SavesRGBbmp) {
+	const auto& dir = std::filesystem::temp_directory_path();
+	auto path = dir / "sndx" / "SaveRGBbmp.bmp";
+
+	testSaveWorks(path, false);
 }

@@ -3,6 +3,9 @@
 #define STBI_WINDOWS_UTF8
 #include <stb_image.h>
 
+#define STBIW_WINDOWS_UTF8
+#include <stb_image_write.h>
+
 #include "imagedata.hpp"
 
 namespace sndx::render {
@@ -46,6 +49,39 @@ namespace sndx::render {
 			stbi_image_free(bdata);
 
 			return ImageData{ size_t(width), size_t(height), channels, std::move(dat) };
+		}
+	};
+
+	class STBimageSaver {
+	private:
+		int8_t m_quality{};
+		bool m_flip{};
+
+	public:
+		STBimageSaver(bool flip = false, int8_t quality = 100) noexcept:
+			m_quality(quality), m_flip(flip) {}
+
+		bool save(const std::filesystem::path& path, const ImageData& image) const {
+			stbi_flip_vertically_on_write(m_flip);
+
+			std::string strPath{};
+			if constexpr (std::is_same_v<std::decay_t<decltype(path.native())>, std::wstring>) {
+				const auto& filename = path.wstring();
+				strPath.resize(stbiw_convert_wchar_to_utf8(nullptr, 0, filename.c_str()));
+			
+				stbiw_convert_wchar_to_utf8(strPath.data(), strPath.size(), filename.c_str());
+			}
+			else {
+				strPath = path.string();
+			}
+
+			if (path.extension() == ".jpg" || path.extension() == ".jpeg")
+				return stbi_write_jpg(strPath.c_str(), image.width(), image.height(), image.channels(), image.data(), m_quality);
+			
+			if (path.extension() == ".bmp")
+				return stbi_write_bmp(strPath.c_str(), image.width(), image.height(), image.channels(), image.data());
+			
+			return stbi_write_png(strPath.c_str(), image.width(), image.height(), image.channels(), image.data(), 0);
 		}
 	};
 }

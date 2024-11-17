@@ -21,7 +21,7 @@ namespace sndx::render {
 		size_t m_width{}, m_height{};
 		uint8_t m_channels{};
 
-		template <size_t n, size_t c, std::floating_point T, class Fn> [[nodiscard]]
+		template <glm::length_t n, glm::length_t c, std::floating_point T, class Fn> [[nodiscard]]
 		ImageData transformStub(Fn&& func) const {
 			using oldVec = glm::vec<c, std::byte>;
 			using newVec = glm::vec<n, std::byte>;
@@ -74,6 +74,10 @@ namespace sndx::render {
 			return pixels() * channels();
 		}
 
+		[[nodiscard]] auto data() const noexcept {
+			return m_data.data();
+		}
+
 		[[nodiscard]]
 		auto& at(size_t x, size_t y, size_t channel) {
 			if (x >= width() || y >= height() || channel >= channels())
@@ -90,7 +94,7 @@ namespace sndx::render {
 			return m_data[y * width() * channels() + x * channels() + channel];
 		}
 
-		template <size_t n> [[nodiscard]]
+		template <glm::length_t n> [[nodiscard]]
 		glm::vec<n, std::byte> at(size_t x, size_t y) const {
 			if (n != channels())
 				throw std::invalid_argument("n must be equal to channels");
@@ -104,7 +108,7 @@ namespace sndx::render {
 			return asVecs[y * width() + x];
 		}
 
-		template <size_t n, size_t c, std::floating_point T = float> [[nodiscard]]
+		template <glm::length_t n, glm::length_t c, std::floating_point T = float> [[nodiscard]]
 		ImageData transform(const glm::mat<n, c, T>& matrix) const {
 			if (c != m_channels)
 				throw std::invalid_argument("Transform matrix must have 'channels' rows");
@@ -119,7 +123,7 @@ namespace sndx::render {
 			});
 		}
 
-		template <size_t c, std::floating_point T = float> [[nodiscard]]
+		template <glm::length_t c, std::floating_point T = float> [[nodiscard]]
 		ImageData transform(const glm::vec<c, T>& matrix) const {
 			if (c != m_channels)
 				throw std::invalid_argument("Transform matrix must have 'channels' rows");
@@ -158,5 +162,10 @@ namespace sndx::render {
 			throw std::invalid_argument("Channels must be between 1 and 4");
 
 		return loader.loadFromFile(path, channels);
+	}
+
+	template <class Saver> [[nodiscard]]
+	static bool saveImageFile(const std::filesystem::path& path, const ImageData& image, const Saver& saver) {
+		return saver.save(path, image);
 	}
 }

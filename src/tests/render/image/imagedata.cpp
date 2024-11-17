@@ -45,6 +45,9 @@ TEST(ImageDataTest, AtOutOfBounds) {
 	EXPECT_THROW([[maybe_unused]] auto _ = cdata.at(0, 0, 1), std::domain_error);
 
 	EXPECT_THROW([[maybe_unused]] auto _ = cdata.at<2>(0, 0), std::invalid_argument);
+
+	EXPECT_THROW([[maybe_unused]] auto _ = cdata.at<1>(13, 0), std::domain_error);
+	EXPECT_THROW([[maybe_unused]] auto _ = cdata.at<1>(0, 1), std::domain_error);
 }
 
 TEST(ImageDataTest, SpanCopied) {
