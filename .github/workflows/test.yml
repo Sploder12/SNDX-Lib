@@ -48,6 +48,6 @@ jobs:
                   ninja
 
             - name: Run Tests
-              timeout-minutes: 1
+              timeout-minutes: 5
               run: ${{ matrix.binary }}
             

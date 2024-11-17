@@ -1,6 +1,6 @@
 file(GLOB_RECURSE SOURCES *.cpp)
 
-add_executable(tests ${SOURCES} )
+add_executable(tests ${SOURCES})
 
 target_compile_features(tests PUBLIC cxx_std_20)
 

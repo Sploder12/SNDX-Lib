@@ -107,6 +107,16 @@ namespace sndx::math {
 			}
 
 			[[nodiscard]]
+			auto begin() const noexcept {
+				return positions.begin();
+			}
+
+			[[nodiscard]]
+			auto end() const noexcept {
+				return positions.end();
+			}
+
+			[[nodiscard]]
 			auto contains(const IdT& id) const noexcept {
 				return positions.contains(id);
 			}
