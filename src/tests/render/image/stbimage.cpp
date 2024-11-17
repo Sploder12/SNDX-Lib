@@ -15,7 +15,7 @@ std::filesystem::path test_data_path{ "test_data/visual/rgbbw_test_img.png" };
 class STBimageTest : public ::testing::Test {
 public:
 	void SetUp() override {
-		set_test_weight<TestWeight::BasicIntegration>();
+		set_test_weight(TestWeight::BasicIntegration);
 	}
 };
 
@@ -113,7 +113,7 @@ TEST_F(STBimageTest, LoadsRGBApngFlipped) {
 class STBimageSaveTest : public ::testing::Test {
 public:
 	void SetUp() override {
-		set_test_weight<TestWeight::Integration>();
+		set_test_weight(TestWeight::Integration);
 	}
 
 	static void testSaveWorks(const std::filesystem::path& path, bool flip) {

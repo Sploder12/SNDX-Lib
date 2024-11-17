@@ -7,7 +7,7 @@
 #endif
 
 enum class TestWeight : size_t {
-	None = 0,
+	None = 0, // Nothing
 	BasicUnit = 1, // quick, nothing evil
 	Unit = 2, // evil unit tests
 	BasicIntegration = 3, // quick API calls, no writing to disk
@@ -60,9 +60,7 @@ constexpr auto weight_skip_msg() {
 	}
 }
 
-template <TestWeight weight = TestWeight::All>
-void set_test_weight() {
-	if constexpr (size_t(weight) > SNDX_TEST_WEIGHT_LIMIT) {
-		GTEST_SKIP() << weight_skip_msg<weight>();
-	}
-}
+#define set_test_weight(weight) \
+	if constexpr (size_t(weight) > SNDX_TEST_WEIGHT_LIMIT) { \
+		GTEST_SKIP() << weight_skip_msg<weight>(); \
+	} 

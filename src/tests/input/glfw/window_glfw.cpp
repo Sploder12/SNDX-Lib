@@ -8,28 +8,29 @@ using namespace sndx::collision;
 class GLFWwindowTest : public ::testing::Test {
 public:
     void SetUp() override {
-        set_test_weight<TestWeight::Integration>();
-
-        // it's important to check if we even can test,
-        // headless platforms like GitHub runners can't test GLFW
-        if (glfwInit() != GLFW_TRUE) {
-            const char* what = "";
-            glfwGetError(&what);
-            GTEST_SKIP() << "Failed to initialize GLFW: " << what;
-        }
-
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        if (auto win = glfwCreateWindow(640, 480, "Verify Window", nullptr, nullptr); !win) {
-            const char* what = "";
-            glfwGetError(&what);
-            GTEST_SKIP() << "Failed to create GLFW window: " << what;
-        }
+        set_test_weight(TestWeight::Integration)
         else {
-            glfwDestroyWindow(win);
-        }
-        WindowHintsGLFW::restoreDefaults();
+            // it's important to check if we even can test,
+            // headless platforms can't test GLFW
+            if (glfwInit() != GLFW_TRUE) {
+                const char* what = "";
+                glfwGetError(&what);
+                GTEST_SKIP() << "Failed to initialize GLFW: " << what;
+            }
 
-        m_testBuilder.setTitle("test").setX(0).setY(1).setWidth(320).setHeight(240);
+            glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+            if (auto win = glfwCreateWindow(640, 480, "Verify Window", nullptr, nullptr); !win) {
+                const char* what = "";
+                glfwGetError(&what);
+                GTEST_SKIP() << "Failed to create GLFW window: " << what;
+            }
+            else {
+                glfwDestroyWindow(win);
+            }
+            WindowHintsGLFW::restoreDefaults();
+
+            m_testBuilder.setTitle("test").setX(0).setY(1).setWidth(320).setHeight(240);
+        }
     }
 
     static void verifyBuiltWindow(const WindowGLFW& window, const WindowBuilderGLFW& builder) {

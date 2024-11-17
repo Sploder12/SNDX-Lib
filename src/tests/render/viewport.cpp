@@ -26,7 +26,7 @@ void testViewport(glm::vec2 offset, glm::vec2 scale) {
 }
 
 TEST(Viewport, NormalViewport) {
-	set_test_weight<TestWeight::Unit>();
+	set_test_weight(TestWeight::Unit);
 
 	EXPECT_THROW(Viewport{ glm::vec2(0.0) }, std::invalid_argument);
 	EXPECT_THROW(Viewport{ glm::vec2(-1.0) }, std::invalid_argument);

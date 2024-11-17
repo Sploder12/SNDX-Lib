@@ -32,6 +32,10 @@ namespace sndx {
 			explicit Serializer(std::ostream& sink) :
 				m_sink(sink.rdbuf()) {}
 
+			[[nodiscard]] auto tell() {
+				return m_sink.tellp();
+			}
+
 			template <class T>
 			Serializer& serialize(const T& obj) {
 				obj.serialize(*this);

@@ -8,11 +8,12 @@
 #include <iterator>
 #include <optional>
 #include <filesystem>
-#include <string>
 #include <execution>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "../../data/serialize.hpp"
 
 namespace sndx::render {
 	class ImageData {
@@ -153,6 +154,26 @@ namespace sndx::render {
 			default:
 				return *this;
 			}
+		}
+
+		void serialize(serialize::Serializer& serializer) const {
+			serializer.serialize<std::endian::little>(m_width);
+			serializer.serialize<std::endian::little>(m_height);
+			serializer.serialize(m_channels);
+			serializer.serialize(reinterpret_cast<const uint8_t*>(m_data.data()), m_data.size());
+		}
+
+		void deserialize(serialize::Deserializer& deserializer) {
+			deserializer.deserialize<std::endian::little>(m_width);
+			deserializer.deserialize<std::endian::little>(m_height);
+			deserializer.deserialize(m_channels);
+
+			if (m_channels <= 0 || m_channels > 4)
+				throw deserialize_error("Tried to deserialize invalid channel count");
+
+			size_t size = m_width * m_height * m_channels;
+			m_data.resize(size);
+			deserializer.deserialize(reinterpret_cast<uint8_t*>(m_data.data()), size);
 		}
 	};
 
