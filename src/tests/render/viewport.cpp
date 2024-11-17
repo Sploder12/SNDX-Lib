@@ -1,6 +1,6 @@
 #include "render/viewport.hpp"
 
-#include <gtest/gtest.h>
+#include "../common.hpp"
 
 using namespace sndx::render;
 using namespace sndx::collision;
@@ -26,6 +26,7 @@ void testViewport(glm::vec2 offset, glm::vec2 scale) {
 }
 
 TEST(Viewport, NormalViewport) {
+	set_test_weight<TestWeight::Unit>();
 
 	EXPECT_THROW(Viewport{ glm::vec2(0.0) }, std::invalid_argument);
 	EXPECT_THROW(Viewport{ glm::vec2(-1.0) }, std::invalid_argument);

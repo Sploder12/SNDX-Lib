@@ -1,7 +1,7 @@
 #include "render/image/imagedata.hpp"
 #include <array>
 
-#include <gtest/gtest.h>
+#include "../../common.hpp"
 
 using namespace sndx::render;
 

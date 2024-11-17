@@ -1,6 +1,6 @@
 ﻿#include "render/image/stbimage.hpp"
 
-#include <gtest/gtest.h>
+#include "../../common.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -10,16 +10,12 @@
 
 using namespace sndx::render;
 
-std::filesystem::path test_data_path{ L"test_data/visual/rgbbw_test_img📷.png" };
+std::filesystem::path test_data_path{ "test_data/visual/rgbbw_test_img.png" };
 
 class STBimageTest : public ::testing::Test {
 public:
 	void SetUp() override {
-#ifdef SNDX_NO_INTEGRATION_TESTS
-		GTEST_SKIP() << "Integration tests disabled.";
-#else
-
-#endif
+		set_test_weight<TestWeight::BasicIntegration>();
 	}
 };
 
@@ -114,61 +110,68 @@ TEST_F(STBimageTest, LoadsRGBApngFlipped) {
 	EXPECT_EQ(img->at<4>(190, 99), (Vec{ 255, 255, 255, 255 }));
 }
 
-void testSaveWorks(const std::filesystem::path& path, bool flip) {
-	ImageData img{ 2, 2, 3, {
-		std::byte(0xff), std::byte(0x0), std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0x0),
-		std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0xff), std::byte(0xff), std::byte(0xff)
-	}};
+class STBimageSaveTest : public ::testing::Test {
+public:
+	void SetUp() override {
+		set_test_weight<TestWeight::Integration>();
+	}
 
-	ASSERT_TRUE(saveImageFile(path, img, STBimageSaver{ flip }));
-	ASSERT_TRUE(std::filesystem::exists(path));
+	static void testSaveWorks(const std::filesystem::path& path, bool flip) {
+		ImageData img{ 2, 2, 3, {
+			std::byte(0xff), std::byte(0x0), std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0x0),
+			std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0xff), std::byte(0xff), std::byte(0xff)
+		}};
 
-	auto reloaded = STBimageLoader{ flip }.loadFromFile(path, 3);
+		ASSERT_TRUE(saveImageFile(path, img, STBimageSaver{ flip }));
+		ASSERT_TRUE(std::filesystem::exists(path));
 
-	std::filesystem::remove(path);
-	ASSERT_TRUE(reloaded.has_value());
+		auto reloaded = STBimageLoader{ flip }.loadFromFile(path, 3);
 
-	EXPECT_EQ(img.width(), reloaded->width());
-	EXPECT_EQ(img.height(), reloaded->height());
-	EXPECT_EQ(img.channels(), reloaded->channels());
+		std::filesystem::remove(path);
+		ASSERT_TRUE(reloaded.has_value());
 
-	ASSERT_EQ(img.pixels(), reloaded->pixels());
+		EXPECT_EQ(img.width(), reloaded->width());
+		EXPECT_EQ(img.height(), reloaded->height());
+		EXPECT_EQ(img.channels(), reloaded->channels());
 
-	for (size_t y = 0; y < img.height(); ++y) {
-		for (size_t x = 0; x < img.width(); ++x) {
-			for (size_t c = 0; c < img.channels(); ++c) {
-				auto a = uint8_t(img.at(x, y, c));
-				auto b = uint8_t(reloaded->at(x, y, c));
+		ASSERT_EQ(img.pixels(), reloaded->pixels());
 
-				auto delta = std::max(a, b) - std::min(a, b);
-				EXPECT_LE(delta, 1);
+		for (size_t y = 0; y < img.height(); ++y) {
+			for (size_t x = 0; x < img.width(); ++x) {
+				for (size_t c = 0; c < img.channels(); ++c) {
+					auto a = uint8_t(img.at(x, y, c));
+					auto b = uint8_t(reloaded->at(x, y, c));
+
+					auto delta = std::max(a, b) - std::min(a, b);
+					EXPECT_LE(delta, 1);
+				}
 			}
 		}
 	}
-}
+};
 
-TEST_F(STBimageTest, SavesRGBpng) {
+TEST_F(STBimageSaveTest, SavesRGBpng) {
 	const auto& dir = std::filesystem::temp_directory_path();
 	auto path = dir / "sndx" / "SaveRGBpng.png";
 
 	testSaveWorks(path, false);
 }
 
-TEST_F(STBimageTest, SavesRGBjpg) {
+TEST_F(STBimageSaveTest, SavesRGBjpg) {
 	const auto& dir = std::filesystem::temp_directory_path();
 	auto path = dir / "sndx" / "SaveRGBjpg.jpg";
 
 	testSaveWorks(path, false);
 }
 
-TEST_F(STBimageTest, SavesRGBjpeg) {
+TEST_F(STBimageSaveTest, SavesRGBjpeg) {
 	const auto& dir = std::filesystem::temp_directory_path();
 	auto path = dir / "sndx" / "SaveRGBjpeg.jpeg";
 
 	testSaveWorks(path, true);
 }
 
-TEST_F(STBimageTest, SavesRGBbmp) {
+TEST_F(STBimageSaveTest, SavesRGBbmp) {
 	const auto& dir = std::filesystem::temp_directory_path();
 	auto path = dir / "sndx" / "SaveRGBbmp.bmp";
 

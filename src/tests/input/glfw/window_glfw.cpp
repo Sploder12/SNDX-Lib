@@ -1,6 +1,6 @@
 #include "input/glfw/window_glfw.hpp"
 
-#include <gtest/gtest.h>
+#include "../../common.hpp"
 
 using namespace sndx::input;
 using namespace sndx::collision;
@@ -8,10 +8,8 @@ using namespace sndx::collision;
 class GLFWwindowTest : public ::testing::Test {
 public:
     void SetUp() override {
+        set_test_weight<TestWeight::Integration>();
 
-#ifdef SNDX_NO_INTEGRATION_TESTS
-        GTEST_SKIP() << "Integration tests disabled.";
-#else
         // it's important to check if we even can test,
         // headless platforms like GitHub runners can't test GLFW
         if (glfwInit() != GLFW_TRUE) {
@@ -32,7 +30,6 @@ public:
         WindowHintsGLFW::restoreDefaults();
 
         m_testBuilder.setTitle("test").setX(0).setY(1).setWidth(320).setHeight(240);
-#endif
     }
 
     static void verifyBuiltWindow(const WindowGLFW& window, const WindowBuilderGLFW& builder) {
