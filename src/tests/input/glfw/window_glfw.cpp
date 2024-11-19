@@ -34,10 +34,10 @@ public:
     }
 
     static void verifyBuiltWindow(const WindowGLFW& window, const WindowBuilderGLFW& builder) {
-        if (auto x = builder.getX(); x.has_value())
+        if (auto x = builder.getX())
             EXPECT_EQ(*x, window.getPosition().x);
 
-        if (auto y = builder.getY(); y.has_value())
+        if (auto y = builder.getY())
             EXPECT_EQ(*y, window.getPosition().y);
 
         EXPECT_EQ(builder.getWidth(), window.getSize().x);

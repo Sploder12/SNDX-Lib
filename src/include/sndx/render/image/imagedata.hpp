@@ -11,7 +11,6 @@
 #include <execution>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include "../../data/serialize.hpp"
 
@@ -30,10 +29,13 @@ namespace sndx::render {
 			size_t pixels = m_width * m_height;
 			std::vector<std::byte> data(pixels * n);
 
-			const oldVec* asVecs = reinterpret_cast<const oldVec*>(m_data.data());
-			newVec* newVecs = reinterpret_cast<newVec*>(data.data());
+			static_assert(sizeof(oldVec) == c * sizeof(std::byte));
+			static_assert(sizeof(newVec) == n * sizeof(std::byte));
 
-			std::transform(std::execution::par_unseq, asVecs, asVecs + pixels, newVecs, func);
+			auto asVecs = reinterpret_cast<const oldVec*>(m_data.data());
+			auto newVecs = reinterpret_cast<newVec*>(data.data());
+
+			std::transform(std::execution::par_unseq, asVecs, asVecs + pixels, newVecs, std::forward<Fn>(func));
 
 			return ImageData{ m_width, m_height, n, std::move(data) };
 		}
@@ -178,7 +180,7 @@ namespace sndx::render {
 	};
 
 	template <class Loader> [[nodiscard]]
-	static auto loadImageFile(const std::filesystem::path& path, uint8_t channels, const Loader& loader) {
+	auto loadImageFile(const std::filesystem::path& path, uint8_t channels, const Loader& loader) {
 		if (channels <= 0 || channels > 4)
 			throw std::invalid_argument("Channels must be between 1 and 4");
 
@@ -186,7 +188,7 @@ namespace sndx::render {
 	}
 
 	template <class Saver> [[nodiscard]]
-	static bool saveImageFile(const std::filesystem::path& path, const ImageData& image, const Saver& saver) {
+	bool saveImageFile(const std::filesystem::path& path, const ImageData& image, const Saver& saver) {
 		return saver.save(path, image);
 	}
 }

@@ -10,7 +10,7 @@
 
 using namespace sndx::render;
 
-std::filesystem::path test_data_path{ "test_data/visual/rgbbw_test_img.png" };
+const std::filesystem::path test_data_path{ u8"test_data/visual/rgbbw_test_img☃.png" };
 
 class STBimageTest : public ::testing::Test {
 public:
@@ -122,6 +122,7 @@ public:
 			std::byte(0x0), std::byte(0x0), std::byte(0xff), std::byte(0xff), std::byte(0xff), std::byte(0xff)
 		}};
 
+		std::filesystem::create_directories(path.parent_path());
 		ASSERT_TRUE(saveImageFile(path, img, STBimageSaver{ flip }));
 		ASSERT_TRUE(std::filesystem::exists(path));
 
@@ -152,28 +153,28 @@ public:
 
 TEST_F(STBimageSaveTest, SavesRGBpng) {
 	const auto& dir = std::filesystem::temp_directory_path();
-	auto path = dir / "sndx" / "SaveRGBpng.png";
+	auto path = dir / "sndx_test_dir" / "SaveRGBpng.png";
 
 	testSaveWorks(path, false);
 }
 
 TEST_F(STBimageSaveTest, SavesRGBjpg) {
 	const auto& dir = std::filesystem::temp_directory_path();
-	auto path = dir / "sndx" / "SaveRGBjpg.jpg";
+	auto path = dir / "sndx_test_dir" / "SaveRGBjpg.jpg";
 
 	testSaveWorks(path, false);
 }
 
 TEST_F(STBimageSaveTest, SavesRGBjpeg) {
 	const auto& dir = std::filesystem::temp_directory_path();
-	auto path = dir / "sndx" / "SaveRGBjpeg.jpeg";
+	auto path = dir / "sndx_test_dir" / "SaveRGBjpeg.jpeg";
 
 	testSaveWorks(path, true);
 }
 
 TEST_F(STBimageSaveTest, SavesRGBbmp) {
 	const auto& dir = std::filesystem::temp_directory_path();
-	auto path = dir / "sndx" / "SaveRGBbmp.bmp";
+	auto path = dir / "sndx_test_dir" / "SaveRGBbmp.bmp";
 
 	testSaveWorks(path, false);
 }

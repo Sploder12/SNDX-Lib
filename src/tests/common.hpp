@@ -63,4 +63,4 @@ constexpr auto weight_skip_msg() {
 #define set_test_weight(weight) \
 	if constexpr (size_t(weight) > SNDX_TEST_WEIGHT_LIMIT) { \
 		GTEST_SKIP() << weight_skip_msg<weight>(); \
-	} 
+	}
