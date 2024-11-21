@@ -12,7 +12,7 @@ TEST(Binpack, TrivialPacking) {
 	EXPECT_EQ(none_out.neededHeight, 0);
 	EXPECT_EQ(none_out.neededWidth, 0);
 
-	ASSERT_TRUE(packer.add("a", 10, 5));
+	packer.add("a", 10, 5);
 
  	auto trivial_out = packer.pack(10);
 	
@@ -23,7 +23,7 @@ TEST(Binpack, TrivialPacking) {
 	EXPECT_EQ(trivial_out.positions["a"].x, 0);
 	EXPECT_EQ(trivial_out.positions["a"].y, 0);
 
-	ASSERT_TRUE(packer.add("b", 1, 5));
+	packer.add("b", 1, 5);
 	auto horizontal_out = packer.pack(11);
 
 	EXPECT_EQ(horizontal_out.neededHeight, 5);
@@ -45,8 +45,8 @@ TEST(Binpack, TrivialPacking) {
 
 	BinPacker<false> verticalPacker{};
 
-	ASSERT_TRUE(verticalPacker.add("a", 5, 10));
-	ASSERT_TRUE(verticalPacker.add("b", 5, 1));
+	verticalPacker.add("a", 5, 10);
+	verticalPacker.add("b", 5, 1);
 	auto vertical_out = verticalPacker.pack(11);
 
 	EXPECT_EQ(vertical_out.neededHeight, 11);
@@ -74,8 +74,7 @@ TEST(Binpack, PaddingPads) {
 	EXPECT_EQ(none_out.neededHeight, 0);
 	EXPECT_EQ(none_out.neededWidth, 0);
 
-	ASSERT_TRUE(packer.add("a", 10, 5));
-
+	packer.add("a", 10, 5);
 	auto trivial_out = packer.pack(10, 20);
 
 	EXPECT_EQ(trivial_out.neededHeight, 5);
@@ -85,7 +84,7 @@ TEST(Binpack, PaddingPads) {
 	EXPECT_EQ(trivial_out.positions["a"].x, 0);
 	EXPECT_EQ(trivial_out.positions["a"].y, 0);
 
-	ASSERT_TRUE(packer.add("b", 1, 5));
+	packer.add("b", 1, 5);
 	auto horizontal_out = packer.pack(11 + 20, 20);
 
 	EXPECT_EQ(horizontal_out.neededHeight, 5);
@@ -108,7 +107,7 @@ TEST(Binpack, PaddingPads) {
 TEST(Binpack, invalid_packing_throws) {
 	BinPacker packer{};
 
-	ASSERT_TRUE(packer.add("a", 10, 5));
+	packer.add("a", 10, 5);
 	
 	EXPECT_THROW(auto ign = packer.pack(0), std::invalid_argument);
 	EXPECT_THROW(auto ign = packer.pack(1), std::invalid_argument);

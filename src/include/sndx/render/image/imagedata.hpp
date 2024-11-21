@@ -40,7 +40,7 @@ namespace sndx::render {
 			return ImageData{ m_width, m_height, n, std::move(data) };
 		}
 	public:
-		ImageData(size_t width, size_t height, uint8_t channels, decltype(m_data) && data) :
+		ImageData(size_t width, size_t height, uint8_t channels, decltype(m_data)&& data) :
 			m_data(std::move(data)), m_width(width), m_height(height), m_channels(channels) {}
 
 		ImageData(size_t width, size_t height, uint8_t channels, std::span<const std::byte> data) :
@@ -187,7 +187,7 @@ namespace sndx::render {
 		return loader.loadFromFile(path, channels);
 	}
 
-	template <class Saver> [[nodiscard]]
+	template <class Saver>
 	bool saveImageFile(const std::filesystem::path& path, const ImageData& image, const Saver& saver) {
 		return saver.save(path, image);
 	}

@@ -39,6 +39,15 @@ namespace sndx::math {
 			}
 		};
 
+		struct LabeledEntry : public Entry {
+			using Entry::operator>;
+
+			IdT id;
+
+			constexpr LabeledEntry(const IdT& ID, size_t width, size_t height) noexcept :
+				Entry{ width, height }, id(ID) {}
+		};
+
 		struct Shelf {
 			Entry dims{};
 			size_t occupied{};
@@ -58,37 +67,22 @@ namespace sndx::math {
 				return occupied + entry.getSecondaryDim() <= dims.getSecondaryDim();
 			}
 
-			void addEntry(const IdT& id, const Entry& entry, size_t padding = 0) noexcept {
+			void addEntry(const LabeledEntry& entry, size_t padding = 0) noexcept {
 				occupied += entry.getSecondaryDim() + padding;
-				entries.emplace_back(id, std::addressof(entry));
+				entries.emplace_back(entry.id, std::addressof(entry));
 			}
 
 			[[nodiscard]]
-			bool tryAddEntry(const IdT& id, const Entry& entry, size_t padding = 0) noexcept {
-				return canAddEntry(entry) && (addEntry(id, entry, padding), true);
+			bool tryAddEntry(const LabeledEntry& entry, size_t padding = 0) noexcept {
+				return canAddEntry(entry) && (addEntry(entry, padding), true);
 			}
 		};
 
-		std::multiset<Entry, std::greater<Entry>> m_entries{};
-		std::unordered_map<IdT, typename decltype(m_entries)::iterator> m_ids{};
+		std::multiset<LabeledEntry, std::greater<LabeledEntry>> m_entries{};
 
 	public:
-		bool add(const IdT& id, size_t width, size_t height) {
-			return m_ids.emplace(id, m_entries.emplace(width, height)).second;
-		}
-
-		bool remove(const IdT& id) {
-			if (auto itit = m_ids.find(id); itit != m_ids.end()) {
-				m_entries.erase(itit->second);
-				m_ids.erase(itit);
-				return true;
-			}
-
-			return false;
-		}
-
-		void reserve(size_t size) noexcept {
-			m_ids.reserve(size);
+		void add(const IdT& id, size_t width, size_t height) {
+			m_entries.emplace(id, width, height);
 		}
 
 		struct Packing {
@@ -143,22 +137,21 @@ namespace sndx::math {
 			out.positions.reserve(m_entries.size());
 
 			std::vector<Shelf> shelves{};
-			for (const auto& [id, entry_it] : m_ids) {
-				const auto& entry = *entry_it;
+			for (const auto& entry : m_entries) {
 
 				if (entry.getSecondaryDim() > dimConstraint)
 					throw std::invalid_argument("Cannot pack box that exceeds size constraint itself.");
 
 				bool added = false;
 				for (auto& prevShelf : shelves) {
-					added = prevShelf.tryAddEntry(id, entry, padding);
+					added = prevShelf.tryAddEntry(entry, padding);
 					if (added)
 						break;
 				}
 
 				if (!added) {
 					shelves.emplace_back(entry.getPrimaryDim(), dimConstraint);
-					shelves.back().addEntry(id, entry, padding);
+					shelves.back().addEntry(entry, padding);
 				}
 			}
 
