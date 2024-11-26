@@ -84,6 +84,21 @@ namespace sndx::render {
 			m_id = 0;
 		}
 
+		[[nodiscard]]
+		auto width() const noexcept {
+			return m_width;
+		}
+
+		[[nodiscard]]
+		auto height() const noexcept {
+			return m_height;
+		}
+
+		[[nodiscard]]
+		auto target() const noexcept {
+			return m_target;
+		}
+
 		void bind() const {
 			glBindTexture(m_target, m_id);
 		}

@@ -129,7 +129,7 @@ namespace sndx::render {
 		}
 
 		template <class Packer = sndx::math::BinPacker<true, size_t>> [[nodiscard]]
-		ImageAtlas<IdT> build(auto&& policy, size_t dimConstraint, size_t padding = 1) const {
+		ImageAtlas<IdT> build(auto&& policy, size_t dimConstraint, size_t padding) const {
 			Packer packer{};
 
 			size_t maxChannels = 0;
@@ -141,8 +141,12 @@ namespace sndx::render {
 			}
 
 			auto packing = packer.pack(dimConstraint, padding);
-
+			if (packing.empty() || packing.width() == 0 || packing.height() == 0) [[unlikely]] {
+				throw std::logic_error("Cannot create an empty atlas");
+			}
+			
 			std::vector<std::byte> data{};
+
 			data.resize(maxChannels * (packing.width() + padding) * (packing.height() + padding), std::byte(0x0));
 
 			std::for_each_n(std::forward<decltype(policy)>(policy), packing.begin(), m_entries.size(), 

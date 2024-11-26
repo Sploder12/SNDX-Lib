@@ -3,11 +3,11 @@
 #include "render/image/stbimage.hpp"
 #include "../../common.hpp"
 
+#include "../image/image_helper.hpp"
+
 #include <GLFW/glfw3.h>
 
 using namespace sndx::render;
-
-const std::filesystem::path test_data_path{ u8"test_data/visual/rgbbw_test_img☃.png" };
 
 class TextureTest : public ::testing::Test {
 public:
@@ -76,36 +76,19 @@ TEST_F(TextureTest, BindWorks) {
 }
 
 TEST_F(TextureTest, CanLoadFromFile) {
-	auto tex = loadTextureFile(test_data_path, 3, STBimageLoader{});
+	auto tex = loadTextureFile(test_image_path, 3, STBimageLoader{});
 	ASSERT_TRUE(tex.has_value());
 	ASSERT_EQ(glGetError(), GL_NO_ERROR);
 }
 
 TEST_F(TextureTest, CanConvertToImg) {
-	auto tex = loadTextureFile(test_data_path, 3, STBimageLoader{true}, 0, false);
-	ASSERT_TRUE(tex.has_value());
+	auto originalImg = createCheckeredImage(16, 10, {0xff, 0xff, 0xff});
+	auto tex = Texture2D(originalImg, 0, false);
+
 	ASSERT_EQ(glGetError(), GL_NO_ERROR);
 
-	auto img = tex->asImage(4);
+	auto img = tex.asImage(3);
 	ASSERT_EQ(glGetError(), GL_NO_ERROR);
 
-	EXPECT_EQ(img.width(), 225);
-	EXPECT_EQ(img.height(), 100);
-	EXPECT_EQ(img.channels(), 4);
-	EXPECT_EQ(img.pixels(), 225 * 100);
-	EXPECT_EQ(img.bytes(), 225 * 100 * 4);
-
-	using Vec = glm::vec<4, std::byte>;
-
-	EXPECT_EQ(img.at<4>(0, 0), (Vec{ 255, 0, 0, 255 }));
-	EXPECT_EQ(img.at<4>(50, 0), (Vec{ 0, 255, 0, 255 }));
-	EXPECT_EQ(img.at<4>(100, 0), (Vec{ 0, 0, 255, 255 }));
-	EXPECT_EQ(img.at<4>(150, 0), (Vec{ 255, 255, 255, 255 }));
-	EXPECT_EQ(img.at<4>(190, 0), (Vec{ 0, 0, 0, 255 }));
-
-	EXPECT_EQ(img.at<4>(0, 99), (Vec{ 255, 0, 0, 255 }));
-	EXPECT_EQ(img.at<4>(50, 99), (Vec{ 0, 255, 0, 255 }));
-	EXPECT_EQ(img.at<4>(100, 99), (Vec{ 0, 0, 255, 255 }));
-	EXPECT_EQ(img.at<4>(150, 99), (Vec{ 0, 0, 0, 255 }));
-	EXPECT_EQ(img.at<4>(190, 99), (Vec{ 255, 255, 255, 255 }));
+	EXPECT_TRUE(imageEqual(img, originalImg));
 }

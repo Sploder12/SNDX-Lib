@@ -12,6 +12,48 @@
 
 namespace sndx::math {
 
+	template <class IdT = std::string>
+	struct Packing {
+		std::unordered_map<IdT, glm::vec<2, size_t>> positions{};
+		size_t neededWidth{};
+		size_t neededHeight{};
+
+		[[nodiscard]]
+		auto empty() const noexcept {
+			return positions.empty();
+		}
+
+		[[nodiscard]]
+		auto find(const IdT& id) const noexcept {
+			return positions.find(id);
+		}
+
+		[[nodiscard]]
+		auto begin() const noexcept {
+			return positions.begin();
+		}
+
+		[[nodiscard]]
+		auto end() const noexcept {
+			return positions.end();
+		}
+
+		[[nodiscard]]
+		auto contains(const IdT& id) const noexcept {
+			return positions.contains(id);
+		}
+
+		[[nodiscard]]
+		auto width() const noexcept {
+			return neededWidth;
+		}
+
+		[[nodiscard]]
+		auto height() const noexcept {
+			return neededHeight;
+		}
+	};
+
 	template <bool horizontal = true, class IdT = std::string>
 	class BinPacker {
 	private:
@@ -85,51 +127,10 @@ namespace sndx::math {
 			m_entries.emplace(id, width, height);
 		}
 
-		struct Packing {
-			std::unordered_map<IdT, glm::vec<2, size_t>> positions{};
-			size_t neededWidth{};
-			size_t neededHeight{};
-
-			[[nodiscard]]
-			auto empty() const noexcept {
-				return positions.empty();
-			}
-
-			[[nodiscard]]
-			auto find(const IdT& id) const noexcept {
-				return positions.find(id);
-			}
-
-			[[nodiscard]]
-			auto begin() const noexcept {
-				return positions.begin();
-			}
-
-			[[nodiscard]]
-			auto end() const noexcept {
-				return positions.end();
-			}
-
-			[[nodiscard]]
-			auto contains(const IdT& id) const noexcept {
-				return positions.contains(id);
-			}
-
-			[[nodiscard]]
-			auto width() const noexcept {
-				return neededWidth;
-			}
-
-			[[nodiscard]]
-			auto height() const noexcept {
-				return neededHeight;
-			}
-		};
-
 		// uses a modified Next-Fit Decreasing Height/Width algorithm.
 		[[nodiscard]]
-		Packing pack(size_t dimConstraint, size_t padding = 0) const {
-			Packing out{};
+		Packing<IdT> pack(size_t dimConstraint, size_t padding = 0) const {
+			Packing<IdT> out{};
 
 			if (m_entries.size() == 0) [[unlikely]]
 				return out;

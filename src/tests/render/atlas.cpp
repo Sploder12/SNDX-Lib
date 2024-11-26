@@ -4,20 +4,101 @@
 #include "render/image/stbimage.hpp"
 #include "../common.hpp"
 
-#include <GLFW/glfw3.h>
+#include "fake_texture.hpp"
+#include "../math/mock_binpack.hpp"
+#include "../render/image/image_helper.hpp"
+
+using namespace ::testing;
 
 using namespace sndx::render;
 
 const std::filesystem::path test_data_path{ u8"test_data/visual/rgbbw_test_img☃.png" };
 
-class ImageAtlasTest : public ::testing::Test {
+class ImageAtlasTest : public ::testing::Test {};
+
+TEST_F(ImageAtlasTest, emptyThrows) {
+	AtlasBuilder<size_t> builder{};
+
+	MockBinPacker<size_t> mockPacker{};
+
+	sndx::math::Packing<size_t> out{};
+
+	EXPECT_CALL(mockPacker, mock_constructor);
+	EXPECT_CALL(mockPacker, mock_destructor);
+	EXPECT_CALL(mockPacker, add).Times(0);
+	EXPECT_CALL(mockPacker, pack(10, 5)).WillOnce(Return(out));
+
+	EXPECT_THROW(auto ign = builder.build<ProxyBinPacker<size_t>>(10, 5), std::logic_error);
+}
+
+TEST_F(ImageAtlasTest, zeroWidthThrows) {
+	AtlasBuilder<size_t> builder{};
+
+	MockBinPacker<size_t> mockPacker{};
+
+	sndx::math::Packing<size_t> out{};
+	out.positions[0] = {};
+	out.neededHeight = 20;
+	out.neededWidth = 0;
+
+	EXPECT_CALL(mockPacker, mock_constructor);
+	EXPECT_CALL(mockPacker, mock_destructor);
+	EXPECT_CALL(mockPacker, add).Times(0);
+	EXPECT_CALL(mockPacker, pack(20, 10)).WillOnce(Return(out));
+
+	EXPECT_THROW(auto ign = builder.build<ProxyBinPacker<size_t>>(20, 10), std::logic_error);
+}
+
+TEST_F(ImageAtlasTest, zeroHeightThrows) {
+	AtlasBuilder<size_t> builder{};
+
+	MockBinPacker<size_t> mockPacker{};
+
+	sndx::math::Packing<size_t> out{};
+	out.positions[0] = {};
+	out.neededHeight = 0;
+	out.neededWidth = 20;
+
+	EXPECT_CALL(mockPacker, mock_constructor);
+	EXPECT_CALL(mockPacker, mock_destructor);
+	EXPECT_CALL(mockPacker, add).Times(0);
+	EXPECT_CALL(mockPacker, pack(10, 20)).WillOnce(Return(out));
+
+	EXPECT_THROW(auto ign = builder.build<ProxyBinPacker<size_t>>(10, 20), std::logic_error);
+}
+
+TEST_F(ImageAtlasTest, addsEntry) {
+	AtlasBuilder<size_t> builder{};
+
+	auto img = createCheckeredImage(3, 7, glm::vec<1, std::byte>{std::byte(0xff)});
+	builder.add(42, img);
+
+	MockBinPacker<size_t> mockPacker{};
+
+	sndx::math::Packing<size_t> out{};
+	out.positions[0] = {};
+	out.neededWidth = 3;
+	out.neededHeight = 7;
+
+	EXPECT_CALL(mockPacker, mock_constructor);
+	EXPECT_CALL(mockPacker, mock_destructor);
+	EXPECT_CALL(mockPacker, add(0, 3, 7));
+	EXPECT_CALL(mockPacker, pack(10, 5)).WillOnce(Return(out));
+
+	auto atlas = builder.build<ProxyBinPacker<size_t>>(10, 5);
+
+	EXPECT_EQ(atlas.size(), 1);
+	EXPECT_NO_THROW(auto ign = atlas.getEntry(42));
+}
+
+class IntenseImageAtlasTest : public ImageAtlasTest {
 public:
 	void SetUp() override {
 		set_test_weight(TestWeight::BasicIntegration);
 	}
 };
 
-TEST_F(ImageAtlasTest, canBuildSingleImage) {
+TEST_F(IntenseImageAtlasTest, canBuildSingleImage) {
 	AtlasBuilder<std::string> builder{};
 
 	auto img = loadImageFile(test_data_path, 4, STBimageLoader{false});
@@ -36,7 +117,7 @@ TEST_F(ImageAtlasTest, canBuildSingleImage) {
 	EXPECT_EQ(atlas.getEntry("single").dims, (glm::vec<2, size_t>{225, 100}));
 }
 
-TEST_F(ImageAtlasTest, canBuildMultiImage) {
+TEST_F(IntenseImageAtlasTest, canBuildMultiImage) {
 	AtlasBuilder<int> builder{};
 
 	auto imgRGB = loadImageFile(test_data_path, 3, STBimageLoader{ true });
@@ -73,44 +154,8 @@ TEST_F(ImageAtlasTest, canBuildMultiImage) {
 
 class TextureAtlasTest : public ::testing::Test {
 public:
-	GLFWwindow* window = nullptr;
-
 	void SetUp() override {
-		set_test_weight(TestWeight::Integration)
-		else {
-			if (glfwInit() != GLFW_TRUE) {
-				const char* what = "";
-				glfwGetError(&what);
-				GTEST_SKIP() << "Failed to initialize GLFW: " << what;
-			}
-
-			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-			if (window = glfwCreateWindow(640, 480, "Texture Testing", nullptr, nullptr); !window) {
-				const char* what = "";
-				glfwGetError(&what);
-				GTEST_SKIP() << "Failed to create GLFW window: " << what;
-			}
-
-			glfwMakeContextCurrent(window);
-
-			if (auto err = glewInit(); err != GLEW_OK) {
-				GTEST_SKIP() << "Could not init glew " << glewGetErrorString(err);
-			}
-
-			// discard latest error to prevent polution
-			while (glGetError() != GL_NO_ERROR) {}
-			}
-	}
-
-	void TearDown() override {
-		glfwDestroyWindow(window);
-		window = nullptr;
-
-		glfwTerminate();
+		set_test_weight(TestWeight::BasicIntegration)
 	}
 };
 
@@ -122,6 +167,17 @@ TEST_F(TextureAtlasTest, BasicTextureAtlas) {
 
 	builder.add("single", *img);
 
-	auto atlas = builder.buildTexture<Texture2D>(img->width(), 0);
+	auto atlas = builder.buildTexture<FakeTexture>(img->width(), 0);
+	const auto& texture = atlas.getTexture();
 
+	EXPECT_EQ(texture.width(), img->width());
+	EXPECT_EQ(texture.height(), img->height());
+
+	const auto& asImg = texture.asImage(img->channels(), 0);
+
+	ASSERT_EQ(asImg.bytes(), img->bytes());
+
+	for (size_t i = 0; i < asImg.bytes(); ++i) {
+		EXPECT_EQ(asImg.data()[i], img->data()[i]);
+	}
 }
