@@ -20,26 +20,18 @@ struct ProxyBinPacker {
 	using MockT = MockBinPacker<IdT>;
 
 	ProxyBinPacker() {
-		MockT::callMock([](MockT& m) {
-			m.mock_constructor();
-		});
+		PROXY_CALL_MOCK(MockT, mock_constructor);
 	}
 
 	~ProxyBinPacker() {
-		MockT::callMock([](MockT& m) {
-			m.mock_destructor();
-		});
+		PROXY_CALL_MOCK(MockT, mock_destructor);
 	}
 
 	void add(const IdT& id, size_t width, size_t height) {
-		MockT::callMock([&](MockT& m) {
-			m.add(id, width, height);
-		});
+		PROXY_CALL_MOCK(MockT, add, id, width, height);
 	}
 
 	MockT::Packing pack(size_t dimConstraint, size_t padding = 0) const {
-		return MockT::callMock([&](MockT& m) {
-			return m.pack(dimConstraint, padding);
-		});
+		return PROXY_CALL_MOCK(MockT, pack, dimConstraint, padding);
 	}
 };

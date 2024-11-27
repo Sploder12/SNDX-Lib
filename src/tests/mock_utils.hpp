@@ -8,7 +8,9 @@ struct MockError : public std::logic_error {
 	using std::logic_error::logic_error;
 };
 
-template <class Mock>
+// CRTP mixin that enables proxying for a mock.
+// the size_t allows for having multiple proxys of a Mock at a time
+template <class Mock, size_t ProxyID = 0>
 class ProxyableMock {
 private:
 	inline static Mock* mock{ nullptr };
@@ -17,7 +19,6 @@ private:
 		return std::exchange(mock, newMock);
 	}
 public:
-
 	ProxyableMock() {
 		if (inject(static_cast<Mock*>(this)) != nullptr)
 			throw MockError("Attempting to proxy mock multiple times!");
@@ -32,7 +33,7 @@ public:
 	ProxyableMock& operator=(const ProxyableMock&) = delete;
 	ProxyableMock& operator=(ProxyableMock&&) = delete;
 
-	template <class Func, class... Ts>
+	template <class Func>
 	static decltype(auto) callMock(Func&& func) {
 		if (mock) {
 			return func(*mock);
@@ -40,4 +41,14 @@ public:
 		
 		throw MockError("Tried to call proxy mock that isn't mocked!");
 	}
+
+	[[nodiscard]]
+	static constexpr size_t proxyID() noexcept {
+		return ProxyID;
+	}
 };
+
+#define PROXY_CALL_MOCK(MockT, method, ...) \
+	MockT::callMock([&](MockT& _proxmock) { \
+		return _proxmock.method(__VA_ARGS__); \
+	})
