@@ -54,33 +54,37 @@ namespace sndx::math {
 		}
 	};
 
+	template <bool horizontal>
+	struct BinPackEntry {
+		std::array<size_t, 2> dims{};
+
+		constexpr BinPackEntry(size_t width, size_t height) noexcept :
+			dims{ width, height } {
+		}
+
+		[[nodiscard]]
+		constexpr size_t getPrimaryDim() const noexcept {
+			return dims[horizontal];
+		}
+
+		[[nodiscard]]
+		constexpr size_t getSecondaryDim() const noexcept {
+			return dims[!horizontal];
+		}
+
+		constexpr bool operator>(const BinPackEntry& other) const noexcept {
+			if (getPrimaryDim() == other.getPrimaryDim())
+				return getSecondaryDim() > other.getSecondaryDim();
+
+			return getPrimaryDim() > other.getPrimaryDim();
+		}
+	};
+
 	template <bool horizontal = true, class IdT = std::string>
 	class BinPacker {
 	private:
-		struct Entry {
-			std::array<size_t, 2> dims{};
-
-			constexpr Entry(size_t width, size_t height) noexcept:
-				dims{ width, height } {}
-
-			[[nodiscard]]
-			constexpr size_t getPrimaryDim() const noexcept {
-				return dims[horizontal];
-			}
-
-			[[nodiscard]]
-			constexpr size_t getSecondaryDim() const noexcept {
-				return dims[!horizontal];
-			}
-
-			constexpr bool operator>(const Entry& other) const noexcept {
-				if (getPrimaryDim() == other.getPrimaryDim())
-					return getSecondaryDim() > other.getSecondaryDim();
-
-				return getPrimaryDim() > other.getPrimaryDim();
-			}
-		};
-
+		using Entry = BinPackEntry<horizontal>;
+		
 		struct LabeledEntry : public Entry {
 			using Entry::operator>;
 

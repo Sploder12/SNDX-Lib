@@ -120,6 +120,8 @@ namespace sndx::render {
 		bool m_compress = false;
 
 	public:
+		using DefaultPacker = sndx::math::BinPacker<true, size_t>;
+
 		void add(const IdT& id, const ImageData& img) {
 			m_entries.emplace_back(id, img);
 		}
@@ -128,7 +130,7 @@ namespace sndx::render {
 			m_entries.reserve(size);
 		}
 
-		template <class Packer = sndx::math::BinPacker<true, size_t>> [[nodiscard]]
+		template <class Packer = DefaultPacker> [[nodiscard]]
 		ImageAtlas<IdT> build(auto&& policy, size_t dimConstraint, size_t padding) const {
 			Packer packer{};
 
@@ -191,17 +193,17 @@ namespace sndx::render {
 			return ImageAtlas<IdT>{ std::move(entries), ImageData{packing.width() + padding, packing.height() + padding, uint8_t(maxChannels), std::move(data)}};
 		}
 
-		template <class Packer = sndx::math::BinPacker<true, size_t>> [[nodiscard]]
+		template <class Packer = DefaultPacker> [[nodiscard]]
 		ImageAtlas<IdT> build(size_t dimConstraint, size_t padding = 1) const {
 			return build<Packer>(std::execution::par_unseq, dimConstraint, padding);
 		}
 
-		template <class TextureT, class Packer = sndx::math::BinPacker<true, size_t>> [[nodiscard]]
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
 			return TextureAtlas<TextureT, IdT>{build<Packer>(std::forward<decltype(policy)>(policy), dimConstraint, padding), compress};
 		}
 
-		template <class TextureT, class Packer = sndx::math::BinPacker<true, size_t>> [[nodiscard]]
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(size_t dimConstraint, size_t padding = 1, bool compress = false) {
 			return buildTexture<TextureT, Packer>(std::execution::par_unseq, dimConstraint, padding, compress);
 		}
