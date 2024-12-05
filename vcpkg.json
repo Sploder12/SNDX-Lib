@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "freetype",
+    "glew",
+    "glfw3",
+    "minimp3",
+    "openal-soft",
+    "stb",
+    "glm",
+    "libvorbis"
+  ]
+}

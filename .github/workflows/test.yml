@@ -1,0 +1,53 @@
+name: Run gtest
+run-name: Run tests by ${{ github.actor }}
+on: [push]
+jobs:
+    job:
+        name: ${{ matrix.os }}-${{ github.workflow }}
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [windows-latest, ubuntu-latest]
+                include:
+                    - os: windows-latest
+                      preset: 'x64-release'
+                      binary: '.\out\build\x64-release\src\tests\tests.exe'
+                    - os: ubuntu-latest
+                      preset: 'linux-debug'
+                      binary: './out/build/linux-debug/src/tests/tests'
+                      install_opengl: true
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4.2.0
+
+            - name: Install openGL
+              if: ${{ matrix.install_opengl }}
+              run: |
+                  sudo apt-get install libxmu-dev libxi-dev libgl-dev
+                  sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
+                  sudo apt install libxrandr-dev
+
+            - uses: ilammy/msvc-dev-cmd@v1.13.0
+
+            - uses: lukka/get-cmake@latest
+            - name: Run vcpkg
+              uses: lukka/run-vcpkg@v11.5
+              with:
+                runVcpkgInstall: true
+            
+            - name: Run CMake
+              uses: lukka/run-cmake@v10
+              with:
+                configurePreset: ${{ matrix.preset }}
+
+            - name: Compile
+              run: |
+                  cd './out/build/${{ matrix.preset }}'
+                  ninja
+
+            - name: Run Tests
+              timeout-minutes: 5
+              run: ${{ matrix.binary }}
+            

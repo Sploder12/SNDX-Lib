@@ -1,167 +1,211 @@
 #pragma once
 
-#include "texture.hpp"
+#include "../math/binpack.hpp"
 
-#include "../data.hpp"
+#include "./image/imagedata.hpp"
 
 #include <unordered_map>
-#include <set>
+#include <string>
+#include <functional>
+#include <algorithm>
+#include <execution>
 
-namespace sndx {
-
-	// A texture atlas that consists of equally sized and spaced elements
-	struct RegularAtlas {
-		Texture tex;
-
-		//width and height of the texture in CELLS!! (not pixels)
-		size_t width, height;
-
-		// precomputed offsets to save some time
-		std::vector<glm::vec2> offsets;
-
-		explicit RegularAtlas() :
-			tex(), width(0), height(0), offsets{} {}
-
-		// width and height are in cells! not pixels!!
-		RegularAtlas(Texture data, size_t width, size_t height):
-			tex(data), width(width), height(height), offsets{} {
-
-			resize(width, height);
-		}
-
-		void resize(size_t newWidth, size_t newHeight) {
-			if (newWidth <= 0 || newHeight <= 0) [[unlikely]] {
-				throw std::runtime_error("Atlas has dimension of 0");
-			}
-
-			width = newWidth;
-			height = newHeight;
-
-			updateOffsets();
-		}
-
-		void updateOffsets() {
-			offsets.resize(width * height);
-
-			auto dims = cellDims();
-
-			for (int x = 0; x < width; ++x) {
-				for (int y = 0; y < height; ++y) {
-					float xoff = dims.x * float(x) + dims.x * 0.5f / float(tex.width);
-					float yoff = dims.y * float(height - 1 - y) + dims.y * 0.5f / float(tex.height);
-
-					offsets[x + y * width] = glm::vec2(xoff, yoff);
-				}
-			}
-		}
-
-		void bind(size_t id = 0) const {
-			tex.bind(id);
-		}
-
-		[[nodiscard]]
-		glm::vec2 cellDims() const {
-			return { 1.0f / float(width), 1.0f / float(height) };
-		}
-
-		// half pixel corrected dimensions
-		[[nodiscard]]
-		glm::vec2 cellDimsAdj() const {
-			auto base = cellDims();
-			glm::vec2 texAdj{ float(tex.width), float(tex.height) };
-			base.x -= base.x / texAdj.x;
-			base.y -= base.y / texAdj.y;
-			return base;
-		}
-
-		[[nodiscard]]
-		glm::vec2 getOffset(size_t x, size_t y) const {
-			return getOffset(x + y * width);
-		}
-
-		[[nodiscard]]
-		glm::vec2 getOffset(size_t id) const {
-			if (id >= offsets.size()) [[unlikely]] return { -1.0, -1.0 };
-			return offsets[id];
-		}
-
-		void destroy() {
-			tex.destroy();
-			width = 0;
-			height = 0;
-			offsets.clear();
-		}
-	};
+namespace sndx::render {
 	
 	template <class IdT = std::string>
-	struct Atlas {
-		Texture tex{};
+	class ImageAtlas {
+	private:
+		struct Entry {
+			glm::vec<2, size_t> pos, dims;
+		};
 
-		std::unordered_map<IdT, std::pair<glm::vec2, glm::vec2>> entries{};
+		std::unordered_map<IdT, Entry> m_entries{};
+		ImageData m_image;
 
-		[[nodiscard]]
-		auto& getCell(const IdT& id) {
-			return entries.at(id);
-		}
+		template <class>
+		friend class AtlasBuilder;
 
-		[[nodiscard]]
-		const auto& getCell(const IdT& id) const {
-			return entries.at(id);
-		}
-
-		[[nodiscard]]
-		bool contains(const IdT& id) const {
-			return entries.contains(id);
-		}
+		ImageAtlas(decltype(m_entries)&& entries, ImageData&& image) :
+			m_entries(std::move(entries)), m_image(std::move(image)) {}
+	public:
 
 		[[nodiscard]]
-		decltype(auto) find(const IdT& id) const {
-			return entries.find(id);
+		const auto& getImage() const {
+			return m_image;
 		}
 
-		decltype(auto) begin() const {
-			return entries.begin();
+		[[nodiscard]]
+		const auto& getEntry(const IdT& id) const {
+			return m_entries.at(id);
 		}
 
-		decltype(auto) end() const {
-			return entries.end();
+		[[nodiscard]]
+		auto size() const {
+			return m_entries.size();
 		}
 
-		void bind(size_t id = 0) const {
-			tex.bind(id);
+		[[nodiscard]]
+		auto begin() const {
+			return m_entries.begin();
 		}
 
-		// currently only supports string based atlases
-		bool save(const std::string& atlasname) const {
+		[[nodiscard]]
+		auto end() const {
+			return m_entries.end();
+		}
+	};
 
-			std::string imgPath = atlasname + ".jpg";
+	template <class TextureT, class IdT = std::string>
+	class TextureAtlas {
+	private:
+		struct Entry {
+			glm::vec2 pos, dims;
+		};
 
-			Data root("img", imgPath);
-			
-			Data offsets(DataDict{});
-			
-			for (const auto& [id, entry] : entries) {
-				Data data("x", entry.first.x);
-				data.append("y", entry.first.y);
-				data.append("wid", entry.second.x);
-				data.append("hig", entry.second.y);
+		std::unordered_map<IdT, Entry> m_entries;
+		TextureT m_texture;
 
-				offsets.append(std::to_string(id), std::move(data));
+		TextureAtlas(decltype(m_entries)&& entries, TextureT&& texture) :
+			m_entries(std::move(entries)), m_texture(std::move(texture)) {}
+	public:
+
+		TextureAtlas(const ImageAtlas<IdT>& atlas, bool compress = false):
+			m_entries{}, m_texture{atlas.getImage(), 0, compress } {
+			m_entries.reserve(atlas.size());
+			const auto& image = atlas.getImage();
+
+			glm::vec2 scaling = 1.0f / glm::vec2{ image.width(), image.height()};
+
+			for (const auto& [id, entry] : atlas) {
+				Entry e{ glm::vec2{entry.pos} *scaling, glm::vec2{entry.dims} *scaling };
+				m_entries.emplace(id, std::move(e));
+			}
+		}
+		
+		[[nodiscard]]
+		const auto& getTexture() const {
+			return m_texture;
+		}
+
+		[[nodiscard]]
+		const auto& getEntry(const IdT& id) const {
+			return m_entries.at(id);
+		}
+
+		[[nodiscard]]
+		auto size() const {
+			return m_entries.size();
+		}
+
+		[[nodiscard]]
+		auto begin() const {
+			return m_entries.begin();
+		}
+
+		[[nodiscard]]
+		auto end() const {
+			return m_entries.end();
+		}
+	};
+
+	template <class IdT = std::string>
+	class AtlasBuilder {
+	private:
+		struct Entry {
+			IdT id;
+			std::reference_wrapper<const ImageData> data;
+		};
+
+		std::vector<Entry> m_entries{};
+		bool m_compress = false;
+
+	public:
+		using DefaultPacker = sndx::math::BinPacker<true, size_t>;
+
+		void add(const IdT& id, const ImageData& img) {
+			m_entries.emplace_back(id, img);
+		}
+
+		void reserve(size_t size) noexcept {
+			m_entries.reserve(size);
+		}
+
+		template <class Packer = DefaultPacker> [[nodiscard]]
+		ImageAtlas<IdT> build(auto&& policy, size_t dimConstraint, size_t padding) const {
+			Packer packer{};
+
+			size_t maxChannels = 0;
+			for (size_t i = 0; i < m_entries.size(); ++i) {
+				const auto& img = m_entries[i].data.get();
+
+				maxChannels = std::max(maxChannels, size_t(img.channels()));
+				packer.add(i, img.width(), img.height());
 			}
 
-			root.append("offsets", std::move(offsets));
-
-			if (encodeData<JSONencoder>(atlasname + ".atlas", root)) {
-				tex.save(imgPath.c_str());
-				return true;
+			auto packing = packer.pack(dimConstraint, padding);
+			if (packing.empty() || packing.width() == 0 || packing.height() == 0) [[unlikely]] {
+				throw std::logic_error("Cannot create an empty atlas");
 			}
 			
-			return false;
+			std::vector<std::byte> data{};
+
+			data.resize(maxChannels * (packing.width() + padding) * (packing.height() + padding), std::byte(0x0));
+
+			std::for_each_n(std::forward<decltype(policy)>(policy), packing.begin(), m_entries.size(), 
+				[this, &data, &maxChannels, &packing, &padding](const auto& entry) {
+				
+				const auto& [imgIdx, pos] = entry;
+				const auto& [id, imgRef] = m_entries[imgIdx];
+				const auto& img = imgRef.get();
+				
+				size_t stride = maxChannels * (packing.width() + padding);
+
+				for (size_t y = 0; y < img.height(); ++y) {
+					size_t rowPos = (pos.y + y) * stride + pos.x * maxChannels;
+
+					for (size_t x = 0; x < img.width(); ++x) {
+						
+						for (size_t c = 0; c < img.channels(); ++c) {
+							data.at(rowPos + x * maxChannels + c) = img.at(x, y, c);
+						}
+
+						for (size_t c = img.channels(); c < maxChannels; ++c) {
+							data.at(rowPos + x * maxChannels + c) = c >= 3 ? std::byte(0xff) : std::byte(0x0);
+						}
+					}
+				}
+			});
+
+			std::unordered_map<IdT, typename ImageAtlas<IdT>::Entry> entries{};
+			entries.reserve(m_entries.size());
+
+			for (const auto& [imgIdx, pos] : packing) {
+				const auto& [id, img] = m_entries[imgIdx];
+
+				typename ImageAtlas<IdT>::Entry entry{
+					pos,
+					glm::vec<2, size_t>{img.get().width(), img.get().height()}
+				};
+
+				entries.emplace(id, std::move(entry));
+			}
+
+			return ImageAtlas<IdT>{ std::move(entries), ImageData{packing.width() + padding, packing.height() + padding, uint8_t(maxChannels), std::move(data)}};
 		}
 
-		void destroy() {
-			tex.destroy();
-			entries.clear();
+		template <class Packer = DefaultPacker> [[nodiscard]]
+		ImageAtlas<IdT> build(size_t dimConstraint, size_t padding = 1) const {
+			return build<Packer>(std::execution::par_unseq, dimConstraint, padding);
+		}
+
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
+		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
+			return TextureAtlas<TextureT, IdT>{build<Packer>(std::forward<decltype(policy)>(policy), dimConstraint, padding), compress};
+		}
+
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
+		auto buildTexture(size_t dimConstraint, size_t padding = 1, bool compress = false) {
+			return buildTexture<TextureT, Packer>(std::execution::par_unseq, dimConstraint, padding, compress);
 		}
 	};
 }

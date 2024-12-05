@@ -1,10 +1,13 @@
 #pragma once
 
-#include "render/imagedata.hpp"
-#include "render/texture.hpp"
-#include "render/atlas.hpp"
-#include "render/shader.hpp"
-#include "render/vao.hpp"
-#include "render/vbo.hpp"
-#include "render/font.hpp"
-#include "render/viewport.hpp"
+#include "./render/image/imagedata.hpp"
+#include "./render/image/stbimage.hpp"
+
+#include "./render/atlas.hpp"
+#include "./render/camera.hpp"
+#include "./render/font.hpp"
+#include "./render/viewport.hpp"
+
+#ifndef SNDX_NO_GL
+#include "./render/sndxgl.hpp"
+#endif

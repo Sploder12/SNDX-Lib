@@ -368,3 +368,7 @@ lib/
 GPUCache/
 
 Intel*
+
+# Jetbrains IDEs
+.idea/
+cmake-build-*/

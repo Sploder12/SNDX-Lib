@@ -1,8 +1,19 @@
 #pragma once
 
-#include "audio/signal.hpp"
-#include "audio/audiodata.hpp"
-#include "audio/alcontext.hpp"
-#include "audio/aldevice.hpp"
-#include "audio/abo.hpp"
-#include "audio/alsource.hpp"
+#include "./audio/audio_decoder.hpp"
+
+#ifndef SNDX_NO_MP3
+#include "./audio/mp3.hpp"
+#endif
+
+#ifndef SNDX_NO_OGG
+#include "./audio/vorbis.hpp"
+#endif
+
+#ifndef SNDX_NO_WAV
+#include "./audio/wav.hpp"
+#endif
+
+#ifndef SNDX_NO_AL
+#include "./audio/al.hpp"
+#endif

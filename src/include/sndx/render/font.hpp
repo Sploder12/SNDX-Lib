@@ -1,69 +1,41 @@
 #pragma once
 
-#include "atlas.hpp"
-
-#include "../util/atlasbuild.hpp"
-
-#include <unordered_map>
-#include <optional>
-
 #include <ft2build.h>
 #include <freetype/freetype.h>
 
-#include <GL/glew.h>
+#include <glm/glm.hpp>
 
-namespace sndx {
+#include <optional>
+#include <filesystem>
 
-	struct FreetypeContext {
-		FT_Library ft = nullptr;
+#include "atlas.hpp"
 
-		FreetypeContext() {
-			FT_Init_FreeType(&ft);
-		}
-
-		operator FT_Library&() {
-			return ft;
-		}
-
-		FreetypeContext(const FreetypeContext&) = delete;
-		FreetypeContext(FreetypeContext&& other) noexcept:
-			ft(std::move(other.ft)) {
-			other.ft = nullptr;
-		}
-
-		FreetypeContext& operator=(const FreetypeContext&) = delete;
-		FreetypeContext& operator=(FreetypeContext&& other) noexcept {
-			std::swap(ft, other.ft);
-			return *this;
-		}
-
-		~FreetypeContext() {
-			FT_Done_FreeType(ft);
-			ft = nullptr;
-		}
-	};
-
-	// metrics a character
-	struct gmetric {
+namespace sndx::render {
+	struct GlyphMetric {
+		glm::ivec2 bearing, dims;
 		float advance;
-		glm::vec2 bearing;
-		glm::vec2 dims;
 
-		constexpr gmetric() :
-			advance(0), bearing(0.0f), dims(0.0f) {}
+		constexpr GlyphMetric() = default;
 
-		constexpr gmetric(float advance, int bearingX, int bearingY, unsigned short width, unsigned short height) :
-			advance(advance), bearing(bearingX, bearingY), dims(width, height) {}
+		constexpr GlyphMetric(float advance, const glm::ivec2& bearing, const glm::ivec2& dims) :
+			bearing(bearing), dims(dims), advance(advance) {}
 	};
 
-	struct Font {
-		// metrics for all the characters
-		std::unordered_map<FT_ULong, gmetric> metrics;
-		Atlas<FT_ULong> atlas;
+	template <class AtlasT = TextureAtlas<FT_ULong>> 
+	class Font {
+	private:
+		AtlasT m_atlas;
+		std::unordered_map<FT_ULong, GlyphMetric> m_metrics{};
 
-		int maxBearingY = 0; // Needed for hang calculation
-		bool sdf = false;
+		int m_maxBearingY = 0;
+		bool m_sdf{};
 
+		friend class FontBuilder;
+
+		Font(AtlasT&& atlas, const std::unordered_map<FT_ULong, GlyphMetric>& metrics, int maxBearingY, bool sdf) :
+			m_atlas(std::move(atlas)), m_metrics(metrics), m_maxBearingY(maxBearingY), m_sdf(sdf) {}
+	
+	public:
 		// returns charcode if it exists, the charcode "white square" otherwise
 		[[nodiscard]]
 		FT_ULong getChar(FT_ULong charcode) const {
@@ -74,131 +46,146 @@ namespace sndx {
 
 		[[nodiscard]]
 		bool contains(FT_ULong charcode) const {
-			return metrics.contains(charcode);
+			return m_metrics.contains(charcode);
 		}
 
 		[[nodiscard]]
-		const gmetric& getCharMetrics(FT_ULong charcode) const {
-			return metrics.at(getChar(charcode));
+		const GlyphMetric& getCharMetrics(FT_ULong charcode) const {
+			return m_metrics.at(getChar(charcode));
 		}
 
 		[[nodiscard]]
-		glm::vec2 getCharOffset(FT_ULong charcode) const {
-			return atlas.getCell(getChar(charcode)).first;
-		}
-
-		[[nodiscard]]
-		glm::vec2 getCharDims(FT_ULong charcode) const {
-			return atlas.getCell(getChar(charcode)).second;
-		}
-
-		void bind(size_t id = 0) const {
-			atlas.bind(id);
-		}
-
-		void destroy() {
-			metrics.clear();
-			atlas.destroy();
+		const auto& getAtlas() const {
+			return m_atlas;
 		}
 	};
 
+	class FontBuilder {
+	private:
+		using MetricsT = std::unordered_map<FT_ULong, GlyphMetric>;
+		using GlyphsT = std::vector<std::pair<FT_ULong, ImageData>>;
 
-	template <size_t font_padding = 2> [[nodiscard]]
-	inline std::optional<Font> loadFont(FreetypeContext& context, const char* filepath, bool sdf = false, unsigned int size = 32) {
-		FT_Face face;
-		if (FT_New_Face(context, filepath, 0, &face)) return {};
+		MetricsT m_metrics{};
+		GlyphsT m_glyphs{};
+		AtlasBuilder<FT_ULong> m_builder{};
+		int m_maxBearingY;
+		bool m_sdf;
 
-		// Set the pixel height to the size, the width is derived
-		FT_Set_Pixel_Sizes(face, 0, size);
+		using DefaultPacker = decltype(m_builder)::DefaultPacker;
 
-		//if (sdf) size *= 2;
+		friend class FreetypeContext;
 
-		FT_ULong count = face->num_glyphs;
-		unsigned int columns = (unsigned int)(ceil(sqrt(count)));
+		FontBuilder(MetricsT&& metrics, GlyphsT&& glyphs, int maxBearingY, bool sdf) :
+			m_metrics(std::move(metrics)), m_glyphs(std::move(glyphs)), m_maxBearingY(maxBearingY), m_sdf(sdf) {
 
-		Font out;
-		out.metrics.reserve(count);
-		out.sdf = sdf;
+			m_builder.reserve(m_glyphs.size());
 
-		AtlasBuilder<FT_ULong> builder{};
-
-		// Iterate over each character
-		FT_UInt idx;
-		FT_ULong chr = FT_Get_First_Char(face, &idx);
-		while (idx != 0) {
-			FT_Load_Glyph(face, idx, FT_LOAD_DEFAULT);
-
-			const FT_GlyphSlot& glyph = face->glyph;
-
-			// Have freetype render the glyph
-			if (FT_Render_Glyph(glyph, (sdf) ? FT_RENDER_MODE_SDF : FT_RENDER_MODE_NORMAL)) {
-				FT_Done_Face(face);
-				return {};
+			for (const auto& [chr, glyph] : m_glyphs) {
+				m_builder.add(chr, glyph);
 			}
-
-			const FT_Bitmap& bitmap = glyph->bitmap;
-
-			ImageData img;
-			img.width = bitmap.width;
-			img.height = bitmap.rows;
-			img.channels = 1;
-			img.data.resize((long long)(img.width) * img.height * img.channels, 0);
-
-			std::copy(bitmap.buffer, bitmap.buffer + img.data.size(), img.data.begin());
-
-			builder.insert(chr, std::move(img));
-
-			// Needed for proper text y alignment on the baseline
-			if (glyph->bitmap_top > out.maxBearingY) out.maxBearingY = glyph->bitmap_top;
-
-			// create the metric for the font, the advance is in 64ths of pixels so divide by 64 to get it into pixels
-			out.metrics[chr] = gmetric(glyph->advance.x / 64.0f, glyph->bitmap_left, glyph->bitmap_top, glyph->bitmap.width, glyph->bitmap.rows);
-		
-			chr = FT_Get_Next_Char(face, chr, &idx);
 		}
-		FT_Done_Face(face);
-	
-		out.atlas = builder.buildAtlas<font_padding>(columns / 4.0f);
-	
-		return out;
-	}
+	public:
+		template <class Packer = DefaultPacker> [[nodiscard]]
+		Font<ImageAtlas<FT_ULong>> build(auto&& policy, size_t dimConstraint, size_t padding) const {
+			auto atlas = m_builder.build<Packer>(std::forward<decltype(policy)>(policy), dimConstraint, padding);
 
-	using CharPosWH = std::pair<glm::vec2, glm::vec2>;
+			return Font<ImageAtlas<FT_ULong>>{std::move(atlas), m_metrics, m_maxBearingY, m_sdf};
+		}
 
-	struct TextLocationResult {
-		// the position is the top-left of the glyph
-		std::vector<CharPosWH> result{};
+		template <class Packer = DefaultPacker> [[nodiscard]]
+		Font<ImageAtlas<FT_ULong>> build(size_t dimConstraint, size_t padding = 1) const {
+			return build<Packer>(std::execution::par_unseq, dimConstraint, padding);
+		}
 
-		// the cursor after the last character
-		glm::vec2 endPos;
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
+		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
+			auto atlas = TextureAtlas<TextureT, FT_ULong>{m_builder.build<Packer>(std::forward<decltype(policy)>(policy), dimConstraint, padding), compress};
+		
+			return Font<TextureAtlas<TextureT, FT_ULong>>{std::move(atlas), m_metrics, m_maxBearingY, m_sdf};
+		}
+
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
+		auto buildTexture(size_t dimConstraint, size_t padding = 1, bool compress = false) {
+			return buildTexture<TextureT, Packer>(std::execution::par_unseq, dimConstraint, padding, compress);
+		}
 	};
 
-	template <typename C = char>
-	inline TextLocationResult getTextLocations(const Font& font, std::basic_string_view<C> text, glm::vec2 pos, glm::vec2 scale, bool center) {
-		pos.y -= font.maxBearingY * scale.y;
+	struct FreetypeContext {
+		FT_Library context = nullptr;
+
+		FreetypeContext() {
+			FT_Init_FreeType(&context);
+		}
+
+		operator FT_Library& () {
+			return context;
+		}
+
+		FreetypeContext(const FreetypeContext&) = delete;
+		FreetypeContext(FreetypeContext&& other) noexcept :
+			context(std::exchange(other.context, nullptr)) {
+		}
+
+		FreetypeContext& operator=(const FreetypeContext&) = delete;
+		FreetypeContext& operator=(FreetypeContext&& other) noexcept {
+			std::swap(context, other.context);
+			return *this;
+		}
+
+		~FreetypeContext() {
+			FT_Done_FreeType(std::exchange(context, nullptr));
+		}
+
+		[[nodiscard]]
+		std::optional<FontBuilder> loadFont(const char* filepath, unsigned int size = 32, bool sdf = false) {
+			FT_Face face;
+			if (FT_New_Face(context, filepath, 0, &face)) return {};
+
+			// Set the pixel height to the size, the width is derived
+			FT_Set_Pixel_Sizes(face, 0, size);
+
+			FT_ULong count = face->num_glyphs;
+			unsigned int columns = (unsigned int)(ceil(sqrt(count)));
+
+			std::unordered_map<FT_ULong, GlyphMetric> metrics{};
+			metrics.reserve(count);
+
+			std::vector<std::pair<FT_ULong, ImageData>> glyphs{};
+			glyphs.reserve(count);
+
+			int maxBearingY = 0;
+			
+			// Iterate over each character
+			FT_UInt idx;
+			FT_ULong chr = FT_Get_First_Char(face, &idx);
+			while (idx != 0) {
+				FT_Load_Glyph(face, idx, FT_LOAD_DEFAULT);
+
+				const FT_GlyphSlot& glyphSlot = face->glyph;
+
+				// Have freetype render the glyph
+				if (FT_Render_Glyph(glyphSlot, (sdf) ? FT_RENDER_MODE_SDF : FT_RENDER_MODE_NORMAL)) {
+					FT_Done_Face(face);
+					return {};
+				}
+
+				const FT_Bitmap& bitmap = glyphSlot->bitmap;
+
+				ImageData glyph{ bitmap.width, bitmap.rows, 1, std::span{ (const std::byte*)(bitmap.buffer), bitmap.width * bitmap.rows } };
+
+				glyphs.emplace_back(chr, std::move(glyph));
 		
-		if (center) {
-			for (const auto& chr : text) {
-				const auto& metrics = font.getCharMetrics(FT_ULong(chr));
-				pos.x -= metrics.advance * scale.x * 0.5f;
+				// Needed for proper text y alignment on the baseline
+				maxBearingY = std::max(maxBearingY, glyphSlot->bitmap_top);
+
+				// create the metric for the font, the advance is in 64ths of pixels so divide by 64 to get it into pixels
+				metrics[chr] = GlyphMetric(glyphSlot->advance.x / 64.0f, glm::ivec2{ glyphSlot->bitmap_left, glyphSlot->bitmap_top }, glm::ivec2{ bitmap.width, bitmap.rows });
+
+				chr = FT_Get_Next_Char(face, chr, &idx);
 			}
+			FT_Done_Face(face);
+
+			return FontBuilder(std::move(metrics), std::move(glyphs), maxBearingY, sdf);
 		}
-
-		TextLocationResult out{};
-		out.result.reserve(text.size());
-
-		for (const auto& chr : text) {
-			const auto& metrics = font.getCharMetrics(FT_ULong(chr));
-
-			auto charPos = pos + metrics.bearing * scale;
-			auto charDims = metrics.dims * scale;
-
-			out.result.emplace_back(charPos, charDims);
-
-			pos.x += metrics.advance * scale.x;
-		}
-
-		out.endPos = pos;
-		return out;
-	}
+	};
 }

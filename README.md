@@ -4,19 +4,16 @@ Includes support for:
 - OpenGL with GLFW (for visuals and input)
 - OpenAL (for Audio)
 - Freetype (for Fonts)
-- Assimp (for 3D models)
+- ~Assimp (for 3D models)~
 - Dynamic Texture Atlas Creation
 - Lines and Bezier Curves
 - Data Logging
-- Tree File parsing that supports arbitrary formats.
+- RIFF File parsing.
 - Window size management
 - 2D/3D collision detection
 - Fourier Transform (and inverse)
-- WAVE and MP3 audio format loading
+- WAVE, MP3, and Ogg Vorbis audio format loading
 - Image writing and reading (using stbi)
-- Debug widgets (using Dear ImGui)
 
 ## Building
 Not needed! Just include the files!
-
-Use VisualStudio 2022 for testing.
