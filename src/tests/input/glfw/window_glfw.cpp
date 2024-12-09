@@ -13,15 +13,13 @@ public:
             // it's important to check if we even can test,
             // headless platforms can't test GLFW
             if (glfwInit() != GLFW_TRUE) {
-                const char* what = "";
-                glfwGetError(&what);
+                auto [_, what] = GLFW::getLastError();
                 GTEST_SKIP() << "Failed to initialize GLFW: " << what;
             }
 
             glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
             if (auto win = glfwCreateWindow(640, 480, "Verify Window", nullptr, nullptr); !win) {
-                const char* what = "";
-                glfwGetError(&what);
+                auto [_, what] = GLFW::getLastError();
                 GTEST_SKIP() << "Failed to create GLFW window: " << what;
             }
             else {
@@ -31,6 +29,10 @@ public:
 
             m_testBuilder.setTitle("test").setX(0).setY(1).setWidth(320).setHeight(240);
         }
+    }
+
+    void TearDown() override {
+        glfwTerminate();
     }
 
     static void verifyBuiltWindow(const WindowGLFW& window, const WindowBuilderGLFW& builder) {
@@ -48,10 +50,6 @@ public:
         EXPECT_EQ(window.isVisible(), visible);
 
         EXPECT_EQ(builder.getTitle(), window.getTitle());
-    }
-
-    void TearDown() override {
-        glfwTerminate();
     }
 
     [[nodiscard]]
@@ -105,7 +103,7 @@ TEST_F(GLFWwindowTest, CanTransform) {
     window.resize(glm::ivec2(450, 290));
     EXPECT_EQ(window.getSize(), glm::ivec2(450, 290));
 
-    EXPECT_FALSE(glfwWindowShouldClose(window));
+    EXPECT_FALSE(window.shouldClose());
     window.tryClose();
-    EXPECT_TRUE(glfwWindowShouldClose(window));
+    EXPECT_TRUE(window.shouldClose());
 }

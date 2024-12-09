@@ -2,8 +2,7 @@
 
 #include "../window_backend.hpp"
 
-#define NOMINMAX
-#include <GLFW/glfw3.h>
+#include "./glfw.hpp"
 
 #include "../../render/viewport.hpp"
 
@@ -60,6 +59,15 @@ namespace sndx::input {
 
 		operator GLFWwindow* () const {
 			return m_window;
+		}
+
+		void setCursor(GLFWcursor* cursor = nullptr) noexcept {
+			glfwSetCursor(m_window, cursor);
+		}
+
+		[[nodiscard]]
+		bool shouldClose() const noexcept {
+			return glfwWindowShouldClose(m_window);
 		}
 
 	private:
