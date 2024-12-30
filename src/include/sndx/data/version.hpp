@@ -4,7 +4,7 @@
 
 #define SNDXLIB_MAJOR 0
 #define SNDXLIB_MINOR 2
-#define SNDXLIB_PATCH 0
+#define SNDXLIB_PATCH 1
 
 #define SNDX_AS_STRING(macro) #macro
 
