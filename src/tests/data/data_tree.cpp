@@ -72,6 +72,7 @@ TEST_F(DataTreeTest, ValueCanBeNumber) {
 
 	inumber = 4;
 	EXPECT_EQ(inumber, 4);
+	EXPECT_EQ(inumber, fnumber);
 }
 
 TEST_F(DataTreeTest, ValueCanBeString) {
@@ -221,4 +222,64 @@ TEST_F(DataTreeTest, DictCanBeListInitialized) {
 	else {
 		ADD_FAILURE() << "'sub' not found in dict!";
 	}
+}
+
+TEST_F(DataTreeTest, DataCanSquareBracket) {
+	data::Data dat{};
+
+	dat[0]["banana"][1] = 5;
+
+	EXPECT_EQ(dat[0]["banana"][1], 5);
+	EXPECT_EQ(dat[0]["banana"][0], nullptr);
+
+	dat[1]["banana"][0] = 5;
+
+	EXPECT_EQ(dat[0]["banana"][1], 5);
+	EXPECT_EQ(dat[0]["banana"][0], nullptr);
+	EXPECT_EQ(dat[1]["banana"][0], 5);
+	EXPECT_EQ(dat[1]["banana"][1], nullptr);
+
+	dat[0]["fish"] = true;
+
+	EXPECT_TRUE(dat[0]["fish"]);
+}
+
+TEST_F(DataTreeTest, DataThrowsOnBadIndexing) {
+	data::Data val = 5;
+
+	EXPECT_THROW(val[0], std::logic_error);
+	EXPECT_THROW(val[":)"], std::logic_error);
+
+	EXPECT_THROW(val.at(0), std::logic_error);
+	EXPECT_THROW(val.at(":)"), std::logic_error);
+
+	data::Data arr = data::DataArray{ 5, 10 };
+
+	EXPECT_THROW(arr[":("], std::logic_error);
+
+	EXPECT_THROW(arr.at(2), std::out_of_range);
+	EXPECT_THROW(arr.at(":("), std::logic_error);
+
+	data::Data dict = data::DataDict{{":(", 10}};
+
+	EXPECT_THROW(dict[0], std::logic_error);
+
+	EXPECT_THROW(dict.at(":)"), std::out_of_range);
+	EXPECT_THROW(dict.at(0), std::logic_error);
+}
+
+TEST_F(DataTreeTest, DataCanBeAssigned) {
+	data::Data a = 5;
+	data::Data b = data::DataArray{ 5, 10 };
+	data::Data c = data::DataDict{ {":(", 10} };
+
+	a = c;
+	c = b;
+	b = 5;
+
+	b = { 10, 20 };
+
+	EXPECT_EQ(a, data::DataDict({":(", 10}));
+	EXPECT_EQ(b, data::DataArray(10, 20));
+	EXPECT_EQ(c, data::DataArray(5, 10));
 }

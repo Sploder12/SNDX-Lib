@@ -88,7 +88,7 @@ TEST_F(ImageAtlasTest, addsEntry) {
 	auto atlas = builder.build<ProxyBinPacker<size_t>>(10, 5);
 
 	EXPECT_EQ(atlas.size(), 1);
-	EXPECT_NO_THROW(auto ign = atlas.getEntry(42));
+	EXPECT_NO_THROW(std::ignore = atlas.getEntry(42));
 }
 
 class IntenseImageAtlasTest : public ImageAtlasTest {

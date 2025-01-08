@@ -6,19 +6,20 @@
 #include <stdexcept>
 #include <memory>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <concepts>
 #include <initializer_list>
 
 #define SNDX_CREATE_GET(type, cnst, cnstxpr) \
-	[[nodiscard]] cnstxpr cnst type##T* get##type##() cnst { \
+	[[nodiscard]] cnstxpr cnst type##T* get##type() cnst { \
 		return get<type##T>(); \
 	}
 
 #define SNDX_CREATE_GET_OR(type, cnstxpr) \
 	[[nodiscard]] cnstxpr type##T get##type##Or(const type##T& _alt) const { \
-		if (auto _val = get##type##()) { \
+		if (auto _val = get##type()) { \
 			return *_val; } \
 		return _alt; \
 	}
@@ -42,23 +43,18 @@ namespace sndx::data {
 
 		template <class T>
 		using is_internal_t = std::bool_constant<
-			std::is_same_v<T, IntT> || 
+			std::is_same_v<T, IntT> ||
 			std::is_same_v<T, FloatT>>;
 
 		template <class T>
 		static constexpr bool is_internal_t_v = is_internal_t<T>();
 
 		friend class Value;
+
 	private:
 		std::variant<IntT, FloatT> m_value;
 
 	public:
-		constexpr Number(const Number&) noexcept = default;
-		constexpr Number(Number&&) noexcept = default;
-		constexpr Number& operator=(const Number&) noexcept = default;
-		constexpr Number& operator=(Number&&) noexcept = default;
-		constexpr ~Number() noexcept = default;
-
 		template <numeric T>
 		constexpr Number(T&& value) noexcept :
 			m_value(std::forward<T>(value)) {}
@@ -139,17 +135,19 @@ namespace sndx::data {
 		}
 
 		[[nodiscard]]
-		constexpr const FloatT getAsFloat() const noexcept {
+		constexpr FloatT getAsFloat() const noexcept {
 			return getAs<FloatT>();
 		}
 	};
-
 
 	class Value {
 	public:
 		using NumberT = Number;
 		using StringT = std::string;
 		using BoolT = bool;
+
+		using IntT = NumberT::IntT;
+		using FloatT = NumberT::FloatT;
 
 		template <class T>
 		using is_internal_t = std::bool_constant<
@@ -160,19 +158,10 @@ namespace sndx::data {
 		template <class T>
 		static constexpr bool is_internal_t_v = is_internal_t<T>();
 
-		using IntT = NumberT::IntT;
-		using FloatT = NumberT::FloatT;
-
 	private:
 		std::variant<NumberT, StringT, BoolT> m_value;
 
 	public:
-		Value(const Value&) = default;
-		Value(Value&&) noexcept = default;
-		Value& operator=(const Value&) = default;
-		Value& operator=(Value&&) noexcept = default;
-		~Value() noexcept = default;
-
 		template <numeric T>
 		Value(T&& value) noexcept :
 			m_value(std::forward<T>(value)) {}
@@ -361,8 +350,6 @@ namespace sndx::data {
 			return *this;
 		}
 
-		~DataArray() noexcept = default;
-
 		template <class T>
 		bool operator==(const T& arr) const {
 			if (size() != arr.size())
@@ -386,7 +373,11 @@ namespace sndx::data {
 
 		template <class... Args>
 		void emplace_back(Args&&... args) {
-			m_data.emplace_back(DataT(std::forward<Args>(args)...));
+			m_data.emplace_back(std::forward<Args>(args)...);
+		}
+
+		void resize(size_t size) {
+			m_data.resize(size);
 		}
 
 		void reserve(size_t size) {
@@ -445,10 +436,13 @@ namespace sndx::data {
 		std::unordered_map<IdT, DataT> m_data{};
 
 	public:
+		DataDict() = default;
 
 		DataDict(std::initializer_list<std::pair<const IdT, DataT>> list) :
-			m_data{ list } {
-		}
+			m_data{ list } {}
+
+		DataDict(const IdT& t, const DataT& d) :
+			m_data{ {t, d} } {}
 
 		DataDict(const DataDict& other) {
 			m_data.reserve(other.size());
@@ -474,8 +468,6 @@ namespace sndx::data {
 			std::swap(m_data, other.m_data);
 			return *this;
 		}
-
-		~DataDict() noexcept = default;
 
 		bool operator==(const auto& dict) const {
 			if (size() != dict.size())
@@ -602,8 +594,8 @@ namespace sndx::data {
 		Data(T&& value) noexcept :
 			m_data(std::in_place_type_t<ValueT>{}, std::forward<T>(value)) {}
 
-		explicit Data(const ArrayT& arr) :
-			m_data{ std::in_place_type_t<ArrayT>{}, ArrayT(arr) } {}
+		Data(const ArrayT& arr) :
+			m_data{ std::in_place_type_t<ArrayT>{}, arr } {}
 
 		Data(const MapT& dict):
 			m_data{ std::make_unique<MapT>(dict)} {}
@@ -644,11 +636,10 @@ namespace sndx::data {
 			return *this;
 		}
 
-		~Data() noexcept = default;
-
 		template <class T>
+			requires std::constructible_from<ValueT, T>
 		Data& operator=(T&& value) noexcept {
-			m_data = std::forward<T>(value);
+			m_data.emplace<Value>(std::forward<T>(value));
 			return *this;
 		}
 
@@ -658,7 +649,14 @@ namespace sndx::data {
 		}
 
 		Data& operator=(std::initializer_list<Data> arr_init) {
-			m_data.emplace<ArrayT>(ArrayT(arr_init));
+			ArrayT val{};
+			val.reserve(arr_init.size());
+
+			for (auto&& d : arr_init) {
+				val.emplace_back(d);
+			}
+
+			m_data.emplace<ArrayT>(std::move(val));
 			return *this;
 		}
 
@@ -800,5 +798,68 @@ namespace sndx::data {
 		
 		SNDX_CREATE_GETS(Int, );
 		SNDX_CREATE_GETS(Float, );
+
+		Data& at(size_t idx) {
+			if (auto arr = getArray())
+				return arr->at(idx);
+
+			throw std::logic_error("Cannot index into non-array");
+		}
+
+		const Data& at(size_t idx) const {
+			if (auto arr = getArray())
+				return arr->at(idx);
+
+			throw std::logic_error("Cannot index into non-array");
+		}
+
+		Data& at(const StringT& id) {
+			if (auto map = getMap())
+				return map->at(id);
+
+			throw std::logic_error("Cannot index into non-map");
+		}
+
+		const Data& at(const StringT& id) const {
+			if (auto map = getMap())
+				return map->at(id);
+
+			throw std::logic_error("Cannot index into non-map");
+		}
+
+		Data& operator[](size_t idx) {
+			if (isNull())
+				m_data.emplace<ArrayT>(ArrayT{});
+
+			if (auto arr = getArray()) {
+				// this is not that great
+				if (idx >= arr->size())
+					arr->resize(idx + 1);
+
+				return arr->at(idx);
+			}
+
+			throw std::logic_error("Cannot index into non-array");
+		}
+
+		Data& operator[](const StringT& id) {
+			if (isNull())
+				m_data.emplace<std::unique_ptr<MapT>>(std::make_unique<MapT>());
+
+			if (auto map = getMap()) {
+				return (*map)[id];
+			}
+
+			throw std::logic_error("Cannoit index into non-map");
+		}
+
+		void reserve(size_t size) {
+			if (auto arr = getArray()) {
+				arr->reserve(size);
+			}
+			else if (auto map = getMap()) {
+				map->reserve(size);
+			}
+		}
 	};
 }
