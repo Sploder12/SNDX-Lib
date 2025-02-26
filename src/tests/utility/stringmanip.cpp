@@ -1,8 +1,8 @@
-﻿#include "string/stringmanip.hpp"
+﻿#include "utility/stringmanip.hpp"
 
 #include <gtest/gtest.h>
 
-using namespace sndx::string;
+using namespace sndx::utility;
 
 using str = sv<char>;
 

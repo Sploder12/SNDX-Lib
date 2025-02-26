@@ -8,7 +8,7 @@
 #include <cassert>
 #include <cstdint>
 
-namespace sndx::string {
+namespace sndx::utility {
 	template <typename CharT = char>
 	using sv = std::basic_string_view<CharT>;
 
@@ -177,7 +177,6 @@ namespace sndx::string {
 	inline auto parseEscaped(const char* str) noexcept {
 		return parseEscaped(sv{str});
 	}
-
 
 	using Codepoint = uint32_t;
 

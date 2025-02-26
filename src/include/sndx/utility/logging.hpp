@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-namespace sndx::string {
+namespace sndx::utility {
 
 	template <typename CharT = char>
 	using Formatter = std::function<std::basic_string<CharT>(std::basic_string_view<CharT>)>;
