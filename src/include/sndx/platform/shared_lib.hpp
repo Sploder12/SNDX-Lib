@@ -122,7 +122,7 @@ namespace sndx::platform {
 		}
 
 		template <class Str, class T>
-		void bind(Str&& id, const T*& dest, const T* fallback) {
+		void bind(Str&& id, T*& dest, T* fallback) {
 			m_funcs[std::forward<Str>(id)] = Data{
 				(const void**)(std::addressof(dest)),
 				(const void*)(fallback) 
@@ -130,7 +130,7 @@ namespace sndx::platform {
 		}
 
 		template <class Str, class T>
-		void bind(Str&& id, const T*& dest, std::nullptr_t) {
+		void bind(Str&& id, T*& dest, std::nullptr_t) {
 			bind(std::forward<Str>(id), dest, (const T*)(nullptr));
 		}
 
