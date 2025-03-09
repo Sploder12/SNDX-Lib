@@ -80,6 +80,8 @@ namespace sndx::platform {
 			}
 		}
 
+		SharedLib() noexcept = default;
+
 		SharedLib(const SharedLib&) = delete;
 		SharedLib(SharedLib&& other) noexcept :
 			m_lib(std::exchange(other.m_lib, nullptr)) {}
@@ -98,8 +100,8 @@ namespace sndx::platform {
 	class LibLoader {
 	private:
 		struct Data {
-			void** dest;
-			void* fallback;
+			const void** dest;
+			const void* fallback;
 		};
 
 		std::unordered_map<std::string, Data> m_funcs{};
@@ -120,19 +122,16 @@ namespace sndx::platform {
 		}
 
 		template <class Str, class T>
-		void bind(Str&& id, T*& dest, T* fallback) {
+		void bind(Str&& id, const T*& dest, const T* fallback) {
 			m_funcs[std::forward<Str>(id)] = Data{
-				(void**)(std::addressof(dest)),
-				(void*)(fallback) 
+				(const void**)(std::addressof(dest)),
+				(const void*)(fallback) 
 			};
 		}
 
 		template <class Str, class T>
-		void bind(Str&& id, T*& dest, std::nullptr_t) {
-			m_funcs[std::forward<Str>(id)] = Data{ 
-				(void**)(std::addressof(dest)),
-				nullptr
-			};
+		void bind(Str&& id, const T*& dest, std::nullptr_t) {
+			bind(std::forward<Str>(id), dest, (const T*)(nullptr));
 		}
 
 		bool remove(const std::string& id) {
@@ -163,7 +162,7 @@ namespace sndx::platform {
 				++fails;
 			}
 
-			if (lib.valid()) {
+			if (!lib.valid()) {
 				errorCallback("", "library not valid");
 			}
 

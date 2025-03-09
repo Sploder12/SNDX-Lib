@@ -34,13 +34,16 @@ public:
 
 TEST_F(SharedLibTest, CanFailToLoadLib) {
 	platform::SharedLib lib{ badFilename };
-	EXPECT_TRUE(!lib.valid());
+	EXPECT_FALSE(lib.valid());
+
+	platform::SharedLib defaulted{};
+	EXPECT_FALSE(defaulted.valid());
 }
 
 class GoodSharedLibTest : public ::testing::Test {
 public:
 	void SetUp() override {
-		set_test_weight(TestWeight::BasicIntegration)
+		set_test_weight(TestWeight::Integration)
 		else {
 			const auto& info = testing::UnitTest::GetInstance()->current_test_info();
 			
@@ -165,4 +168,27 @@ TEST_F(GoodSharedLibTest, LibLoaderLoads) {
 	EXPECT_EQ(increment, nullptr);
 	EXPECT_EQ(advanced, nullptr);
 	EXPECT_EQ(fake, stubfunc);
+}
+
+TEST_F(GoodSharedLibTest, LibLoaderCallsCallback) {
+	ASSERT_TRUE(lib->valid());
+
+	NO_ARGS no_args{};
+	ADD_ONE add_one{};
+	NO_ARGS fake{};
+
+	platform::LibLoader loader{};
+	loader.bind("no_args", no_args, stubfunc);
+	loader.bind(":_:", add_one, nullptr);
+	loader.bind("this does not exist", fake, stubfunc);
+
+	size_t calls = 0;
+	EXPECT_EQ(loader.load(*lib, [&calls](auto, auto) {++calls; }), 2);
+	EXPECT_EQ(calls, 2);
+
+	lib->close();
+
+	calls = 0;
+	EXPECT_EQ(loader.load(*lib, [&calls](auto, auto) {++calls; }), 3);
+	EXPECT_EQ(calls, 1);
 }
