@@ -3,11 +3,11 @@
 #define NOMINMAX
 #include <GLFW/glfw3.h>
 
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
 #include "../../data/version.hpp"
-
 
 namespace sndx::input {
 	struct GLFW {

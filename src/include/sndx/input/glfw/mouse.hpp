@@ -10,7 +10,7 @@ namespace sndx::input::glfw {
 
 	public:
 		[[nodiscard]]
-		static bool supportsRawMouseMotion() const noexcept {
+		static bool supportsRawMouseMotion() noexcept {
 			return glfwRawMouseMotionSupported() == GLFW_TRUE;
 		}
 
@@ -22,13 +22,13 @@ namespace sndx::input::glfw {
 			return m_cursor;
 		}
 
-		constexpr explicit Cursor(int shape) noexcept :
+		explicit Cursor(int shape) noexcept :
 			m_cursor(glfwCreateStandardCursor(shape)) {}
 
-		constexpr Cursor(const render::ImageData& img, int xhot, int yhot) noexcept {
+		Cursor(const render::ImageData& img, int xhot, int yhot) noexcept {
 			if (img.channels() == 4) {
 				GLFWimage gimg{
-					img.width(), img.height(), (unsigned char*)(img.data())
+					int(img.width()), int(img.height()), (unsigned char*)(img.data())
 				};
 
 				m_cursor = glfwCreateCursor(&gimg, xhot, yhot);
