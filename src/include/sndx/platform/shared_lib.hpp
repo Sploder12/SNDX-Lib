@@ -35,11 +35,11 @@ namespace sndx::platform {
 		#endif
 
 		// returns nullptr on error
-		void* load(std::nullptr_t) const = delete;
-		void* load(const char* symbol) const {
+		[[nodiscard]] void* load(std::nullptr_t) const = delete;
+		[[nodiscard]] void* load(const char* symbol) const {
 			if (!valid()) return nullptr;
 		#ifdef _WIN32
-			return GetProcAddress(m_lib, symbol);
+			return (void*)GetProcAddress(m_lib, symbol);
 		#else
 			return dlsym(m_lib, symbol);
 		#endif

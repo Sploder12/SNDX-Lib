@@ -1,6 +1,9 @@
 #pragma once
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
+
 #include <GLFW/glfw3.h>
 
 #include <stdexcept>
