@@ -51,17 +51,20 @@ namespace sndx::render {
 		GLenum m_target{GL_TEXTURE_2D};
 		
 	public:
+
+		explicit Texture2D() = default;
+
 		Texture2D(GLenum target, GLint internalFormat, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* data, GLint mipmaps = 0) :
 			m_width(width), m_height(height), m_target(target) {
 
 			glGenTextures(1, &m_id);
 			glBindTexture(m_target, m_id);
-			glTexImage2D(m_target, mipmaps, internalFormat, m_width, m_height, 0, format, type, data);
+			glTexImage2D(m_target, mipmaps, internalFormat, GLsizei(m_width), GLsizei(m_height), 0, format, type, data);
 		}
 
 		Texture2D(const ImageData& image, GLint mipmaps = 0, bool compress = true) :
 			Texture2D(GL_TEXTURE_2D, formatFromChannels(image.channels(), compress),
-				image.width(), image.height(), formatFromChannels(image.channels(), false), GL_UNSIGNED_BYTE, image.data()) { }
+				GLsizei(image.width()), GLsizei(image.height()), formatFromChannels(image.channels(), false), GL_UNSIGNED_BYTE, image.data()) { }
 
 		Texture2D(const Texture2D&) = delete;
 		Texture2D(Texture2D&& other) noexcept :

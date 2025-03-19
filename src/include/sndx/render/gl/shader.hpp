@@ -43,6 +43,8 @@ namespace sndx::render {
 	private:
 		GLuint m_id{0};
 
+		friend class ShaderProgram;
+
 	public:
 		constexpr Shader() noexcept = default;
 		
@@ -77,7 +79,7 @@ namespace sndx::render {
 	protected:
 		void destroy() {
 			if (m_id != 0) {
-				glDeleteShader(std::exchange(id, 0));
+				glDeleteShader(std::exchange(m_id, 0));
 			}
 		}
 
@@ -132,18 +134,18 @@ namespace sndx::render {
 
 		template <class T>
 		explicit ShaderProgram(T& shaders) :
-			id(glCreateProgram()), uniformCache{} {
+			m_id(glCreateProgram()), uniformCache{} {
 
-			for (auto shader : shaders) {
-				glAttachShader(id, shader.id);
+			for (const auto& shader : shaders) {
+				glAttachShader(m_id, shader.m_id);
 			}
 
-			glLinkProgram(id);
+			glLinkProgram(m_id);
 
 			auto err = checkErr();
 
-			for (auto shader : shaders) {
-				glDetachShader(id, shader.id);
+			for (const auto& shader : shaders) {
+				glDetachShader(m_id, shader.m_id);
 			}
 
 			if (err.has_value()) [[unlikely]] {
@@ -152,7 +154,7 @@ namespace sndx::render {
 		}
 
 		void use() const {
-			glUseProgram(id);
+			glUseProgram(m_id);
 		}
 
 		[[nodiscard]]
@@ -162,7 +164,7 @@ namespace sndx::render {
 				return it->second;
 			}
 
-			auto ret = glGetUniformLocation(id, uid.c_str());
+			auto ret = glGetUniformLocation(m_id, uid.c_str());
 			uniformCache.emplace(uid, ret);
 			return ret;
 		}
@@ -289,9 +291,6 @@ namespace sndx::render {
 				shaders[i] = std::move(shdr.value());
 			}
 			else {
-				for (; i > 0; --i) {
-					shaders[i - 1].destroy();
-				}
 				return {};
 			}
 
@@ -299,11 +298,6 @@ namespace sndx::render {
 		}
 
 		auto out = ShaderProgram(shaders);
-
-		for (auto& shader : shaders) {
-			shader.destroy();
-		}
-
 		return out;
 	}
 }

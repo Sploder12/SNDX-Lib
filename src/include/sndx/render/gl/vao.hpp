@@ -10,7 +10,7 @@ namespace sndx::render {
 		GLuint m_id = 0;
 
 		void destroy() noexcept {
-			glDeleteVertexArrays(&m_id);
+			glDeleteVertexArrays(1, &m_id);
 			curIdx = 0;
 			m_id = 0;
 		}
@@ -48,7 +48,7 @@ namespace sndx::render {
 		template <class... Layout>
 		void bindLayout(TypedVBO<Layout...>& vbo, GLuint divisor = 0) {
 			bind();
-			vbo.bind();
+			vbo.bind(GL_ARRAY_BUFFER);
 			curIdx += VboLayout<Layout...>::vertexAttribPointer(curIdx, divisor);
 		}
 
@@ -56,7 +56,7 @@ namespace sndx::render {
 			if (m_id != 0) {
 				bind();
 				for (size_t i = 0; i < curIdx; ++i) {
-					glDisableVertexAttribArray(i);
+					glDisableVertexAttribArray(GLuint(i));
 				}
 				curIdx = 0;
 			}
@@ -66,7 +66,7 @@ namespace sndx::render {
 			if (m_id != 0) {
 				destroy();
 			}
-			glGenVertexArrays(1, &m_idx);
+			glGenVertexArrays(1, &m_id);
 		}
 	};
 }

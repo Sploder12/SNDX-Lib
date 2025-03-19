@@ -12,7 +12,7 @@
 #define UNDEF_LEANMEAN
 #endif
 
-#include <Windows.h>
+#include <windows.h>
 
 #ifdef UNDEF_MINMAX
 #undef NOMINMAX
