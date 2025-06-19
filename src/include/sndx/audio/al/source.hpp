@@ -102,28 +102,29 @@ namespace sndx::audio {
 		}
 
 		template <typename T> [[nodiscard]]
-		T getParam(ALenum) const = delete;
+		T getParam(ALenum param) const {
+			static_assert(
+				std::is_same_v<T, float> ||
+				std::is_same_v<T, glm::vec2> ||
+				std::is_same_v<T, int>
+			);
 
-		template <> [[nodiscard]]
-		float getParam(ALenum param) const {
-			float out;
-			alGetSourcef(m_id, param, &out);
-			return out;
-		}
-
-		template <> [[nodiscard]]
-		glm::vec3 getParam(ALenum param) const {
-			glm::vec3 out;
-			alGetSource3f(m_id, param, &out.x, &out.y, &out.z);
-			return out;
-		}
-
-		template <> [[nodiscard]]
-		int getParam(ALenum param) const {
-			int out;
-			alGetSourcei(m_id, param, &out);
-			return out;
-		}
+			if constexpr (std::is_same_v<T, float>) {
+				float out;
+				alGetSourcef(m_id, param, &out);
+				return out;
+			}
+			else if constexpr (std::is_same_v<T, glm::vec3>) {
+				glm::vec3 out;
+				alGetSource3f(m_id, param, &out.x, &out.y, &out.z);
+				return out;
+			}
+			else if constexpr (std::is_same_v<T, int>) {
+				int out;
+				alGetSourcei(m_id, param, &out);
+				return out;
+			}
+		};
 
 		const ALsource& setPos(glm::vec3 pos) const {
 			setParam(AL_POSITION, pos);

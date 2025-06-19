@@ -62,8 +62,8 @@ namespace sndx::utility {
 	}
 
 	template <class CharT = char> [[nodiscard]]
-	constexpr sv<CharT> splitFirst(const Str<CharT>& str, CharT delim, sv<CharT> strips = defaultStrip<char>) {
-		return stripFirst(sv<CharT>(str), delim, strips);
+	constexpr std::pair<sv<char>, sv<char>> splitFirst(const Str<CharT>& str, CharT delim, sv<CharT> strips = defaultStrip<char>) {
+		return splitFirst(sv<CharT>(str), delim, strips);
 	}
 
 	constexpr std::pair<sv<char>, sv<char>> splitFirst(std::nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
@@ -75,7 +75,7 @@ namespace sndx::utility {
 
 
 	template <class Chr = char> [[nodiscard]]
-	std::vector<sv<Chr>> splitStrip(sv<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
+	inline std::vector<sv<Chr>> splitStrip(sv<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
 		std::vector<sv<Chr>> out{};
 		str = strip(str, strips);
 		if (str == "") return out;
@@ -99,20 +99,20 @@ namespace sndx::utility {
 	}
 
 	template <class Chr = char> [[nodiscard]]
-	auto splitStrip(Str<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
+	inline auto splitStrip(Str<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
 		return splitStrip(sv<Chr>{str}, delim, strips);
 	}
 
 	inline std::vector<sv<char>> splitStrip(std::nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
-	auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
+	inline auto splitStrip(const char* str, char delim, sv<char> strips = defaultStrip<char>) noexcept {
 		return splitStrip(sv<char>{str}, delim, strips);
 	}
 	
 
 	template <typename CharT = char> [[nodiscard]]
-	Str<CharT> parseEscaped(sv<CharT> str) {
+	inline Str<CharT> parseEscaped(sv<CharT> str) {
 		Str<CharT> out{};
 		out.reserve(str.size());
 
@@ -167,11 +167,11 @@ namespace sndx::utility {
 	}
 
 	template <typename CharT = char> [[nodiscard]]
-	Str<CharT> parseEscaped(const Str<CharT>& str) {
+	inline Str<CharT> parseEscaped(const Str<CharT>& str) {
 		return parseEscaped(sv<CharT>{str});
 	}
 
-	std::string parseEscaped(std::nullptr_t) = delete;
+	inline std::string parseEscaped(std::nullptr_t) = delete;
 
 	[[nodiscard]]
 	inline auto parseEscaped(const char* str) noexcept {

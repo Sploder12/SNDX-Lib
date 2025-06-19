@@ -19,7 +19,7 @@ namespace sndx::render {
 	template <typename T>
 	using is_GLnormalized = std::bool_constant <
 		requires (T) {
-		std::same_as<typename T::normalized, std::bool_constant<true>>;
+		requires std::same_as<typename T::normalized, std::bool_constant<true>>;
 	} > ;
 
 	template <typename T>

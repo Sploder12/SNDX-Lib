@@ -115,6 +115,11 @@ namespace sndx::audio {
 			return m_buffers.at(id);
 		}
 
+		[[nodiscard]]
+		const ABO& getBuffer(const IdT& id) const {
+			return m_buffers.at(id);
+		}
+
 		// make sure you unbind the buffer from all sources!
 		bool deleteBuffer(const IdT& id) {
 			return bool(m_buffers.erase(id));
