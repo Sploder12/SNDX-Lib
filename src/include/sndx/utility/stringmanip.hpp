@@ -24,7 +24,7 @@ namespace sndx::utility {
 		auto first = str.find_first_not_of(strips);
 		auto last = str.find_last_not_of(strips);
 
-		if (first == sv<char>::npos) [[unlikely]] {
+		if (first == sv<Chr>::npos) [[unlikely]] {
 			return str.substr(0, 0);
 		}
 
@@ -175,7 +175,7 @@ namespace sndx::utility {
 
 	[[nodiscard]]
 	inline auto parseEscaped(const char* str) noexcept {
-		return parseEscaped(sv{str});
+		return parseEscaped(sv<char>{str});
 	}
 
 	using Codepoint = uint32_t;
