@@ -19,6 +19,10 @@ namespace sndx::container {
 
 			DataT data;
 
+			template<class... Ts>
+			Entry(index_type to, Ts&&... data) :
+				to(to), data(std::forward<Ts>(data)...) {}
+
 			static bool comp(const IndexT& index, const Entry& entry) {
 				return index < entry.to;
 			}
@@ -38,7 +42,7 @@ namespace sndx::container {
 			}
 
 			last += weight;
-			return entries.emplace_back(last, std::forward<Ts...>(data...));
+			return entries.emplace_back(last, std::forward<Ts>(data)...);
 		}
 
 		decltype(auto) push_back(const IndexT& weight, const DataT& data) {
