@@ -2,11 +2,13 @@
 
 #include <glm/glm.hpp>
 
+#include <concepts>
+
 namespace sndx {
 
 	template <class T>
 	concept Vector = requires(const T& vector) {
-		{ T::length() } -> std::convertible_to<size_t>;
+		{ vector.length() } -> std::convertible_to<size_t>;
 		{ vector[0] } -> std::convertible_to<float>;
 	} && T::length() > 0;
 
@@ -17,7 +19,7 @@ namespace sndx {
 
 	template <class T>
 	concept Volume = requires(const T& t) {
-		{ T::dimensionality() } -> std::convertible_to<size_t>;
+		{ t.dimensionality() } -> std::convertible_to<size_t>;
 		{ t.getSize() } -> VectorN<T::dimensionality()>;
 		{ t.getCenter() } -> VectorN<T::dimensionality()>;
 		{ t.getArea() } -> std::convertible_to<float>;
