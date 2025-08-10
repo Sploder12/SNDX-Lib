@@ -35,7 +35,11 @@ namespace sndx::render {
 			auto asVecs = reinterpret_cast<const oldVec*>(m_data.data());
 			auto newVecs = reinterpret_cast<newVec*>(data.data());
 
+#ifndef __APPLE__
 			std::transform(std::execution::par_unseq, asVecs, asVecs + pixels, newVecs, std::forward<Fn>(func));
+#else
+			std::transform(asVecs, asVecs + pixels, newVecs, std::forward<Fn>(func));
+#endif
 
 			return ImageData{ m_width, m_height, n, std::move(data) };
 		}

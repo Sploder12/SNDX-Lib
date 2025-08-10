@@ -94,7 +94,11 @@ namespace sndx::render {
 
 		template <class Packer = DefaultPacker> [[nodiscard]]
 		Font<ImageAtlas<FT_ULong>> build(size_t dimConstraint, size_t padding = 1) const {
+#ifndef __APPLE__
 			return build<Packer>(std::execution::par_unseq, dimConstraint, padding);
+#else
+			return build<Packer>(dimConstraint, padding);
+#endif
 		}
 
 		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
@@ -106,7 +110,11 @@ namespace sndx::render {
 
 		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(size_t dimConstraint, size_t padding = 1, bool compress = false) {
+#ifndef __APPLE__
 			return buildTexture<TextureT, Packer>(std::execution::par_unseq, dimConstraint, padding, compress);
+#else
+			return buildTexture<TextureT, Packer>(dimConstraint, padding, compress);
+#endif
 		}
 	};
 
