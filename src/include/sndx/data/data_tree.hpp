@@ -33,6 +33,9 @@ namespace sndx::data {
 	template<class... Ts>
 	struct overloads : Ts... { using Ts::operator()...; };
 
+	template<class... Ts>
+	overloads(Ts...) -> overloads<Ts...>;
+
 	template <class T>
 	concept numeric = std::integral<T> || std::floating_point<T>;
 	

@@ -6,15 +6,18 @@
 
 #include "../../render/viewport.hpp"
 
+#include <algorithm>
 #include <type_traits>
 #include <string>
+#include <string_view>
 #include <stdexcept>
 #include <optional>
 #include <unordered_map>
 
+
 namespace sndx::input {
 	class WindowGLFW : public Window<WindowGLFW> {
-		friend Window;
+		friend Window<WindowGLFW>;
 		friend class WindowBuilderGLFW;
 
 		std::string m_title{};
@@ -168,7 +171,7 @@ namespace sndx::input {
 	};
 
 	class WindowBuilderGLFW final: public WindowBuilder<WindowBuilderGLFW> {
-		friend WindowBuilder;
+		friend WindowBuilder<WindowBuilderGLFW>;
 
 		GLFWmonitor* m_monitor = nullptr;
 		GLFWwindow* m_share = nullptr;
