@@ -19,18 +19,18 @@ namespace sndx::math {
 		return glm::cross(u, v);
 	}
 
-	template <class I = float, I threshold = std::numeric_limits<I>::epsilon(), glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
+	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
 	constexpr bool areColinear(const glm::vec<3, I, Q>& p, const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& b) noexcept {
-		return glm::length(surfaceNormal(p, a, b)) <= threshold;
+		return glm::length(surfaceNormal(p, a, b)) <= std::numeric_limits<I>::epsilon();
 	}
 
-	template <class I = float, I threshold = std::numeric_limits<I>::epsilon(), glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
+	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
 	constexpr bool areColinear(const glm::vec<2, I, Q>& p, const glm::vec<2, I, Q>& a, const glm::vec<2, I, Q>& b) noexcept {
 		// this is functionally equivalent to the 3d version
 		auto pv = p - a;
 		auto bv = b - a;
 
-		return glm::abs(pv.x * bv.y - bv.x * pv.y) <= threshold;
+		return glm::abs(pv.x * bv.y - bv.x * pv.y) <= std::numeric_limits<I>::epsilon();
 	}
 
 	template <std::floating_point T, class... Ts>

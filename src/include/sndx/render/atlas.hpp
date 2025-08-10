@@ -130,8 +130,13 @@ namespace sndx::render {
 			m_entries.reserve(size);
 		}
 
+#ifndef __APPLE__
 		template <class Packer = DefaultPacker> [[nodiscard]]
 		ImageAtlas<IdT> build(auto&& policy, size_t dimConstraint, size_t padding) const {
+#else
+		template <class Packer = DefaultPacker> [[nodiscard]]
+		ImageAtlas<IdT> build(size_t dimConstraint, size_t padding) const {
+#endif
 			Packer packer{};
 
 			size_t maxChannels = 0;
@@ -151,7 +156,11 @@ namespace sndx::render {
 
 			data.resize(maxChannels * (packing.width() + padding) * (packing.height() + padding), std::byte(0x0));
 
+#ifndef __APPLE__
 			std::for_each_n(std::forward<decltype(policy)>(policy), packing.begin(), m_entries.size(), 
+#else
+			std::for_each_n(packing.begin(), m_entries.size(),
+#endif
 				[this, &data, &maxChannels, &packing, &padding](const auto& entry) {
 				
 				const auto& [imgIdx, pos] = entry;
@@ -195,17 +204,31 @@ namespace sndx::render {
 
 		template <class Packer = DefaultPacker> [[nodiscard]]
 		ImageAtlas<IdT> build(size_t dimConstraint, size_t padding = 1) const {
+#ifndef __APPLE__
 			return build<Packer>(std::execution::par_unseq, dimConstraint, padding);
+#else
+			return build<Packer>(dimConstraint, padding);
+#endif
 		}
 
+#ifndef __APPLE__
 		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
 			return TextureAtlas<TextureT, IdT>{build<Packer>(std::forward<decltype(policy)>(policy), dimConstraint, padding), compress};
+#else
+		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
+		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
+			return TextureAtlas<TextureT, IdT>{build<Packer>(dimConstraint, padding), compress};
+#endif
 		}
 
 		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(size_t dimConstraint, size_t padding = 1, bool compress = false) {
+#ifndef __APPLE__
 			return buildTexture<TextureT, Packer>(std::execution::par_unseq, dimConstraint, padding, compress);
+#else
+			return buildTexture<TextureT, Packer>(dimConstraint, padding, compress);
+#endif
 		}
 	};
 }
