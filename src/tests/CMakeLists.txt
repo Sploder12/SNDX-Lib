@@ -35,4 +35,8 @@ target_link_libraries(tests PUBLIC GTest::gmock_main GTest::gtest)
 include(GoogleTest)
 gtest_discover_tests(tests)
 
-file(COPY ./../../test_data DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+add_custom_command(
+	TARGET tests
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/test_data" "${CMAKE_CURRENT_BINARY_DIR}"
+)

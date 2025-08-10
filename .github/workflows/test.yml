@@ -8,15 +8,16 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [windows-latest, ubuntu-latest]
+                os: [windows-latest, ubuntu-latest, macos-latest]
                 include:
                     - os: windows-latest
                       preset: 'x64-release'
-                      binary: '.\out\build\x64-release\src\tests\tests.exe'
+                      binary_ext: '.exe'
                     - os: ubuntu-latest
                       preset: 'linux-debug'
-                      binary: './out/build/linux-debug/src/tests/tests'
                       install_opengl: true
+                    - os: macos-latest
+                      preset: 'macos-debug'
 
         steps:
             - name: Checkout
@@ -25,6 +26,7 @@ jobs:
             - name: Install openGL
               if: ${{ matrix.install_opengl }}
               run: |
+                  sudo apt-get update
                   sudo apt-get install libxmu-dev libxi-dev libgl-dev
                   sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
                   sudo apt install libxrandr-dev
@@ -32,6 +34,10 @@ jobs:
             - uses: ilammy/msvc-dev-cmd@v1.13.0
 
             - uses: lukka/get-cmake@latest
+              with:
+                cmakeVersion: "~3.31.0"  # use most recent 3.31.x version
+
+
             - name: Run vcpkg
               uses: lukka/run-vcpkg@v11.5
               with:
@@ -43,11 +49,11 @@ jobs:
                 configurePreset: ${{ matrix.preset }}
 
             - name: Compile
-              run: |
-                  cd './out/build/${{ matrix.preset }}'
-                  ninja
+              working-directory: ./out/build/${{ matrix.preset }}
+              run: ninja
 
             - name: Run Tests
+              working-directory: ./out/build/${{ matrix.preset }}/src/tests
               timeout-minutes: 5
-              run: ${{ matrix.binary }}
+              run: ./tests${{ matrix.binary_ext }}
             
