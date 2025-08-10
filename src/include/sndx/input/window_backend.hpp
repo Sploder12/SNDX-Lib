@@ -10,7 +10,10 @@
 #include <glm/gtx/component_wise.hpp>
 #endif
 
+#include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <optional>
 
 namespace sndx::input {

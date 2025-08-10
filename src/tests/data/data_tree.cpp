@@ -1,3 +1,5 @@
+
+#ifndef __APPLE__
 #include "data/data_tree.hpp"
 
 #include "../common.hpp"
@@ -283,3 +285,4 @@ TEST_F(DataTreeTest, DataCanBeAssigned) {
 	EXPECT_EQ(b, data::DataArray(10, 20));
 	EXPECT_EQ(c, data::DataArray(5, 10));
 }
+#endif

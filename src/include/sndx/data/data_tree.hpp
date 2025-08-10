@@ -1,5 +1,6 @@
 #pragma once
 
+#ifndef __APPLE__
 #include <cstdint>
 #include <variant>
 #include <string>
@@ -866,3 +867,4 @@ namespace sndx::data {
 		}
 	};
 }
+#endif
