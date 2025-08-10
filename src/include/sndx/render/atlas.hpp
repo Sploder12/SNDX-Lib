@@ -202,32 +202,27 @@ namespace sndx::render {
 			return ImageAtlas<IdT>{ std::move(entries), ImageData{packing.width() + padding, packing.height() + padding, uint8_t(maxChannels), std::move(data)}};
 		}
 
+#ifndef __APPLE__
 		template <class Packer = DefaultPacker> [[nodiscard]]
 		ImageAtlas<IdT> build(size_t dimConstraint, size_t padding = 1) const {
-#ifndef __APPLE__
 			return build<Packer>(std::execution::par_unseq, dimConstraint, padding);
-#else
-			return build<Packer>(dimConstraint, padding);
-#endif
+
 		}
+#endif
 
 #ifndef __APPLE__
 		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
 			return TextureAtlas<TextureT, IdT>{build<Packer>(std::forward<decltype(policy)>(policy), dimConstraint, padding), compress};
-#else
-		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
-		auto buildTexture(auto&& policy, size_t dimConstraint, size_t padding = 1, bool compress = false) {
-			return TextureAtlas<TextureT, IdT>{build<Packer>(dimConstraint, padding), compress};
-#endif
 		}
+#endif
 
 		template <class TextureT, class Packer = DefaultPacker> [[nodiscard]]
 		auto buildTexture(size_t dimConstraint, size_t padding = 1, bool compress = false) {
 #ifndef __APPLE__
 			return buildTexture<TextureT, Packer>(std::execution::par_unseq, dimConstraint, padding, compress);
 #else
-			return buildTexture<TextureT, Packer>(dimConstraint, padding, compress);
+			return TextureAtlas<TextureT, IdT>{build<Packer>(dimConstraint, padding), compress};
 #endif
 		}
 	};
