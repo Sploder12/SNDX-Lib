@@ -114,6 +114,9 @@ namespace sndx::render {
 		struct Entry {
 			IdT id;
 			std::reference_wrapper<const ImageData> data;
+
+			Entry(const IdT& id, const ImageData& data):
+				id(id), data(data) {}
 		};
 
 		std::vector<Entry> m_entries{};
@@ -123,7 +126,7 @@ namespace sndx::render {
 		using DefaultPacker = sndx::math::BinPacker<true, size_t>;
 
 		void add(const IdT& id, const ImageData& img) {
-			m_entries.push_back(id, img);
+			m_entries.push_back(Entry{ id, img });
 		}
 
 		void reserve(size_t size) noexcept {
