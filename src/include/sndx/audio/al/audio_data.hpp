@@ -22,38 +22,6 @@ namespace sndx::audio {
 		std::vector<std::byte> m_buffer{};
 
 	public:
-		explicit ALaudioData() noexcept = default;
-
-		explicit ALaudioData(const ALaudioMeta& meta) noexcept :
-			m_meta(meta) {}
-
-		explicit ALaudioData(const ALaudioMeta& meta, std::vector<std::byte>&& buf) noexcept :
-			m_meta(meta), m_buffer{ std::move(buf) } {}
-
-		template <std::floating_point F>
-		explicit ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf) :
-			m_meta(meta) {
-
-			m_buffer.resize(buf.size() * getChannels() * getByteDepth(meta.m_format));
-
-			auto newMin = getMinValue(m_meta.m_format);
-			auto newMax = getMaxValue(m_meta.m_format);
-			auto newCenter = getCenterValue(m_meta.m_format);
-
-			for (size_t i = 0; i < buf.size(); ++i) {
-				long double val = buf[i];
-
-				auto newVal = math::remapBalanced(val,
-					0.0l, newCenter,
-					-1.0l, 1.0l,
-					newMin, newMax);
-
-				for (size_t c = 0; c < getChannels(); ++c) {
-					setSample(i, c, newVal);
-				}
-			}
-		}
-
 		[[nodiscard]]
 		const ALaudioMeta& getMeta() const noexcept {
 			return m_meta;
@@ -70,7 +38,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		auto getChannels() const noexcept {
+		short getChannels() const noexcept {
 			return audio::getChannels(getFormat());
 		}
 
@@ -141,6 +109,38 @@ namespace sndx::audio {
 
 				auto ptr = (int16_t*)(m_buffer.data() + bytePos);
 				*ptr = int16_t(value);
+			}
+		}
+
+		explicit ALaudioData() noexcept = default;
+
+		explicit ALaudioData(const ALaudioMeta& meta) noexcept :
+			m_meta(meta) {}
+
+		explicit ALaudioData(const ALaudioMeta& meta, std::vector<std::byte>&& buf) noexcept :
+			m_meta(meta), m_buffer{ std::move(buf) } {}
+
+		template <std::floating_point F>
+		explicit ALaudioData(const ALaudioMeta& meta, const std::vector<F>& buf) :
+			m_meta(meta) {
+
+			m_buffer.resize(buf.size() * getChannels() * getByteDepth(meta.m_format));
+
+			auto newMin = getMinValue(m_meta.m_format);
+			auto newMax = getMaxValue(m_meta.m_format);
+			auto newCenter = getCenterValue(m_meta.m_format);
+
+			for (size_t i = 0; i < buf.size(); ++i) {
+				long double val = buf[i];
+
+				auto newVal = math::remapBalanced(val,
+					0.0l, newCenter,
+					-1.0l, 1.0l,
+					newMin, newMax);
+
+				for (size_t c = 0; c < getChannels(); ++c) {
+					setSample(i, c, newVal);
+				}
 			}
 		}
 
