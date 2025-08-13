@@ -126,7 +126,7 @@ namespace sndx::render {
 		using DefaultPacker = sndx::math::BinPacker<true, size_t>;
 
 		void add(const IdT& id, const ImageData& img) {
-			m_entries.push_back(Entry{ id, img });
+			m_entries.emplace_back(id, img);
 		}
 
 		void reserve(size_t size) noexcept {

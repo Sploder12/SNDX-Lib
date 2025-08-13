@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../window_backend.hpp"
-
 #include "./glfw.hpp"
 
-#include "../../render/viewport.hpp"
+#include <glm/glm.hpp>
 
 #include <algorithm>
 #include <type_traits>
@@ -15,16 +13,15 @@
 #include <unordered_map>
 
 
-namespace sndx::input {
-	class WindowGLFW : public Window<WindowGLFW> {
-		friend Window<WindowGLFW>;
-		friend class WindowBuilderGLFW;
+namespace sndx::glfw {
+	class Window {
+		friend class WindowBuilder;
 
 		std::string m_title{};
 		GLFWwindow* m_window = nullptr;
 
-		explicit WindowGLFW(std::nullptr_t, const char* = "") = delete;
-		explicit WindowGLFW(GLFWwindow* window, const char* title = "") :
+		explicit Window(std::nullptr_t, const char* = "") = delete;
+		explicit Window(GLFWwindow* window, const char* title = "") :
 			m_title{title}, m_window{ window } {
 
 			if (!m_window)
@@ -34,18 +31,18 @@ namespace sndx::input {
 		}
 
 	public:
-		WindowGLFW(const char* title, int width, int height, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) :
-			WindowGLFW(glfwCreateWindow(width, height, title ? title : "", monitor, share), title ? title : "") {}
+		Window(const char* title, int width, int height, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) :
+			Window(glfwCreateWindow(width, height, title ? title : "", monitor, share), title ? title : "") {}
 
-		WindowGLFW(std::nullptr_t, int, int, GLFWmonitor* = nullptr, GLFWwindow* = nullptr) = delete;
+		Window(std::nullptr_t, int, int, GLFWmonitor* = nullptr, GLFWwindow* = nullptr) = delete;
 
-		WindowGLFW(WindowGLFW&& other) noexcept :
+		Window(Window&& other) noexcept :
 			m_window(std::exchange(other.m_window, nullptr)) {
 
 			glfwSetWindowUserPointer(m_window, this);
 		}
 
-		WindowGLFW& operator=(WindowGLFW&& other) noexcept {
+		Window& operator=(Window&& other) noexcept {
 			std::swap(m_window, other.m_window);
 
 			glfwSetWindowUserPointer(other.m_window, nullptr);
@@ -53,7 +50,7 @@ namespace sndx::input {
 			return *this;
 		}
 
-		~WindowGLFW() noexcept {
+		~Window() noexcept {
 			if (m_window) {
 				glfwDestroyWindow(m_window);
 				m_window = nullptr;
@@ -73,67 +70,66 @@ namespace sndx::input {
 			return glfwWindowShouldClose(m_window);
 		}
 
-	private:
-		void bindImpl() const noexcept {
+		void bind() const noexcept {
 			glfwMakeContextCurrent(m_window);
 		}
 
-		void setPositionImpl(const glm::ivec2& pos) noexcept {
+		void setPosition(const glm::ivec2& pos) noexcept {
 			glfwSetWindowPos(m_window, pos.x, pos.y);
 		}
 
-		void resizeImpl(const glm::ivec2& dims) {
+		void resize(const glm::ivec2& dims) {
 			glfwSetWindowSize(m_window, dims.x, dims.y);
 		}
 
-		void focusWindowImpl() {
+		void focusWindow() {
 			glfwFocusWindow(m_window);
 		}
 
-		void requestAttentionImpl() {
+		void requestAttention() {
 			glfwRequestWindowAttention(m_window);
 		}
 
-		void setVisibilityImpl(bool visible) {
+		void setVisibility(bool visible) {
 			if (visible) glfwShowWindow(m_window);
 			else glfwHideWindow(m_window);
 		}
 
-		decltype(auto) setTitleImpl(const std::string& newTitle) {
+		decltype(auto) setTitle(const std::string& newTitle) {
 			glfwSetWindowTitle(m_window, newTitle.c_str());
 			return std::exchange(m_title, newTitle);
 		}
 
-		void tryCloseImpl() {
+		void tryClose() {
 			glfwSetWindowShouldClose(m_window, GLFW_TRUE);
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getPositionImpl() const noexcept {
+		glm::ivec2 getPosition() const noexcept {
 			glm::ivec2 out{};
 			glfwGetWindowPos(m_window, &out.x, &out.y);
 			return out;
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getSizeImpl() const noexcept {
+		glm::ivec2 getSize() const noexcept {
 			glm::ivec2 out{};
 			glfwGetWindowSize(m_window, &out.x, &out.y);
 			return out;
 		}
 
 		[[nodiscard]]
-		bool isVisibleImpl() const noexcept {
+		bool isVisible() const noexcept {
 			return glfwGetWindowAttrib(m_window, GLFW_VISIBLE) == GLFW_TRUE;
 		}
 
 		[[nodiscard]]
-		const std::string& getTitleImpl() const noexcept {
+		const std::string& getTitle() const noexcept {
 			return m_title;
 		}
 	};
 
-	class WindowHintsGLFW {
+	class WindowHints {
 		std::unordered_map<int, int> m_hints{};
 
 	public:
@@ -170,43 +166,104 @@ namespace sndx::input {
 		}
 	};
 
-	class WindowBuilderGLFW final: public WindowBuilder<WindowBuilderGLFW> {
-		friend WindowBuilder<WindowBuilderGLFW>;
+	class WindowBuilder {
+		std::string m_title{};
+
+		int m_width = 1;
+		int m_height = 1;
+
+		std::optional<int> m_xpos{}, m_ypos{};
 
 		GLFWmonitor* m_monitor = nullptr;
 		GLFWwindow* m_share = nullptr;
 		GLFWcursor* m_cursor = nullptr;
 
-		WindowHintsGLFW* m_hints = nullptr;
+		WindowHints* m_hints = nullptr;
 
 	public:
-		WindowBuilderGLFW& copySettings(const WindowBuilderGLFW& other) {
+		WindowBuilder& copySettings(const WindowBuilder& other) {
+			m_title = other.m_title;
+			m_width = other.m_width;
+			m_height = other.m_height;
+			m_xpos = other.m_xpos;
+			m_ypos = other.m_ypos;
+
 			m_monitor = other.m_monitor;
 			m_share = other.m_share;
 			m_cursor = other.m_cursor;
 			m_hints = other.m_hints;
 
-			return copyBaseSettings(other);
+			return *this;
 		}
 
-		WindowBuilderGLFW& setMonitor(GLFWmonitor* monitor = nullptr) noexcept {
+		WindowBuilder& setTitle(std::string_view title) noexcept {
+			m_title = title;
+			return *this;
+		}
+
+		WindowBuilder& setX(std::optional<int> x = std::nullopt) noexcept {
+			m_xpos = x;
+			return *this;
+		}
+
+		WindowBuilder& setY(std::optional<int> y = std::nullopt) noexcept {
+			m_ypos = y;
+			return *this;
+		}
+
+		WindowBuilder& setWidth(int width) noexcept {
+			m_width = std::max(width, 1);
+			return *this;
+		}
+
+		WindowBuilder& setHeight(int height) noexcept {
+			m_height = std::max(height, 1);
+			return *this;
+		}
+
+		WindowBuilder& setMonitor(GLFWmonitor* monitor = nullptr) noexcept {
 			m_monitor = monitor;
 			return *this;
 		}
 
-		WindowBuilderGLFW& setShare(GLFWwindow* share = nullptr) noexcept {
+		WindowBuilder& setShare(GLFWwindow* share = nullptr) noexcept {
 			m_share = share;
 			return *this;
 		}
 
-		WindowBuilderGLFW& setCursor(GLFWcursor* cursor = nullptr) noexcept {
+		WindowBuilder& setCursor(GLFWcursor* cursor = nullptr) noexcept {
 			m_cursor = cursor;
 			return *this;
 		}
 
-		WindowBuilderGLFW& setHints(WindowHintsGLFW* hints = nullptr) noexcept {
+		WindowBuilder& setHints(WindowHints* hints = nullptr) noexcept {
 			m_hints = hints;
 			return *this;
+		}
+
+		[[nodiscard]]
+		std::string_view getTitle() const noexcept {
+			return m_title;
+		}
+
+		[[nodiscard]]
+		auto getX() const noexcept {
+			return m_xpos;
+		}
+
+		[[nodiscard]]
+		auto getY() const noexcept {
+			return m_ypos;
+		}
+
+		[[nodiscard]]
+		auto getWidth() const noexcept {
+			return m_width;
+		}
+
+		[[nodiscard]]
+		auto getHeight() const noexcept {
+			return m_height;
 		}
 
 		[[nodiscard]]
@@ -229,9 +286,8 @@ namespace sndx::input {
 			return m_hints;
 		}
 
-	private:
 		[[nodiscard]]
-		auto buildImpl() const {
+		auto build() const {
 			bool visible = !m_hints || m_hints->getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE;
 			if (!visible || this->m_xpos || this->m_ypos) {
 				glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -254,7 +310,7 @@ namespace sndx::input {
 				}
 			}
 
-			return WindowGLFW{ window, m_title.c_str() };
+			return Window{ window, m_title.c_str() };
 		}
 	};
 }

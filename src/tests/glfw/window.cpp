@@ -1,9 +1,8 @@
-#include "input/glfw/window_glfw.hpp"
+#include "glfw/window.hpp"
 
-#include "../../common.hpp"
+#include "../common.hpp"
 
-using namespace sndx::input;
-using namespace sndx::collision;
+using namespace sndx::glfw;
 
 class GLFWwindowTest : public ::testing::Test {
 public:
@@ -25,7 +24,7 @@ public:
             else {
                 glfwDestroyWindow(win);
             }
-            WindowHintsGLFW::restoreDefaults();
+            WindowHints::restoreDefaults();
 
             m_testBuilder.setTitle("test").setX(0).setY(1).setWidth(320).setHeight(240);
         }
@@ -35,7 +34,7 @@ public:
         glfwTerminate();
     }
 
-    static void verifyBuiltWindow(const WindowGLFW& window, const WindowBuilderGLFW& builder) {
+    static void verifyBuiltWindow(const Window& window, const WindowBuilder& builder) {
         if (auto x = builder.getX())
             EXPECT_EQ(*x, window.getPosition().x);
 
@@ -53,27 +52,27 @@ public:
     }
 
     [[nodiscard]]
-    const WindowBuilderGLFW& getBuilder() const {
+    const WindowBuilder& getBuilder() const {
         return m_testBuilder;
     }
 private:
-    WindowBuilderGLFW m_testBuilder{};
+    WindowBuilder m_testBuilder{};
 };
 
 TEST_F(GLFWwindowTest, BadSizeWindowThrows) {
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    EXPECT_THROW((WindowGLFW{"", 0, 0}), std::runtime_error);
-    EXPECT_THROW((WindowGLFW{"", 1, 0}), std::runtime_error);
-    EXPECT_THROW((WindowGLFW{"", 0, 1}), std::runtime_error);
-    EXPECT_NO_THROW((WindowGLFW{"", 1, 1}));
+    EXPECT_THROW((Window{"", 0, 0}), std::runtime_error);
+    EXPECT_THROW((Window{"", 1, 0}), std::runtime_error);
+    EXPECT_THROW((Window{"", 0, 1}), std::runtime_error);
+    EXPECT_NO_THROW((Window{"", 1, 1}));
 }
 
 TEST_F(GLFWwindowTest, BuilderBuilds) {
-    WindowBuilderGLFW builder{getBuilder()};
+    WindowBuilder builder{getBuilder()};
 
-    WindowHintsGLFW::restoreDefaults();
-    WindowHintsGLFW hints{};
+    WindowHints::restoreDefaults();
+    WindowHints hints{};
     hints.setHint(GLFW_VISIBLE, GLFW_FALSE);
 
     builder.setHints(&hints);
@@ -84,9 +83,9 @@ TEST_F(GLFWwindowTest, BuilderBuilds) {
 }
 
 TEST_F(GLFWwindowTest, CanTransform) {
-    WindowHintsGLFW::restoreDefaults();
+    WindowHints::restoreDefaults();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    WindowGLFW window{"", 400, 300};
+    Window window{"", 400, 300};
 
     window.setVisibility(true);
     EXPECT_TRUE(window.isVisible());

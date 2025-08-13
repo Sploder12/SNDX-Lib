@@ -1,9 +1,9 @@
 #pragma once
 
 #include "./glfw.hpp"
-#include "../../render/image/imagedata.hpp"
+#include "../render/image/imagedata.hpp"
 
-namespace sndx::input::glfw {
+namespace sndx::glfw {
 	class Cursor {
 	private:
 		GLFWcursor* m_cursor{};

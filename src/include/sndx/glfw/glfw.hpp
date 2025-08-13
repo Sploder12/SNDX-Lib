@@ -10,9 +10,9 @@
 #include <string>
 #include <string_view>
 
-#include "../../data/version.hpp"
+#include "../data/version.hpp"
 
-namespace sndx::input {
+namespace sndx::glfw {
 	struct GLFW {
 		GLFW() {
 			if (!glfwInit()) {
