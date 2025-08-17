@@ -25,13 +25,16 @@ namespace sndx::glfw {
 		explicit Cursor(int shape) noexcept :
 			m_cursor(glfwCreateStandardCursor(shape)) {}
 
-		Cursor(const render::ImageData& img, int xhot, int yhot) noexcept {
+		Cursor(const render::ImageData& img, int xhot, int yhot) {
 			if (img.channels() == 4) {
 				GLFWimage gimg{
 					int(img.width()), int(img.height()), (unsigned char*)(img.data())
 				};
 
 				m_cursor = glfwCreateCursor(&gimg, xhot, yhot);
+			}
+			else [[unlikely]] {
+				throw std::logic_error("Provided cursor image does not have 4 channels");
 			}
 		}
 

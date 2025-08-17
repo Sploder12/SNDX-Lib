@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <optional>
 #include <unordered_map>
+#include <utility>
 
 
 namespace sndx::glfw {
@@ -289,8 +290,16 @@ namespace sndx::glfw {
 		[[nodiscard]]
 		auto build() const {
 			bool visible = !m_hints || m_hints->getHintOr(GLFW_VISIBLE, GLFW_TRUE) == GLFW_TRUE;
+
+			if (m_hints) {
+				m_hints->apply();
+			}
+
 			if (!visible || this->m_xpos || this->m_ypos) {
 				glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+			}
+			else {
+				glfwWindowHint(GLFW_VISIBLE, GLFW_TRUE);
 			}
 
 			auto window = glfwCreateWindow(this->m_width, this->m_height, this->m_title.c_str(), m_monitor, m_share);
