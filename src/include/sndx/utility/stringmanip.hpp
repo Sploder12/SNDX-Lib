@@ -36,6 +36,9 @@ namespace sndx::utility {
 		return strip(sv<CharT>(str), strips);
 	}
 
+	template <class CharT = char>
+	constexpr sv<CharT> strip(Str<CharT>&&, sv<CharT> = defaultStrip<CharT>) = delete;
+
 	constexpr sv<char> strip(std::nullptr_t, sv<char> = defaultStrip<char>) = delete;
 
 	[[nodiscard]]
@@ -65,6 +68,9 @@ namespace sndx::utility {
 	constexpr std::pair<sv<char>, sv<char>> splitFirst(const Str<CharT>& str, CharT delim, sv<CharT> strips = defaultStrip<char>) {
 		return splitFirst(sv<CharT>(str), delim, strips);
 	}
+
+	template <class CharT = char>
+	constexpr std::pair<sv<char>, sv<char>> splitFirst(Str<CharT>&&, CharT, sv<CharT> = defaultStrip<char>) = delete;
 
 	constexpr std::pair<sv<char>, sv<char>> splitFirst(std::nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 
@@ -99,9 +105,12 @@ namespace sndx::utility {
 	}
 
 	template <class Chr = char> [[nodiscard]]
-	inline auto splitStrip(Str<Chr> str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
+	inline auto splitStrip(const Str<Chr>& str, Chr delim, sv<Chr> strips = sv<Chr>{ " \t\r" }) {
 		return splitStrip(sv<Chr>{str}, delim, strips);
 	}
+
+	template <class Chr = char>
+	inline auto splitStrip(Str<Chr>&&, Chr, sv<Chr> = sv<Chr>{ " \t\r" }) = delete;
 
 	inline std::vector<sv<char>> splitStrip(std::nullptr_t, char, sv<char> = defaultStrip<char>) = delete;
 

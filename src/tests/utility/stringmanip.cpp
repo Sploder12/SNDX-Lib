@@ -9,11 +9,13 @@ using str = sv<char>;
 TEST(StringManip, Strip) {
 	EXPECT_EQ(strip(""), "");
 	EXPECT_EQ(strip(" "), "");
-	EXPECT_EQ(strip(std::string("  ")), "");
+	EXPECT_EQ(strip("  "), "");
 	EXPECT_EQ(strip(" \t "), "");
 	EXPECT_EQ(strip(" \r\t\r \t  \r"), "");
 
-	EXPECT_EQ(strip("apple"), "apple");
+	std::string apple = "apple";
+
+	EXPECT_EQ(strip(apple), "apple");
 	EXPECT_EQ(strip(" apple\r"), "apple");
 	EXPECT_EQ(strip("app le\r"), "app le");
 	EXPECT_EQ(strip("\t a p\r ple\t "), "a p\r ple");
@@ -33,7 +35,9 @@ TEST(StringManip, SplitFirst) {
 	EXPECT_EQ(splitFirst("a a = b b ", '='), pair("a a", "b b"));
 	EXPECT_EQ(splitFirst("a a = b b = c c\r", '='), pair("a a", "b b = c c"));
 
-	EXPECT_EQ(splitFirst(" apple ", 'w'), pair("apple", ""));
+	std::string apple = " apple ";
+
+	EXPECT_EQ(splitFirst(apple, 'w'), pair("apple", ""));
 }
 
 TEST(StringManip, SplitStrip) {
@@ -56,7 +60,8 @@ TEST(StringManip, SplitStrip) {
 
 	EXPECT_TRUE(t.empty());
 
-	t = splitStrip("apple", ',');
+	std::string apple = "apple";
+	t = splitStrip(apple, ',');
 
 	EXPECT_EQ(t.size(), 1);
 	EXPECT_EQ(t[0], "apple");
