@@ -89,13 +89,7 @@ namespace sndx::container {
 				if (m_container != other.m_container)
 					throw std::logic_error("Compared Iterators of PackedView refer to different PackedViews!");
 
-				if (m_pos < other.m_pos) 
-					return std::strong_ordering::less;
-
-				if (m_pos > other.m_pos)
-					return std::strong_ordering::greater;
-
-				return std::strong_ordering::equal;
+				return m_pos <=> other.m_pos;
 			}
 		};
 

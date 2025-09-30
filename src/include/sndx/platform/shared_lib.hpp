@@ -107,6 +107,11 @@ namespace sndx::platform {
 		std::unordered_map<std::string, Data> m_funcs{};
 	public:
 
+		enum class ErrorType : uint8_t {
+			BadLibrary,
+			BadFunction,
+		};
+
 		[[nodiscard]]
 		bool contains(const std::string& id) const {
 			return m_funcs.contains(id);
@@ -154,7 +159,7 @@ namespace sndx::platform {
 						continue;
 					}
 					else {
-						errorCallback(id, "failed to load");
+						errorCallback(id, ErrorType::BadFunction);
 					}
 				}
 				
@@ -163,14 +168,14 @@ namespace sndx::platform {
 			}
 
 			if (!lib.valid()) {
-				errorCallback("", "library not valid");
+				errorCallback("", ErrorType::BadLibrary);
 			}
 
 			return fails;
 		}
 
 		size_t load(const SharedLib& lib) {
-			return load(lib, [](std::string_view, std::string_view) {});
+			return load(lib, [](std::string_view, ErrorType) {});
 		}
 	};
 }

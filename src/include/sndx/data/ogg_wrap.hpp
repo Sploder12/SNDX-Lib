@@ -209,7 +209,7 @@ namespace sndx::ogg {
 		}
 
 		// WriteFn is a function callable with std::span<char, dynamic_extent> as argument,
-		// if the return is can be converted to long, that much is repoted as witten
+		// if the return can be converted to long, that much is repoted as witten
 		// WriteFn should attempt to write size bytes into the argument buffer
 		// returns amount written or -1 on error
 		template <class WriteFn>
