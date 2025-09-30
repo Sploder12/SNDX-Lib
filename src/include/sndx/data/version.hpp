@@ -6,10 +6,16 @@
 #define SNDXLIB_MINOR 3
 #define SNDXLIB_PATCH 1
 
+static_assert(std::is_integral_v<decltype(SNDXLIB_MAJOR)>);
+static_assert(std::is_integral_v<decltype(SNDXLIB_MINOR)>);
+static_assert(std::is_integral_v<decltype(SNDXLIB_PATCH)>);
+
 #define SNDX_AS_STRING(macro) #macro
 
 #define DETAIL_SNDXLIB_VERSION(major, minor, patch) (SNDX_AS_STRING(major) "." SNDX_AS_STRING(minor) "." SNDX_AS_STRING(patch))
 #define SNDXLIB_VERSION DETAIL_SNDXLIB_VERSION(SNDXLIB_MAJOR, SNDXLIB_MINOR, SNDXLIB_PATCH)
+
+static_assert(std::is_constructible_v<std::string, decltype(SNDXLIB_VERSION)>);
 
 namespace sndx {
 	struct Version {

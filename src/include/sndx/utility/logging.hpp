@@ -1,98 +1,103 @@
 #pragma once
 
-#include <iostream>
 #include <atomic>
+#include <concepts>
+#include <format>
 #include <functional>
+#include <string>
 #include <string_view>
 
-#include <vector>
-#include <mutex>
-
-#include <algorithm>
-
 namespace sndx::utility {
+	struct LogLevel {
+		using T = intmax_t;
 
-	template <typename CharT = char>
-	using Formatter = std::function<std::basic_string<CharT>(std::basic_string_view<CharT>)>;
+		static constexpr T increment = 10;
 
-	template <typename CharT = char>
-	std::basic_string<CharT> formatterNone(std::basic_string_view<CharT> str) { return std::basic_string<CharT>(str); }
+		static constexpr T Info = 0;
+		static constexpr T Debug = Info - increment;
+		static constexpr T Trace = Debug - increment;
 
-	template <typename CharT = char>
+		static constexpr T Warning = Info + increment;
+		static constexpr T Error = Warning + increment;
+
+#ifdef _DEBUG
+		static constexpr T Default = Debug;
+#else
+		static constexpr T Default = Info;
+#endif
+		[[nodiscard]]
+		static constexpr std::string_view toString(T level) {
+			if (level >= Error) {
+				return "Error";
+			}
+			if (level >= Warning) {
+				return "Warning";
+			}
+			if (level >= Info) {
+				return "Info";
+			}
+			if (level >= Debug) {
+				return "Debug";
+			}
+			return "Trace";
+		}
+	};
+	using LogLevelT = LogLevel::T;
+
 	class Logger {
+	private:
+		std::atomic<LogLevelT> m_level{ LogLevel::Default };
+
 	protected:
-		std::basic_ostream<CharT> stream;
+		virtual void log_impl(LogLevelT level, std::string&& str) = 0;
 
 	public:
-		std::atomic_bool active;
 
-		Logger(std::basic_streambuf<CharT>* target) :
-			active(false), stream(target) {}
-
-		virtual void log(std::basic_string_view<CharT> msg) {
-			if (active) stream << msg;
-		}
-
-		bool setActive(bool newVal) {
-			return active.exchange(newVal);
-		}
-
-		template <typename T>
-		Logger& operator<<(const T& msg) {
-			if (active) {
-				stream << msg;
+		template <class... Args>
+		void log(LogLevelT level, std::format_string<Args...> fmt, Args&&... args) {
+			if (level >= m_level.load(std::memory_order_acquire)) {
+				log_impl(level, std::format(fmt, std::forward<Args>(args)...));
 			}
-			return *this;
+		}
+
+		template <class... Args>
+		void vlog(LogLevelT level, std::string_view fmt, Args&&... args) {
+			if (level >= m_level.load(std::memory_order_acquire)) {
+				log_impl(level, std::vformat(fmt, std::make_format_args(args...)));
+			}
+		}
+
+		auto setLevel(LogLevelT level) noexcept {
+			return m_level.exchange(level, std::memory_order_acq_rel);
+		}
+
+		[[nodiscard]]
+		auto level() const noexcept {
+			return m_level.load(std::memory_order_acquire);
 		}
 
 		virtual ~Logger() = default;
+
 	};
 
-	// Warning: operator<< is still raw logging
-	template <typename CharT = char>
-	class FormatLogger : public Logger<CharT> {
-	public:
-		Formatter<CharT> formatter;
-
-		FormatLogger(std::basic_streambuf<CharT>* target, Formatter<CharT> formatter = formatterNone<CharT>) :
-			Logger<CharT>(target), formatter(formatter) {}
-
-		void log(std::basic_string_view<CharT> msg) {
-			Logger<CharT>::log(formatter(msg));
-		}
+	template <std::invocable F> 
+	struct LazyArg {
+		F fnc;
 	};
+}
 
-	// non-owning container
-	template <typename CharT = char>
-	class LoggingContext {
-	protected:
-		std::vector<Logger<CharT>*> loggers;
-		std::mutex contextMtx;
+#define SNDX_MAKE_LAZY(func) \
+	sndx::utility::LazyArg{[&](){ return (func); }}
 
-	public:
-		using LoggerT = Logger<CharT>;
-
-		void addLogger(LoggerT& logger) {
-			std::unique_lock lock(contextMtx);
-			loggers.emplace_back(&logger);
+namespace std {
+	template <std::invocable F>
+	struct formatter<sndx::utility::LazyArg<F>> {
+		constexpr auto parse(std::format_parse_context& ctx) {
+			return ctx.begin();
 		}
 
-		void activateLogger(LoggerT& logger) {
-			logger.setActive(true);
-			std::unique_lock lock(contextMtx);
-			loggers.emplace_back(&logger);
-		}
-
-		void removeLogger(LoggerT& logger) {
-			std::unique_lock lock(contextMtx);
-			loggers.erase(std::ranges::remove(loggers, &logger));
-		}
-
-		void log(std::basic_string_view<CharT> msg) {
-			std::unique_lock lock(contextMtx);
-			for (auto& logger : loggers) {
-				logger->log(msg);
-			}
+		auto format(const sndx::utility::LazyArg<F>& arg, std::format_context& ctx) const {
+			return std::format_to(ctx.out(), "{}", arg.fnc());
 		}
 	};
 }
