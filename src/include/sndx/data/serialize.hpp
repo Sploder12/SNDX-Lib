@@ -1,126 +1,171 @@
 #pragma once
 
+#include <array>
+#include <cstdint>
+#include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <type_traits>
 #include <concepts>
 #include <stdexcept>
+#include <vector>
 
 #include "../utility/endian.hpp"
 
 namespace sndx {
-
-	struct io_error : public std::runtime_error {
-		using std::runtime_error::runtime_error;
+	template <class T>
+	struct Serializer {
+		template <class SerializeIt>
+		constexpr void serialize(const T& value, SerializeIt& it) const;
 	};
 
-	struct serialize_error : public io_error {
-		using io_error::io_error;
+	template <class OutputIt, class T>
+	constexpr OutputIt serializeTo(OutputIt out, const T& value) {
+		Serializer<T> serializer{};
+		serializer.serialize(value, out);
+		return out;
+	}
+
+	template <class OutputIt, class T>
+	constexpr void serializeToAdjust(OutputIt& out, const T& value) {
+		out = serializeTo(out, value);
+	}
+
+	template <class T> [[nodiscard]]
+	constexpr std::vector<uint8_t> serialize(const T& value) {
+		std::vector<uint8_t> out{};
+
+		using OutItT = decltype(std::back_inserter(out));
+
+		serializeTo<OutItT, T>(std::back_inserter(out), value);
+		return out;
+	}
+
+	template<class T>
+		requires
+			std::is_same_v<T, int8_t> ||
+			std::is_same_v<T, uint8_t> ||
+			std::is_same_v<T, std::byte> ||
+		    std::is_same_v<T, char>
+	struct Serializer<T> {
+		template <class SerializeIt>
+		constexpr void serialize(const T& value, SerializeIt& it) const {
+			*it = std::bit_cast<uint8_t>(value);
+			++it;
+		}
 	};
 
-	struct deserialize_error : public io_error {
-		using io_error::io_error;
+	template<class T, size_t N>
+	struct Serializer<std::array<T, N>> {
+		template <class SerializeIt>
+		constexpr void serialize(const std::array<T, N>& arr, SerializeIt& it) const {
+			for (const auto& v : arr) {
+				serializeToAdjust(it, v);
+			}
+		}
 	};
 
-	struct identifier_error : public deserialize_error {
+	template<class T>
+		requires 
+			std::is_same_v<T, int16_t> ||
+			std::is_same_v<T, int32_t> ||
+			std::is_same_v<T, int64_t> ||
+			std::is_same_v<T, uint16_t> ||
+			std::is_same_v<T, uint32_t> ||
+			std::is_same_v<T, uint64_t>
+	struct Serializer<T> {
+		template <class SerializeIt>
+		constexpr void serialize(T value, SerializeIt& it) const {
+			value = utility::fromEndianess<std::endian::little>(value);
+
+			auto bytes = std::bit_cast<std::array<std::byte, sizeof(T)>>(value);
+			serializeToAdjust(it, bytes);
+		}
+	};
+}
+
+namespace sndx {
+	struct deserialize_error : std::runtime_error {
+		using runtime_error::runtime_error;
+	};
+
+	struct out_of_data_error : deserialize_error {
 		using deserialize_error::deserialize_error;
 	};
 
-	namespace serialize {
-		struct Serializer {
-			std::ostream m_sink;
+	struct bad_field_error : deserialize_error {
+		using deserialize_error::deserialize_error;
+	};
 
-			explicit Serializer(std::ostream& sink) :
-				m_sink(sink.rdbuf()) {}
+	template <class T>
+	struct Deserializer {
+		template <class DeserializeIt>
+		constexpr void deserialize(T& to, DeserializeIt& it, DeserializeIt end) const;
+	};
 
-			[[nodiscard]] auto tell() {
-				return m_sink.tellp();
-			}
-
-			template <class T>
-			Serializer& serialize(const T& obj) {
-				obj.serialize(*this);
-				return *this;
-			}
-
-			template <class T>
-			Serializer& serialize(const T& val)
-				requires std::is_arithmetic_v<T> {
-
-				m_sink.write(reinterpret_cast<const char*>(std::addressof(val)), sizeof(T));
-
-				if (m_sink.bad())
-					throw serialize_error("Serializer sink went bad!");
-
-				return *this;
-			}
-
-			template <std::endian endianess = std::endian::native>
-			Serializer& serialize(const std::integral auto* arr, size_t size) {
-				for (size_t i = 0; i < size; ++i) {
-					serialize<endianess>(arr[i]);
-				}
-
-				return *this;
-			}
-
-			template <std::endian endianess>
-			decltype(auto) serialize(const std::integral auto& val) {
-				return serialize(utility::fromEndianess<endianess>(val));
-			}
-		};
-
-		struct Deserializer {
-			std::istream m_source;
-
-			Deserializer(std::istream& source) :
-				m_source(source.rdbuf()) {}
-
-			template <class T>
-			decltype(auto) deserialize(T& obj) {
-				return obj.deserialize(*this);
-			}
-
-			template <class T>
-			auto deserialize(T& obj)
-				requires std::is_arithmetic_v<T> {
-
-				m_source.read(reinterpret_cast<char*>(std::addressof(obj)), sizeof(T));
-				if (m_source.gcount() != sizeof(T))
-					throw deserialize_error("Deserialize failed on arithmetic type!");
-			}
-
-			template <std::endian endianess = std::endian::native>
-			auto deserialize(std::integral auto* arr, size_t size) {
-				for (size_t i = 0; i < size; ++i) {
-					deserialize<endianess>(arr[i]);
-				}
-			}
-
-			template <std::endian endianess>
-			auto deserialize(std::integral auto& obj) {
-				deserialize(obj);
-				obj = utility::fromEndianess<endianess>(obj);
-			}
-
-
-			bool discard(size_t bytes, bool seekable) {
-				m_source.clear();
-
-				if (seekable) {
-					m_source.seekg(bytes, std::ios::cur);
-					if (!m_source.fail())
-						return true;
-					else
-						m_source.clear();
-				}
-
-				for (size_t i = 0; i < bytes; ++i) {
-					char c;
-					m_source.read(&c, sizeof(c));
-				}
-
-				return false;
-			}
-		};
+	template <class T, class InputIt>
+	constexpr void deserializeFromAdjust(T& to, InputIt& in, InputIt end) {
+		Deserializer<T> deserializer{};
+		deserializer.deserialize(to, in, end);
 	}
+
+	template <class T, class InputIt>
+	constexpr void deserializeFrom(T& to, InputIt in, InputIt end) {
+		deserializeFromAdjust(to, in, end);
+	}
+
+
+	template <class T> [[nodiscard]]
+	constexpr void deserialize(T& to, const std::vector<uint8_t>& bytes) {
+		deserializeFrom(to, bytes.begin(), bytes.end());
+	}
+
+	template<class T>
+		requires
+			std::is_same_v<T, int8_t> ||
+			std::is_same_v<T, uint8_t> ||
+			std::is_same_v<T, std::byte> ||
+			std::is_same_v<T, char>
+	struct Deserializer<T> {
+		template <class DeserializeIt>
+		constexpr void deserialize(T& to, DeserializeIt& in, DeserializeIt end) const {
+			if (in == end)
+				throw out_of_data_error{"Ran out of data while deserializing"};
+
+			uint8_t out = *in;
+			++in;
+			to = std::bit_cast<T>(out);
+		}
+	};
+
+	template<class T, size_t N>
+	struct Deserializer<std::array<T, N>> {
+		template <class DeserializeIt>
+		constexpr void deserialize(std::array<T, N>& to, DeserializeIt& in, DeserializeIt end) const {
+			for (auto& v : to) {
+				deserializeFromAdjust(v, in, end);
+			}
+		}
+	};
+
+	template<class T>
+		requires
+			std::is_same_v<T, int16_t> ||
+			std::is_same_v<T, int32_t> ||
+			std::is_same_v<T, int64_t> ||
+			std::is_same_v<T, uint16_t> ||
+			std::is_same_v<T, uint32_t> ||
+			std::is_same_v<T, uint64_t>
+	struct Deserializer<T> {
+		template <class DeserializeIt>
+		constexpr void deserialize(T& to, DeserializeIt& in, DeserializeIt end) const {
+			using BufferT = std::array<uint8_t, sizeof(T)>;
+
+			BufferT buffer{};
+			deserializeFromAdjust(buffer, in, end);
+			auto value = std::bit_cast<T>(buffer);
+
+			to = utility::fromEndianess<std::endian::little>(value);
+		}
+	};
 }

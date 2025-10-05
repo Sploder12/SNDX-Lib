@@ -21,8 +21,11 @@ namespace sndx::audio {
 		static constexpr std::array<char, 4> ID = { 'f', 'm', 't', ' ' };
 
 		struct ExtendedNone {
-			static void deserialize(const serialize::Deserializer&) {};
-			static void serialize(const serialize::Serializer&) {};
+			template <class DeserializeIt>
+			static constexpr void deserialize(DeserializeIt&, DeserializeIt) {};
+
+			template <class SerializeIt>
+			static constexpr void serialize(SerializeIt&) {};
 
 			static constexpr uint32_t size() noexcept {
 				return 0 + 16;
@@ -30,16 +33,18 @@ namespace sndx::audio {
 		};
 
 		struct Extended0 {
-			static void deserialize(serialize::Deserializer& deserializer) {
+			template <class DeserializeIt>
+			static constexpr void deserialize(DeserializeIt& in, DeserializeIt end) {
 				uint16_t size;
-				deserializer.deserialize<std::endian::little>(size);
+				deserializeFromAdjust(size, in, end);
 
 				if (size != 0)
 					throw deserialize_error("Extended0 didn't have size 0");
 			};
 
-			static void serialize(serialize::Serializer& serializer) noexcept {
-				serializer.serialize<std::endian::little>(static_cast<uint16_t>(0));
+			template <class SerializeIt>
+			static constexpr void serialize(SerializeIt& out) noexcept {
+				serializeToAdjust(out, static_cast<uint16_t>(0));
 			};
 
 			static constexpr uint32_t size() noexcept {
@@ -50,28 +55,30 @@ namespace sndx::audio {
 		struct Extended {
 			uint16_t validBitsPerSample = 0;
 			uint32_t channelMask = 0;
-			char guid[16] = { 0 };
+			std::array<char, 16> guid{ 0 };
 
 			static constexpr uint16_t dataSize = sizeof(validBitsPerSample) + sizeof(channelMask) + sizeof(guid);
 
-			void deserialize(serialize::Deserializer& deserializer) {
+			template <class DeserializeIt>
+			constexpr void deserialize(DeserializeIt& in, DeserializeIt end) {
 				uint16_t size;
-				deserializer.deserialize<std::endian::little>(size);
+				deserializeFromAdjust(size, in, end);
 
 				if (size != dataSize)
 					throw deserialize_error("Extended format didn't have size 22");
 
-				deserializer.deserialize<std::endian::little>(validBitsPerSample);
-				deserializer.deserialize<std::endian::little>(channelMask);
-				deserializer.deserialize(guid, sizeof(guid));
+				deserializeFromAdjust(validBitsPerSample, in, end);
+				deserializeFromAdjust(channelMask, in, end);
+				deserializeFromAdjust(guid, in, end);
 			};
 
-			void serialize(serialize::Serializer& serializer) const {
-				serializer.serialize<std::endian::little>(dataSize);
+			template <class SerializeIt>
+			void serialize(SerializeIt& out) const {
+				serializeToAdjust(out, dataSize);
 
-				serializer.serialize<std::endian::little>(validBitsPerSample);
-				serializer.serialize<std::endian::little>(channelMask);
-				serializer.serialize(guid, sizeof(guid));
+				serializeToAdjust(out, validBitsPerSample);
+				serializeToAdjust(out, channelMask);
+				serializeToAdjust(out, guid);
 			};
 
 			static constexpr uint32_t size() noexcept {
@@ -102,7 +109,7 @@ namespace sndx::audio {
 				ext = Extended();
 				break;
 			default:
-				throw deserialize_error("Invalid fmt  size");
+				throw bad_field_error("Invalid fmt  size");
 			}
 		}
 		
@@ -111,36 +118,42 @@ namespace sndx::audio {
 			return blockAlign / channels;
 		}
 
-		void deserialize(serialize::Deserializer& deserializer) override {
-			deserializer.deserialize<std::endian::little>(format);
-			deserializer.deserialize<std::endian::little>(channels);
-			deserializer.deserialize<std::endian::little>(sampleRate);
-			deserializer.deserialize<std::endian::little>(byteRate);
-			deserializer.deserialize<std::endian::little>(blockAlign);
-			deserializer.deserialize<std::endian::little>(bitDepth);
+		void deserialize(const std::vector<uint8_t>& in) override {
+			auto it = in.begin();
+			deserializeFromAdjust(format, it, in.end());
+			deserializeFromAdjust(channels, it, in.end());
+			deserializeFromAdjust(sampleRate, it, in.end());
+			deserializeFromAdjust(byteRate, it, in.end());
+			deserializeFromAdjust(blockAlign, it, in.end());
+			deserializeFromAdjust(bitDepth, it, in.end());
 
-			std::visit([&deserializer]<typename T>(T&& arg) {
-				deserializer.deserialize(std::forward<T>(arg));
+			std::visit([&it, end = in.end()]<typename T>(T&& arg) {
+				deserializeFromAdjust(std::forward<T>(arg), it, end);
 			}, ext);
 		};
 
-		void serialize(serialize::Serializer& serializer) const override {
-			serializer.serialize("fmt ", 4);
+		std::vector<uint8_t> serialize() const override {
+			std::vector<uint8_t> out{};
+			auto it = std::back_inserter(out);
+
+			serializeToAdjust(it, std::array{ 'f', 'm', 't', ' ' });
 		
-			std::visit([&serializer]<typename T>(const T&) {
-				serializer.serialize<std::endian::little>(static_cast<uint32_t>(T::size()));
+			std::visit([&it]<typename T>(const T&) {
+				serializeToAdjust(it, static_cast<uint32_t>(T::size()));
 			}, ext);
 				
-			serializer.serialize<std::endian::little>(format);
-			serializer.serialize<std::endian::little>(channels);
-			serializer.serialize<std::endian::little>(sampleRate);
-			serializer.serialize<std::endian::little>(byteRate);
-			serializer.serialize<std::endian::little>(blockAlign);
-			serializer.serialize<std::endian::little>(bitDepth);
+			serializeToAdjust(it, format);
+			serializeToAdjust(it, channels);
+			serializeToAdjust(it, sampleRate);
+			serializeToAdjust(it, byteRate);
+			serializeToAdjust(it, blockAlign);
+			serializeToAdjust(it, bitDepth);
 
-			std::visit([&serializer]<typename T>(T&& arg) {
-				serializer.serialize(std::forward<T>(arg));
+			std::visit([&it]<typename T>(T&& arg) {
+				serializeToAdjust(it, arg);
 			}, ext);
+
+			return out;
 		};
 
 		[[nodiscard]]
@@ -180,15 +193,19 @@ namespace sndx::audio {
 
 		explicit constexpr FACTchunk(const RIFF::ChunkHeader&) noexcept {};
 
-		void deserialize(serialize::Deserializer& deserializer) override {
-			deserializer.deserialize<std::endian::little>(sampleLength);
+		void deserialize(const std::vector<uint8_t>& data) override {
+			sndx::deserialize(sampleLength, data);
 		}
 
-		void serialize(serialize::Serializer& serializer) const override {
-			serializer.serialize("fact", 4);
-			serializer.serialize<std::endian::little>(static_cast<uint32_t>(sizeof(sampleLength)));
+		std::vector<uint8_t> serialize() const override {
+			std::vector<uint8_t> out{};
+			auto it = std::back_inserter(out);
 
-			serializer.serialize<std::endian::little>(sampleLength);
+			serializeToAdjust(it, std::array{ 'f', 'a', 'c', 't' });
+			serializeToAdjust(it, static_cast<uint32_t>(sizeof(sampleLength)));
+			serializeToAdjust(it, sampleLength);
+
+			return out;
 		}
 
 		[[nodiscard]]
@@ -208,25 +225,29 @@ namespace sndx::audio {
 			data.resize(header.size);
 		}
 
-		void deserialize(serialize::Deserializer& deserializer) override {
-			deserializer.deserialize(data.data(), data.size());
-
-			uint8_t padding = 0;
-			if (data.size() % 2 == 1)
-				deserializer.deserialize(padding);
+		void deserialize(const std::vector<uint8_t>& data) override {
+			auto it = data.begin();
+			for (auto& b : this->data) {
+				deserializeFromAdjust(b, it, data.end());
+			}
 		}
 
-		void serialize(serialize::Serializer& serializer) const override {
-			serializer.serialize("data", 4);
-			serializer.serialize<std::endian::little>(static_cast<uint32_t>(data.size()));
+		std::vector<uint8_t> serialize() const override {
+			std::vector<uint8_t> out{};
+			auto it = std::back_inserter(out);
+
+			serializeToAdjust(it, std::array{ 'd', 'a', 't', 'a' });
+			serializeToAdjust(it, static_cast<uint32_t>(data.size()));
 
 			for (const auto& b : data) {
-				serializer.serialize(b);
+				serializeToAdjust(it, b);
 			}
 
 			if (data.size() % 2 == 1) {
-				serializer.serialize(static_cast<uint8_t>(0));
+				serializeToAdjust(it, static_cast<uint8_t>(0));
 			}
+
+			return out;
 		}
 
 		[[nodiscard]]
@@ -307,20 +328,25 @@ namespace sndx::audio {
 			return *m_fmt;
 		}
 
-		void deserialize(serialize::Deserializer& deserializer) {
-			m_file.deserialize(deserializer, ID);
+		template <class InputIt>
+		void deserialize(InputIt& in, InputIt end) {
+			deserializeFromAdjust(m_file, in, end);
+
+			if (m_file.getHeader().type != ID)
+				throw bad_field_error("WAVE file missing WAVE");
 
 			m_fmt = m_file.getChunk<FMTchunk>();
 			m_data = m_file.getChunk<DATAchunk>();
 
 			if (!m_fmt || !m_data)
-				throw deserialize_error("WAVE file missing fmt  or data");
+				throw bad_field_error("WAVE file missing fmt  or data");
 		}
 
-		void serialize(serialize::Serializer& serializer) const {
+		template <class SerializeIt>
+		void serialize(SerializeIt& it) const {
 
 			if (!m_fmt || !m_data)
-				throw serialize_error("WAVE file missing fmt  or data");
+				throw std::logic_error("WAVE file missing fmt  or data");
 
 			auto tmp = m_file.getHeader();
 			const auto& chunks = m_file.getChunks();
@@ -330,8 +356,12 @@ namespace sndx::audio {
 				tmp.size += chunk->getLength();
 			}
 
-			serializer.serialize(tmp);
-			serializer.serialize(*m_fmt);
+			serializeToAdjust(it, tmp);
+
+			auto buf = m_fmt->serialize();
+			for (auto b : buf) {
+				serializeToAdjust(it, b);
+			}
 
 			for (const auto& [id, chunk] : chunks) {
 				if (id == RIFF::idToRawID(FMTchunk::ID) ||
@@ -340,10 +370,16 @@ namespace sndx::audio {
 					continue;
 				}
 
-				serializer.serialize(*chunk);
+				buf = chunk->serialize();
+				for (auto b : buf) {
+					serializeToAdjust(it, b);
+				}
 			}
 
-			serializer.serialize(*m_data);
+			buf = m_fmt->serialize();
+			for (auto b : buf) {
+				serializeToAdjust(it, b);
+			}
 		}
 	};
 
@@ -362,27 +398,32 @@ namespace sndx::audio {
 		explicit WAVdecoder(std::istream& stream) :
 			m_stream(stream.rdbuf()) {
 
-			serialize::Deserializer deserializer{ stream };
-			bool seekable = true;
+			auto it = std::istream_iterator<uint8_t>(stream);
+			auto end = std::istream_iterator<uint8_t>();
 
 			RIFF::RIFFheader head;
-			deserializer.deserialize(head);
+			deserializeFromAdjust(head, it, end);
 
 			if (head.type != std::array<char, 4>{'W', 'A', 'V', 'E'})
-				throw identifier_error("RIFF file is not WAVE");
+				throw bad_field_error("RIFF file is not WAVE");
 
 			RIFF::ChunkHeader header;
-			deserializer.deserialize(header);
+			deserializeFromAdjust(header, it, end);
 
 			
 			if (header.id != std::array<char, 4>{'f', 'm', 't', ' '})
-				throw identifier_error("fmt  not first subchunk in RIFF");
+				throw bad_field_error("fmt  not first subchunk in RIFF");
 
 			m_meta = FMTchunk(header);
-			deserializer.deserialize(m_meta);
+			std::vector<uint8_t> buf{};
+			buf.resize(m_meta.getLength() - 4 - sizeof(uint32_t));
+			for (auto& b : buf) {
+				deserializeFromAdjust(b, it, end);
+			}
+			m_meta.deserialize(buf);
 
 			do {
-				deserializer.deserialize(header);
+				deserializeFromAdjust(header, it, end);
 
 				m_size = header.size;
 
@@ -390,8 +431,6 @@ namespace sndx::audio {
 					m_offset = size_t(m_stream.tellg());
 					return;
 				}
-
-				seekable = deserializer.discard(header.size, seekable);
 			} while (m_stream.good());
 
 			throw deserialize_error("Invalid .wav file");
@@ -553,4 +592,30 @@ namespace sndx::audio {
 			registerDecoder<WAVdecoder>(".wav") &&
 			registerDecoder<WAVdecoder>(".wave");
 	}();
+}
+
+namespace sndx {
+	template<class T>
+		requires
+			std::is_same_v<T, audio::FMTchunk::ExtendedNone> ||
+			std::is_same_v<T, audio::FMTchunk::Extended0> ||
+			std::is_same_v<T, audio::FMTchunk::Extended>
+	struct Serializer<T> {
+		template <class SerializeIt>
+		constexpr void serialize(const T& v, SerializeIt& it) const {
+			v.serialize(it);
+		}
+	};
+
+	template<class T>
+		requires
+			std::is_same_v<T, audio::FMTchunk::ExtendedNone> ||
+			std::is_same_v<T, audio::FMTchunk::Extended0> ||
+			std::is_same_v<T, audio::FMTchunk::Extended>
+	struct Deserializer<T> {
+		template <class DeserializeIt>
+		constexpr void deserialize(T& to, DeserializeIt& in, DeserializeIt end) const {
+			to.deserialize(in, end);
+		}
+	};
 }

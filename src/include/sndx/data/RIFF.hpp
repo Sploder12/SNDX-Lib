@@ -24,16 +24,6 @@ namespace sndx::RIFF {
 	struct ChunkHeader {
 		std::array<char, 4> id = { 0 };
 		uint32_t size = 0;
-
-		void deserialize(serialize::Deserializer& deserializer) {
-			deserializer.deserialize(id.data(), sizeof(id));
-			deserializer.deserialize<std::endian::little>(size);
-		}
-
-		void serialize(serialize::Serializer& serializer) const {
-			serializer.serialize(id.data(), sizeof(id));
-			serializer.serialize<std::endian::little>(size);
-		}
 	};
 
 	struct RIFFheader {
@@ -44,21 +34,6 @@ namespace sndx::RIFF {
 
 		explicit RIFFheader() = default;
 		explicit RIFFheader(std::array<char, 4> id) : type(id) {}
-
-		void deserialize(serialize::Deserializer& deserializer) {
-			deserializer.deserialize(type.data(), sizeof(type));
-			if (type != ID)
-				throw identifier_error("RIFF not present in RIFF header");
-
-			deserializer.deserialize<std::endian::little>(size);
-			deserializer.deserialize(type.data(), sizeof(type));
-		}
-
-		void serialize(serialize::Serializer& serializer) const {
-			serializer.serialize("RIFF", 4);
-			serializer.serialize<std::endian::little>(size);
-			serializer.serialize(type.data(), sizeof(type));
-		}
 
 		[[nodiscard]]
 		uint32_t getLength() const {
@@ -71,20 +46,20 @@ namespace sndx::RIFF {
 
 		// ex: `static std::array<char, 4> ID = ~;`
 
-		virtual void deserialize(serialize::Deserializer&) = 0;
-		virtual void serialize(serialize::Serializer& serializer) const = 0;
+		virtual void deserialize(const std::vector<uint8_t>& data) = 0;
+		virtual std::vector<uint8_t> serialize() const = 0;
 		virtual uint32_t getLength() const = 0;
 
-		using Factory = std::unique_ptr<Chunk> (*)(serialize::Deserializer&, const ChunkHeader&);
+		using Factory = std::unique_ptr<Chunk> (*)(const std::vector<uint8_t>&, const ChunkHeader& header);
 
 		[[nodiscard]]
-		static std::unique_ptr<Chunk> create(serialize::Deserializer& deserializer, const ChunkHeader& header) {
+		static std::unique_ptr<Chunk> create(const std::vector<uint8_t>& data, const ChunkHeader& header) {
 			uint32_t rawID = idToRawID(header.id);
 
 			const auto& map = getChunkMap();
 
 			if (auto it = map.find(rawID); it != map.end()) {
-				return it->second(deserializer, header);
+				return it->second(data, header);
 			}
 
 			return nullptr;
@@ -94,9 +69,9 @@ namespace sndx::RIFF {
 		static void registerChunkType() {
 			auto& map = getChunkMap();
 
-			map.emplace(idToRawID(T::ID), [](serialize::Deserializer& deserializer, const ChunkHeader& header) {
+			map.emplace(idToRawID(T::ID), [](const std::vector<uint8_t>& data, const ChunkHeader& header) {
 				std::unique_ptr<T> chunk = std::make_unique<T>(header);
-				deserializer.deserialize(*chunk);
+				chunk->deserialize(data);
 				return std::unique_ptr<Chunk>(std::move(chunk));
 			});
 		}
@@ -148,22 +123,24 @@ namespace sndx::RIFF {
 		const auto& getChunks() const noexcept {
 			return m_chunks;
 		}
-
-		void deserialize(serialize::Deserializer& deserializer) {
-			deserializer.deserialize(m_header);
-			deserializeRest(deserializer);
+		
+		template <class InputIt>
+		void deserialize(InputIt& in, InputIt end) {
+			deserializeFromAdjust(m_header, in, end);
+			deserializeRest(in, end);
 		}
 
-		void deserialize(serialize::Deserializer& deserializer, std::array<char, 4> checkID) {
-			deserializer.deserialize(m_header);
-
+		template <class InputIt>
+		void deserialize(InputIt& in, InputIt end, std::array<char, 4> checkID) {
+			deserializeFromAdjust(m_header, in, end);
 			if (m_header.type != checkID)
-				throw identifier_error("RIFF description identifier mismatch");
+				throw bad_field_error("RIFF description identifier mismatch");
 			
-			deserializeRest(deserializer);
+			deserializeRest(in, end);
 		}
 
-		void serialize(serialize::Serializer& serializer) const {
+		template <class SerializeIt>
+		void serialize(SerializeIt& it) const {
 			RIFFheader tmp = m_header;
 
 			tmp.size = sizeof(tmp.type);
@@ -171,25 +148,36 @@ namespace sndx::RIFF {
 				tmp.size += chunk->getLength();
 			}
 
-			serializer.serialize(tmp);
+			serializeToAdjust(it, m_header);
 
 			for (const auto& [id, chunk] : m_chunks) {
-				serializer.serialize(*chunk);
+				const auto& data = chunk->serialize();
+				for (auto b : data) {
+					serializeToAdjust(it, b);
+				}
 			}
 		}
 
 	private:
-		void deserializeRest(serialize::Deserializer& deserializer) {
+		template <class InputIt>
+		void deserializeRest(InputIt& in, InputIt end) {
 			size_t read = 8;
-			bool seekable = true;
-
-			while (read < m_header.size && deserializer.m_source.good()) {
+			while (read < m_header.size) {
 				ChunkHeader header;
-				deserializer.deserialize(header);
+				deserializeFromAdjust(header, in, end);
 
-				auto ptr = Chunk::create(deserializer, header);
+				std::vector<uint8_t> buffer{};
+				buffer.reserve(header.size);
+
+				for (size_t i = 0; i < header.size; ++i) {
+					uint8_t b;
+					deserializeFromAdjust(b, in, end);
+					buffer.emplace_back(b);
+				}
+
+				auto ptr = Chunk::create(buffer, header);
+
 				if (!ptr) {
-					seekable = deserializer.discard(header.size, seekable);
 					read += header.size + sizeof(header.id) + sizeof(header.size);
 					continue;
 				}
@@ -200,82 +188,63 @@ namespace sndx::RIFF {
 			}
 		}
 	};
+}
 
-	// requires that the decoder is seekable!
-	class LazyFile {
-	public:
-		struct LazyChunk {
-			ChunkHeader header{};
-			std::ios::pos_type streamPos = -1;
-			std::unique_ptr<Chunk> data = nullptr;
-
-			[[nodiscard]]
-			constexpr uint32_t getLength() const {
-				return sizeof(header.id) + sizeof(header.size) + header.size;
-			}
-		};
-
-	private:
-		RIFFheader m_header{};
-
-		std::unordered_map<uint32_t, LazyChunk> m_chunks{};
-
-	public:
-		void deserialize(serialize::Deserializer& deserializer) {
-			deserializer.deserialize(m_header);
-			deserializeRest(deserializer);
+namespace sndx {
+	template<>
+	struct Serializer<RIFF::ChunkHeader> {
+		template <class SerializeIt>
+		constexpr void serialize(const RIFF::ChunkHeader& value, SerializeIt& it) const {
+			serializeToAdjust(it, value.id);
+			serializeToAdjust(it, value.size);
 		}
+	};
 
-		void deserialize(serialize::Deserializer& deserializer, std::array<char, 4> checkID) {
-			deserializer.deserialize(m_header);
-
-			if (m_header.type != checkID)
-				throw identifier_error("RIFF description identifier mismatch");
-
-			deserializeRest(deserializer);
+	template<>
+	struct Deserializer<RIFF::ChunkHeader> {
+		template <class DeserializeIt>
+		constexpr void deserialize(RIFF::ChunkHeader& to, DeserializeIt& in, DeserializeIt end) const {
+			deserializeFromAdjust(to.id, in, end);
+			deserializeFromAdjust(to.size, in, end);
 		}
+	};
 
-		[[nodiscard]]
-		Chunk* getChunk(std::array<char, 4> id, serialize::Deserializer& deserializer) {
-			uint32_t rawID = idToRawID(id);
-
-			if (auto it = m_chunks.find(rawID); it != m_chunks.end()) {
-				auto& chunk = it->second;
-
-				if (chunk.data)
-					return chunk.data.get();
-
-				deserializer.m_source.seekg(chunk.streamPos);
-				
-				chunk.data = Chunk::create(deserializer, chunk.header);
-				return chunk.data.get();
-			}
-
-			return nullptr;
+	template<>
+	struct Serializer<RIFF::RIFFheader> {
+		template <class SerializeIt>
+		constexpr void serialize(const RIFF::RIFFheader& value, SerializeIt& it) const {
+			serializeToAdjust(it, RIFF::RIFFheader::ID);
+			serializeToAdjust(it, value.size);
+			serializeToAdjust(it, value.type);
 		}
+	};
 
-		template <std::derived_from<Chunk> T> [[nodiscard]]
-		T* getChunk(serialize::Deserializer& deserializer) {
-			return static_cast<T*>(getChunk(T::ID, deserializer));
+	template<>
+	struct Deserializer<RIFF::RIFFheader> {
+		template <class DeserializeIt>
+		constexpr void deserialize(RIFF::RIFFheader& to, DeserializeIt& in, DeserializeIt end) const {
+			deserializeFromAdjust(to.type, in, end);
+			if (to.type != RIFF::RIFFheader::ID)
+				throw bad_field_error{ "RIFF not present in RIFF header" };
+
+			deserializeFromAdjust(to.size, in, end);
+			deserializeFromAdjust(to.type, in, end);
 		}
+	};
 
-	private:
-		void deserializeRest(serialize::Deserializer& deserializer) {
-			size_t read = 8;
-			bool seekable = true;
+	template<>
+	struct Serializer<RIFF::File> {
+		template <class SerializeIt>
+		constexpr void serialize(const RIFF::File& value, SerializeIt& it) const {
+			value.serialize(it);
+		}
+	};
 
-			while (read < m_header.size && deserializer.m_source.good()) {
-				LazyChunk chunk;
-				deserializer.deserialize(chunk.header);
-
-				chunk.streamPos = deserializer.m_source.tellg();
-
-				seekable = deserializer.discard(chunk.header.size, seekable);
-
-				read += chunk.getLength();
-
-				m_chunks.emplace(idToRawID(chunk.header.id), std::move(chunk));
-			}
+	template<>
+	struct Deserializer<RIFF::File> {
+		template <class DeserializeIt>
+		constexpr void deserialize(RIFF::File& to, DeserializeIt& in, DeserializeIt end) const {
+			to.deserialize(in, end);
 		}
 	};
 }

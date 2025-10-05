@@ -3,8 +3,6 @@
 
 #include <gtest/gtest.h>
 
-#include "utility/stream.hpp"
-
 #include <fstream>
 
 using namespace sndx::audio;

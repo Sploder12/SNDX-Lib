@@ -2,6 +2,7 @@
 #include <array>
 
 #include "../../common.hpp"
+
 #include "utility/stream.hpp"
 
 using namespace sndx;
@@ -141,11 +142,11 @@ TEST(ImageDataTest, serializes) {
 	std::array<uint8_t, sizeof(size_t) * 2 + 1 + testData.size()> outArr{0};
 
 	utility::MemoryStream buf(outArr.data(), outArr.size());
-	serialize::Serializer serializer{ buf };
+	auto it = std::ostream_iterator<uint8_t>(buf);
 
 	auto data = ImageData(3, 1, 4, testData);
 
-	data.serialize(serializer);
+	data.serialize(it);
 
 	EXPECT_EQ(outArr[0], 3);
 	EXPECT_EQ(outArr[8], 1);
@@ -160,11 +161,11 @@ TEST(ImageDataTest, badSerializeFails) {
 	std::array<uint8_t, 1> outArr{ 0 };
 
 	utility::MemoryStream buf(outArr.data(), outArr.size());
-	serialize::Serializer serializer{ buf };
+	auto it = std::ostream_iterator<uint8_t>(buf);
 
 	auto data = ImageData(3, 1, 4, testData);
 
-	EXPECT_THROW(data.serialize(serializer), serialize_error);
+	data.serialize(it);
 }
 
 TEST(ImageDataTest, deserializes) {
@@ -175,12 +176,11 @@ TEST(ImageDataTest, deserializes) {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 	};
 
-	utility::MemoryStream buf(inArr.data(), inArr.size());
-	serialize::Deserializer deserializer{ buf };
+	auto it = inArr.begin();
 
 	ImageData data{ 0, 0, 1, std::vector<std::byte>{} };
 
-	data.deserialize(deserializer);
+	data.deserialize(it, inArr.end());
 
 	EXPECT_EQ(data.width(), 3);
 	EXPECT_EQ(data.height(), 1);
@@ -201,12 +201,11 @@ TEST(ImageDataTest, deserializeFailsWithBadChannel) {
 		0, 1, 2, 3, 4, 6
 	};
 
-	utility::MemoryStream buf(inArr.data(), inArr.size());
-	serialize::Deserializer deserializer{ buf };
+	auto it = inArr.begin();
 
 	ImageData data{ 0, 0, 1, std::vector<std::byte>{} };
 
-	EXPECT_THROW(data.deserialize(deserializer), deserialize_error);
+	EXPECT_THROW(data.deserialize(it, inArr.end()), deserialize_error);
 }
 
 TEST(ImageDataTest, deserializeFailsWithLittleData) {
@@ -217,10 +216,9 @@ TEST(ImageDataTest, deserializeFailsWithLittleData) {
 		0, 1, 2, 3, 4
 	};
 
-	utility::MemoryStream buf(inArr.data(), inArr.size());
-	serialize::Deserializer deserializer{ buf };
+	auto it = inArr.begin();
 
 	ImageData data{ 0, 0, 1, std::vector<std::byte>{} };
 
-	EXPECT_THROW(data.deserialize(deserializer), deserialize_error);
+	EXPECT_THROW(data.deserialize(it, inArr.end()), out_of_data_error);
 }

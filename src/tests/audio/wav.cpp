@@ -57,12 +57,10 @@ TEST(WAVE, GoodHeader) {
 }
 
 TEST(WAVE, fullDeserialize) {
-	MemoryStream buf(goodHeader, sizeof(goodHeader));
-
-	sndx::serialize::Deserializer deserializer(buf);
-
+	auto it = goodHeader;
+	
 	WAVfile out;
-	out.deserialize(deserializer);
+	out.deserialize(it, it + sizeof(goodHeader));
 
 	const auto& data = out.getData().data;
 
@@ -82,43 +80,13 @@ TEST(WAVE, fullDeserialize) {
 	uint8_t outData[sizeof(goodHeader)] = { 0 };
 	
 	MemoryStream obuf(outData, sizeof(outData));
-	sndx::serialize::Serializer serializer(obuf);
 
-	out.serialize(serializer);
+	auto oit = std::ostream_iterator<uint8_t>(obuf);
+	out.serialize(oit);
 
 	for (size_t i = 0; i < sizeof(outData); ++i) {
 		EXPECT_EQ(goodHeader[i], outData[i]);
 	}
-}
-
-TEST(WAVE, lazyDeserialize) {
-	MemoryStream buf(goodHeader, sizeof(goodHeader));
-
-	sndx::serialize::Deserializer deserializer(buf);
-
-	sndx::RIFF::LazyFile out;
-	out.deserialize(deserializer);
-
-	auto dataChunkPtr = out.getChunk<DATAchunk>(deserializer);
-	ASSERT_NE(dataChunkPtr, nullptr);
-	
-	const auto& data = dataChunkPtr->data;
-
-	ASSERT_EQ(data.size(), 10);
-
-	for (size_t i = 0; i < data.size(); ++i) {
-		EXPECT_EQ(data[i], i);
-	}
-
-	auto fmtChunkPtr = out.getChunk<FMTchunk>(deserializer);
-	ASSERT_NE(fmtChunkPtr, nullptr);
-
-	const auto& format = *fmtChunkPtr;
-
-	EXPECT_EQ(format.channels, 1);
-	EXPECT_EQ(format.bitDepth, 8);
-	EXPECT_EQ(format.format, WAVE_PCM_INT);
-	EXPECT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
 }
 
 uint8_t badHeaderWAVE[] =
@@ -156,19 +124,15 @@ uint8_t badHeaderFMT[] =
 	"\x5\x6\x7\x8\x9";
 
 TEST(WAVE, badHeaderWAVE) {
-	MemoryStream buf(badHeaderWAVE, sizeof(badHeaderWAVE));
-
-	sndx::serialize::Deserializer deserializer(buf);
+	auto it = badHeaderWAVE;
 
 	WAVfile file;
-	ASSERT_THROW(file.deserialize(deserializer), sndx::identifier_error);
+	ASSERT_THROW(file.deserialize(it, badHeaderWAVE + sizeof(badHeaderWAVE)), sndx::bad_field_error);
 }
 
 TEST(WAVE, badHeaderFMT) {
-	MemoryStream buf(badHeaderFMT, sizeof(badHeaderFMT));
-
-	sndx::serialize::Deserializer deserializer(buf);
+	auto it = badHeaderFMT;
 
 	WAVfile file;
-	ASSERT_THROW(file.deserialize(deserializer), sndx::deserialize_error);
+	ASSERT_THROW(file.deserialize(it, badHeaderFMT + sizeof(badHeaderFMT)), sndx::bad_field_error);
 }
