@@ -13,6 +13,7 @@ set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 project ("SNDXlib")
 
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 find_package(OpenAL CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_path(MINIMP3_INCLUDE_DIRS "minimp3/minimp3.h")
