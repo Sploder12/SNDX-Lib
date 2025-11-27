@@ -2,6 +2,7 @@
 
 #include <bit>
 #include <concepts>
+#include <algorithm>
 
 namespace sndx::utility {
 	[[nodiscard]] // C++23's byteswap https://en.cppreference.com/w/cpp/numeric/byteswap

@@ -5,9 +5,10 @@
 #include "../utility/endian.hpp"
 #include "../data/RIFF.hpp"
 
-#include <variant>
 #include <array>
 #include <concepts>
+#include <ios>
+#include <variant>
 
 namespace sndx::audio {
 
@@ -376,7 +377,7 @@ namespace sndx::audio {
 				}
 			}
 
-			buf = m_fmt->serialize();
+			buf = m_data->serialize();
 			for (auto b : buf) {
 				serializeToAdjust(it, b);
 			}
@@ -397,8 +398,9 @@ namespace sndx::audio {
 	public:
 		explicit WAVdecoder(std::istream& stream) :
 			m_stream(stream.rdbuf()) {
+			m_stream >> std::noskipws;
 
-			auto it = std::istream_iterator<uint8_t>(stream);
+			auto it = std::istream_iterator<uint8_t>(m_stream);
 			auto end = std::istream_iterator<uint8_t>();
 
 			RIFF::RIFFheader head;
@@ -428,7 +430,8 @@ namespace sndx::audio {
 				m_size = header.size;
 
 				if (header.id == std::array<char, 4>{'d', 'a', 't', 'a'}) {
-					m_offset = size_t(m_stream.tellg());
+					m_offset = size_t(m_stream.tellg()) - 1;
+					m_dirty = true;
 					return;
 				}
 			} while (m_stream.good());

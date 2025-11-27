@@ -27,7 +27,7 @@ uint8_t goodHeader[] =
 TEST(WAVE, GoodHeader) {
 	ASSERT_TRUE(_wavDecoderRegisterer);
 
-	MemoryStream buf(goodHeader, sizeof(goodHeader));
+	MemoryStream buf(goodHeader, sizeof(goodHeader) - 1);
 
 	WAVdecoder dec(buf);
 
@@ -60,7 +60,7 @@ TEST(WAVE, fullDeserialize) {
 	auto it = goodHeader;
 	
 	WAVfile out;
-	out.deserialize(it, it + sizeof(goodHeader));
+	out.deserialize(it, it + sizeof(goodHeader) - 1);
 
 	const auto& data = out.getData().data;
 
@@ -77,15 +77,15 @@ TEST(WAVE, fullDeserialize) {
 	EXPECT_EQ(format.format, WAVE_PCM_INT);
 	EXPECT_TRUE(std::holds_alternative<FMTchunk::ExtendedNone>(format.ext));
 
-	uint8_t outData[sizeof(goodHeader)] = { 0 };
-	
-	MemoryStream obuf(outData, sizeof(outData));
+	std::vector<uint8_t> outData{};
+	outData.reserve(sizeof(goodHeader) - 1);
 
-	auto oit = std::ostream_iterator<uint8_t>(obuf);
-	out.serialize(oit);
+	auto i = std::back_inserter(outData);
+	out.serialize(i);
 
-	for (size_t i = 0; i < sizeof(outData); ++i) {
-		EXPECT_EQ(goodHeader[i], outData[i]);
+	ASSERT_EQ(outData.size(), sizeof(goodHeader) - 1);
+	for (size_t i = 0; i < outData.size(); ++i) {
+		EXPECT_EQ(unsigned char(goodHeader[i]), outData[i]);
 	}
 }
 
@@ -127,12 +127,12 @@ TEST(WAVE, badHeaderWAVE) {
 	auto it = badHeaderWAVE;
 
 	WAVfile file;
-	ASSERT_THROW(file.deserialize(it, badHeaderWAVE + sizeof(badHeaderWAVE)), sndx::bad_field_error);
+	ASSERT_THROW(file.deserialize(it, badHeaderWAVE + sizeof(badHeaderWAVE) - 1), sndx::bad_field_error);
 }
 
 TEST(WAVE, badHeaderFMT) {
 	auto it = badHeaderFMT;
 
 	WAVfile file;
-	ASSERT_THROW(file.deserialize(it, badHeaderFMT + sizeof(badHeaderFMT)), sndx::bad_field_error);
+	ASSERT_THROW(file.deserialize(it, badHeaderFMT + sizeof(badHeaderFMT) - 1), sndx::bad_field_error);
 }
