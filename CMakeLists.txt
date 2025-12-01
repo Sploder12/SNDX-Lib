@@ -28,4 +28,5 @@ include_directories(lib/include src/include/sndx)
 include_directories(${Stb_INCLUDE_DIR} ${MINIMP3_INCLUDE_DIRS})
 link_libraries(OpenAL::OpenAL glm::glm glfw GLEW::GLEW Freetype::Freetype Vorbis::vorbis)
 
+enable_testing()
 add_subdirectory(src/tests)
