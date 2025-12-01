@@ -85,7 +85,7 @@ TEST(WAVE, fullDeserialize) {
 
 	ASSERT_EQ(outData.size(), sizeof(goodHeader) - 1);
 	for (size_t i = 0; i < outData.size(); ++i) {
-		EXPECT_EQ(unsigned char(goodHeader[i]), outData[i]);
+		EXPECT_EQ((unsigned char)(goodHeader[i]), outData[i]);
 	}
 }
 
