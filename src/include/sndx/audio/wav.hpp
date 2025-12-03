@@ -10,6 +10,38 @@
 #include <ios>
 #include <variant>
 
+namespace sndx {
+	namespace audio::FMTextension {
+		struct ExtendedNone;
+		struct Extended0;
+		struct Extended;
+	}
+
+	template<class T>
+		requires
+			std::is_same_v<T, audio::FMTextension::ExtendedNone> ||
+			std::is_same_v<T, audio::FMTextension::Extended0> ||
+			std::is_same_v<T, audio::FMTextension::Extended>
+	struct Serializer<T> {
+		template <class SerializeIt>
+		constexpr void serialize(const T& v, SerializeIt& it) const {
+			v.serialize(it);
+		}
+	};
+
+	template<class T>
+		requires
+			std::is_same_v<T, audio::FMTextension::ExtendedNone> ||
+			std::is_same_v<T, audio::FMTextension::Extended0> ||
+			std::is_same_v<T, audio::FMTextension::Extended>
+	struct Deserializer<T> {
+		template <class DeserializeIt>
+		constexpr void deserialize(T& to, DeserializeIt& in, DeserializeIt end) const {
+			to.deserialize(in, end);
+		}
+	};
+}
+
 namespace sndx::audio {
 
 	static constexpr uint16_t WAVE_PCM_INT = 1;
@@ -18,9 +50,7 @@ namespace sndx::audio {
 	static constexpr uint16_t WAVE_MU_LAW = 7;
 	static constexpr uint16_t WAVE_EXTENSIBLE = 0xFFFE;
 
-	struct FMTchunk : public RIFF::Chunk {
-		static constexpr std::array<char, 4> ID = { 'f', 'm', 't', ' ' };
-
+	namespace FMTextension {
 		struct ExtendedNone {
 			template <class DeserializeIt>
 			static constexpr void deserialize(DeserializeIt&, DeserializeIt) {};
@@ -86,6 +116,14 @@ namespace sndx::audio {
 				return dataSize + sizeof(uint16_t) + 16;
 			}
 		};
+	}
+
+	struct FMTchunk : public RIFF::Chunk {
+		static constexpr std::array<char, 4> ID = { 'f', 'm', 't', ' ' };
+
+		using ExtendedNone = FMTextension::ExtendedNone;
+		using Extended0 = FMTextension::Extended0;
+		using Extended = FMTextension::Extended;
 
 		uint16_t format = 0;
 		uint16_t channels = 0;
@@ -595,30 +633,4 @@ namespace sndx::audio {
 			registerDecoder<WAVdecoder>(".wav") &&
 			registerDecoder<WAVdecoder>(".wave");
 	}();
-}
-
-namespace sndx {
-	template<class T>
-		requires
-			std::is_same_v<T, audio::FMTchunk::ExtendedNone> ||
-			std::is_same_v<T, audio::FMTchunk::Extended0> ||
-			std::is_same_v<T, audio::FMTchunk::Extended>
-	struct Serializer<T> {
-		template <class SerializeIt>
-		constexpr void serialize(const T& v, SerializeIt& it) const {
-			v.serialize(it);
-		}
-	};
-
-	template<class T>
-		requires
-			std::is_same_v<T, audio::FMTchunk::ExtendedNone> ||
-			std::is_same_v<T, audio::FMTchunk::Extended0> ||
-			std::is_same_v<T, audio::FMTchunk::Extended>
-	struct Deserializer<T> {
-		template <class DeserializeIt>
-		constexpr void deserialize(T& to, DeserializeIt& in, DeserializeIt end) const {
-			to.deserialize(in, end);
-		}
-	};
 }
