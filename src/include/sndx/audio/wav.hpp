@@ -150,7 +150,7 @@ namespace sndx::audio {
 			serializeToAdjust(it, blockAlign);
 			serializeToAdjust(it, bitDepth);
 
-			std::visit([&it]<typename T>(T&& arg) {
+			std::visit([&it]<typename T>(const T& arg) {
 				serializeToAdjust(it, arg);
 			}, ext);
 
