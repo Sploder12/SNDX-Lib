@@ -3,12 +3,13 @@
 
 #include "../../common.hpp"
 
+#include "data/serialize.hpp"
 #include "utility/stream.hpp"
 
 using namespace sndx;
 using namespace sndx::render;
 
-constexpr std::array<std::byte, 12> testArray {
+constexpr std::array<std::byte, 12> testArray{
 	std::byte{0xff}, std::byte{0xff}, std::byte{0xff}, std::byte{0xff},
 	std::byte{0xff}, std::byte{0x0},  std::byte{0x0},  std::byte{0xff},
 	std::byte{0x0},  std::byte{0x0},  std::byte{0xff}, std::byte{0x0}
@@ -139,7 +140,7 @@ TEST(ImageDataTest, InvalidTransformThrows) {
 }
 
 TEST(ImageDataTest, serializes) {
-	std::array<uint8_t, sizeof(size_t) * 2 + 1 + testData.size()> outArr{0};
+	std::array<uint8_t, sizeof(size_t) * 2 + 1 + testData.size()> outArr{ 0 };
 
 	utility::MemoryStream buf(outArr.data(), outArr.size());
 	auto it = std::ostream_iterator<uint8_t>(buf);
@@ -169,7 +170,7 @@ TEST(ImageDataTest, badSerializeFails) {
 }
 
 TEST(ImageDataTest, deserializes) {
-	std::array<uint8_t, 8 * 2 + 1 + 12> inArr{ 
+	std::array<uint8_t, 8 * 2 + 1 + 12> inArr{
 		3, 0, 0, 0, 0, 0, 0, 0,
 		1, 0, 0, 0, 0, 0, 0, 0,
 		4,

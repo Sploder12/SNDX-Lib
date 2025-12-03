@@ -80,8 +80,8 @@ TEST(WAVE, fullDeserialize) {
 	std::vector<uint8_t> outData{};
 	outData.reserve(sizeof(goodHeader) - 1);
 
-	auto i = std::back_inserter(outData);
-	out.serialize(i);
+	auto in = std::back_inserter(outData);
+	out.serialize(in);
 
 	ASSERT_EQ(outData.size(), sizeof(goodHeader) - 1);
 	for (size_t i = 0; i < outData.size(); ++i) {

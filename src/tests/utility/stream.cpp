@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cstdint>
 
 using namespace sndx::utility;
 

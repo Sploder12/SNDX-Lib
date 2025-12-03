@@ -16,7 +16,9 @@ namespace sndx {
 	template <class T>
 	struct Serializer {
 		template <class SerializeIt>
-		constexpr void serialize(const T& value, SerializeIt& it) const;
+		constexpr void serialize(const T& value, SerializeIt& it) const {
+			static_assert(false, "Missing specialization for type T");
+		};
 	};
 
 	template <class OutputIt, class T>
