@@ -84,6 +84,26 @@ namespace sndx {
 			serializeToAdjust(it, bytes);
 		}
 	};
+
+	template<>
+	struct Serializer<size_t> {
+		template <class SerializeIt>
+		constexpr void serialize(size_t value, SerializeIt& it) const {
+			static_assert(sizeof(size_t) <= sizeof(uint64_t));
+
+			value = utility::fromEndianess<std::endian::little>(value);
+
+			auto bytes = std::bit_cast<std::array<std::byte, sizeof(size_t)>>(value);
+
+			serializeToAdjust(it, bytes);
+
+			if constexpr (sizeof(size_t) != sizeof(uint64_t)) {
+				for (size_t i = 0; i < sizeof(uint64_t) - sizeof(size_t); ++i) {
+					serializeToAdjust(it, '\0');
+				}
+			}
+		}
+	};
 }
 
 namespace sndx {
@@ -168,6 +188,31 @@ namespace sndx {
 			auto value = std::bit_cast<T>(buffer);
 
 			to = utility::fromEndianess<std::endian::little>(value);
+		}
+	};
+
+	template <>
+	struct Deserializer<size_t> {
+		template <class DeserializeIt>
+		constexpr void deserialize(size_t& to, DeserializeIt& in, DeserializeIt end) const {
+			using BufferT = std::array<uint8_t, sizeof(size_t)>;
+
+			BufferT buffer{};
+			deserializeFromAdjust(buffer, in, end);
+			auto value = std::bit_cast<size_t>(buffer);
+
+			to = utility::fromEndianess<std::endian::little>(value);
+
+			if constexpr (sizeof(size_t) != sizeof(uint64_t)) {
+				std::array<uint8_t, sizeof(uint64_t) - sizeof(size_t)> buf{};
+				deserializeFromAdjust(buf, in, end);
+
+				for (auto v : buf) {
+					if (v != 0) {
+						throw bad_field_error("Narrowing 64-bit size_t to 32-bit size_t discarded data!");
+					}
+				}
+			}
 		}
 	};
 }
