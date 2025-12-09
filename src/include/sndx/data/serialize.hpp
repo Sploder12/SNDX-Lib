@@ -18,7 +18,7 @@ namespace sndx {
 		template <class SerializeIt>
 		constexpr void serialize(const T& value, SerializeIt& it) const {
 			static_assert(false, "Missing specialization for type T");
-		};
+		}
 	};
 
 	template <class OutputIt, class T>
@@ -137,7 +137,7 @@ namespace sndx {
 	}
 
 
-	template <class T> [[nodiscard]]
+	template <class T>
 	constexpr void deserialize(T& to, const std::vector<uint8_t>& bytes) {
 		deserializeFrom(to, bytes.begin(), bytes.end());
 	}
