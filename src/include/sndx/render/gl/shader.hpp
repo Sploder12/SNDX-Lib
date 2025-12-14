@@ -76,13 +76,13 @@ namespace sndx::render {
 			}
 		}
 
-	protected:
 		void destroy() {
 			if (m_id != 0) {
 				glDeleteShader(std::exchange(m_id, 0));
 			}
 		}
 
+	protected:
 		// returns a error message on error. Empty optional otherwise.
 		[[nodiscard]]
 		std::optional<std::string> checkErr() {
