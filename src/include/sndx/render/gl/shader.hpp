@@ -279,7 +279,7 @@ namespace sndx::render {
 		return out;
 	}
 
-	template <class... Files> [[nodiscard]]
+	template <std::convertible_to<std::filesystem::path>... Files> [[nodiscard]]
 	inline std::optional<ShaderProgram> programFromFiles(Files&&... files) {
 
 		std::array<Shader, sizeof...(files)> shaders{};
