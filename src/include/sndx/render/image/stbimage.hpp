@@ -42,7 +42,7 @@ namespace sndx::render {
 		}
 
 		[[nodiscard]]
-		std::optional<ImageData> loadFromBuffer(std::span<stbi_uc> data, uint8_t channels) const noexcept {
+		std::optional<ImageData> loadFromBuffer(std::span<const stbi_uc> data, uint8_t channels) const noexcept {
 			stbi_set_flip_vertically_on_load_thread(m_flip);
 
 			int width, height, chan;
