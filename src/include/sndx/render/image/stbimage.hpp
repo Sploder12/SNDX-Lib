@@ -32,6 +32,8 @@ namespace sndx::render {
 			if (!bdata)
 				return std::nullopt;
 
+			if (channels == 0) channels = chan;
+
 			std::vector<std::byte> dat{};
 			dat.reserve(width * height * channels);
 
@@ -51,6 +53,8 @@ namespace sndx::render {
 
 			if (!bdata)
 				return std::nullopt;
+
+			if (channels == 0) channels = chan;
 
 			std::vector<std::byte> dat{};
 			dat.reserve(width * height * channels);
