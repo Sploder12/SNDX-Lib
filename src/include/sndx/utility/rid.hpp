@@ -16,14 +16,31 @@ namespace sndx::utility {
 		static inline std::atomic<underlying> counter{1};
 		underlying m_id;
 
-		explicit RID() noexcept: m_id(counter.fetch_add(1, std::memory_order_relaxed)) {}
-
+		constexpr explicit RID(underlying id) noexcept: m_id(id) {}
+	
 	public:
-		constexpr explicit RID(std::nullptr_t) noexcept: m_id(0) {}
+		constexpr RID(std::nullptr_t) noexcept: m_id(0) {}
+		constexpr explicit RID() noexcept: m_id(0) {}
+
+		constexpr RID(const RID& other) noexcept:
+			m_id(other.m_id) {}
+
+		constexpr RID(RID&& other) noexcept:
+			m_id(std::exchange(other.m_id, 0)) {}
+
+		constexpr RID& operator=(const RID& other) noexcept {
+			m_id = other.m_id;
+			return *this;
+		}
+
+		constexpr RID& operator=(RID&& other) noexcept {
+			std::swap(m_id, other.m_id);
+			return *this;
+		}
 
 		[[nodiscard]]
 		static RID generate() noexcept {
-			return RID();
+			return RID(counter.fetch_add(1, std::memory_order_relaxed));
 		}
 
 		[[nodiscard]]
