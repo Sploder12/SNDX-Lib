@@ -20,37 +20,37 @@ namespace sndx::audio {
 
 	public:
 		[[nodiscard]]
-		size_t frequency() const noexcept {
+		constexpr size_t frequency() const noexcept {
 			return m_frequency;
 		}
 
 		[[nodiscard]]
-		size_t channels() const noexcept {
+		constexpr size_t channels() const noexcept {
 			return m_channels;
 		}
 
 		[[nodiscard]]
-		size_t totalSamples() const noexcept {
+		constexpr size_t totalSamples() const noexcept {
 			return m_buffer.size();
 		}
 
 		[[nodiscard]]
-		size_t sampleFrames() const noexcept {
+		constexpr size_t sampleFrames() const noexcept {
 			return totalSamples() / channels();
 		}
 
 		[[nodiscard]]
-		auto data() const noexcept {
+		constexpr auto data() const noexcept {
 			return m_buffer.data();
 		}
 
 		[[nodiscard]]
-		auto byteSize() const noexcept {
+		constexpr auto byteSize() const noexcept {
 			return m_buffer.size() * sizeof(SampleT);
 		}
 
 		[[nodiscard]]
-		std::chrono::duration<double> lengthSeconds() const {
+		constexpr std::chrono::duration<double> lengthSeconds() const {
 			return std::chrono::duration<double>(double(sampleFrames()) / double(frequency()));
 		}
 
@@ -66,20 +66,20 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		SampleT getSample(size_t sample, size_t channel) const {
-			return m_buffer[samplePos(sample, channel)];
+		SampleT getSample(size_t sampleFrame, size_t channel) const {
+			return m_buffer[samplePos(sampleFrame, channel)];
 		}
 
-		void setSample(size_t sample, size_t channel, SampleT value) {
-			m_buffer[samplePos(sample, channel)] = value;
+		void setSample(size_t sampleFrame, size_t channel, SampleT value) {
+			m_buffer[samplePos(sampleFrame, channel)] = value;
 		}
 
-		explicit AudioData() noexcept = default;
+		explicit constexpr AudioData() noexcept = default;
 
-		explicit AudioData(size_t channels, size_t frequency) noexcept :
+		explicit constexpr AudioData(size_t channels, size_t frequency) noexcept :
 			m_channels(channels), m_frequency(frequency) {}
 
-		explicit AudioData(size_t channels, size_t frequency, std::vector<SampleT>&& buf) noexcept :
+		explicit constexpr AudioData(size_t channels, size_t frequency, std::vector<SampleT>&& buf) noexcept :
 			m_buffer{ std::move(buf) }, m_channels(channels), m_frequency(frequency) {}
 	};
 

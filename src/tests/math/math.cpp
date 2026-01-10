@@ -4,7 +4,7 @@
 
 using namespace sndx::math;
 
-TEST(Math, average) {
+TEST(Math, Average) {
 	std::vector<int> none{};
 	std::array<int, 1> one{ -123 };
 	std::array<int, 2> two{ 50, 30 };
