@@ -4,6 +4,18 @@
 
 using namespace sndx::math;
 
+TEST(Math, average) {
+	std::vector<int> none{};
+	std::array<int, 1> one{ -123 };
+	std::array<int, 2> two{ 50, 30 };
+	std::array<int, 3> three{ 50, 30, -50 };
+
+	EXPECT_EQ(average<int>(none.begin(), none.end()), 0);
+	EXPECT_EQ(average<int>(one.begin(), one.end()), -123);
+	EXPECT_EQ(average<int>(two.begin(), two.end()), 40);
+	EXPECT_EQ(average<int>(three.begin(), three.end()), 10);
+}
+
 TEST(Math, Factorial) {
 	EXPECT_EQ(factorial(0), 1);
 	EXPECT_EQ(factorial(1), 1);

@@ -2,7 +2,7 @@
 
 #include "./al.hpp"
 
-#include "./audio_data.hpp"
+#include "../audio_data.hpp"
 
 #include "../../mixin/handle.hpp"
 
@@ -55,11 +55,27 @@ namespace sndx::audio {
 			destroy();
 		}
 
-		ABO& setData(const ALaudioData& data) {
-			if (auto size = ALsizei(data.getByteSize()); size > 0) {
-				gen();
-				alBufferData(m_id, ALenum(data.getFormat()), data.data(), size, ALsizei(data.getFrequency()));
+		template <class SampleT>
+		ABO& setData(const AudioData<SampleT>& data) {
+			if (auto size = ALsizei(data.byteSize()); size <= 0) {
+				return *this;
 			}
+			gen();
+
+			
+			if constexpr (std::is_same_v<SampleT, uint8_t> || std::is_same_v<SampleT, int16_t>) {
+				ALenum format = determineALformat(sizeof(SampleT), data.channels());
+				alBufferData(m_id, format, data.data(), size, ALsizei(data.frequency()));
+			}
+			else {
+				if (data.channels() > 2)
+					throw std::runtime_error("OpenAL does not support > 2 channels");
+
+				ALenum format = data.channels() == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
+				auto converted = convert<uint16_t>(data);
+				alBufferData(m_id, format, converted.data(), size, ALsizei(converted.frequency()));
+			}
+
 			return *this;
 		}
 

@@ -1,54 +1,26 @@
-#include "audio/al/audio_data.hpp"
+#include "audio/audio_data.hpp"
 
 #include <gtest/gtest.h>
 
 using namespace sndx::audio;
 
-TEST(AL_Audio_Data, AudioData) {
-	ALaudioData data{ ALaudioMeta{}, std::vector<std::byte>{
-		(std::byte)0x0, (std::byte)0xffu, (std::byte)0xffu,
+TEST(Audio_Data, AudioData) {
+	AudioData data{ 1, 1, std::vector<uint8_t>{
+		0x0u, 0xffu, 0xffu,
 	} };
 
-	ASSERT_EQ(data.getSampleCount(), 3);
-	ASSERT_EQ(data.getByteSize(), 3);
+	ASSERT_EQ(data.totalSamples(), 3);
+	ASSERT_EQ(data.byteSize(), 3);
 
 	EXPECT_EQ(data.getSample(0, 0), 0x0);
 	EXPECT_EQ(data.getSample(1, 0), 0xff);
 	EXPECT_EQ(data.getSample(2, 0), 0xff);
 
-	[[maybe_unused]] long double v = 0.0L;
+	[[maybe_unused]] uint8_t v{};
 	ASSERT_THROW(v = data.getSample(3, 0), std::out_of_range);
 
-	auto conv = data.asFormat(ALformat::stereo16);
+	data.setSample(2, 0, 10);
 
-	ASSERT_EQ(conv.getSampleCount(), 3);
-	EXPECT_EQ(conv.getByteSize(), 3 * 2 * 2);
-
-	EXPECT_EQ(conv.getSample(0, 0), -32768);
-	EXPECT_EQ(conv.getSample(1, 0), 32767);
-	EXPECT_EQ(conv.getSample(2, 0), 32767);
-	EXPECT_EQ(conv.getSample(0, 1), -32768);
-	EXPECT_EQ(conv.getSample(1, 1), 32767);
-	EXPECT_EQ(conv.getSample(2, 1), 32767);
-
-	conv.setSample(2, 0, -100);
-	conv.setSample(2, 1, 100);
-
-	EXPECT_EQ(conv.getSample(2, 0), -100);
-	EXPECT_EQ(conv.getSample(2, 1), 100);
-
-	ASSERT_THROW(v = conv.getSample(0, 2), std::out_of_range);
-
-	ASSERT_THROW(conv.setSample(0, 0, 32768.0l), std::domain_error);
-	ASSERT_THROW(conv.setSample(0, 0, -32768.1l), std::domain_error);
-
-	auto back = conv.asFormat(ALformat::mono8);
-
-	ASSERT_EQ(back.getSampleCount(), 3);
-	EXPECT_EQ(back.getSample(0, 0), 0x0);
-	EXPECT_EQ(back.getSample(1, 0), 0xff);
-	EXPECT_EQ(back.getSample(2, 0), 128);
-
-	ASSERT_THROW(back.setSample(0, 0, 256.0l), std::domain_error);
-	ASSERT_THROW(back.setSample(0, 0, -0.1l), std::domain_error);
+	EXPECT_EQ(data.getSample(2, 0), 10);
+	ASSERT_THROW(v = data.getSample(0, 1), std::out_of_range);
 }

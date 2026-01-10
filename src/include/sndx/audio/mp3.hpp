@@ -1,6 +1,7 @@
 #pragma once
 
-#include "./audio_decoder.hpp"
+#include "./audio_data.hpp"
+
 #include "../data/serialize.hpp"
 
 #include <iostream>
@@ -41,18 +42,15 @@
 #endif
 
 namespace sndx::audio {
-	class MP3decoder : public AudioDecoder {
+	class MP3decoder {
 	protected:
-		std::istream m_stream;
-
 		std::vector<mp3d_sample_t> m_buffer;
 		mp3dec_ex_t m_dec;
 		size_t m_pos = 0;
 		bool m_dirty = false;
 
 	public:
-		explicit MP3decoder(std::istream& stream) :
-			m_stream(stream.rdbuf()) {
+		explicit MP3decoder(std::istream& stream) {
 		
 			stream.seekg(0, std::ios::end);
 			size_t size = stream.tellg();
@@ -66,7 +64,7 @@ namespace sndx::audio {
 			}
 		}
 
-		~MP3decoder() override {
+		~MP3decoder() {
 			mp3dec_ex_close(&m_dec);
 		}
 
@@ -78,33 +76,23 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		constexpr size_t getBitDepth() const noexcept override {
+		constexpr size_t getBitDepth() const noexcept {
 			return sizeof(mp3d_sample_t) * 8;
 		}
 
 		[[nodiscard]]
-		constexpr size_t getSampleAlignment() const noexcept override {
-			return sizeof(mp3d_sample_t);
-		}
-
-		[[nodiscard]]
-		size_t getChannels() const noexcept override {
+		size_t getChannels() const noexcept {
 			return getMeta().channels;
 		}
 
 		[[nodiscard]]
-		size_t getSampleRate() const noexcept override {
+		size_t getSampleRate() const noexcept {
 			return getMeta().hz;
 		}
 
-		[[nodiscard]]
-		DataFormat getFormat() const noexcept override {
-			return DataFormat::pcm_int;
-		}
-
-		size_t seek(size_t pos) noexcept override {
-			if (pos >= m_dec.samples * getSampleAlignment() * getChannels())
-				pos = m_dec.samples * getSampleAlignment() * getChannels();
+		size_t seek(size_t pos) noexcept {
+			if (pos >= m_dec.samples * getChannels())
+				pos = m_dec.samples * getChannels();
 			
 			m_dirty = true;
 
@@ -112,28 +100,26 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		size_t tell() const noexcept override {
+		size_t tell() const noexcept {
 			return m_pos;
 		}
 
 		[[nodiscard]]
-		bool done() const override {
-			if (m_pos >= m_dec.samples * getSampleAlignment() * getChannels())
+		bool done() const {
+			if (m_pos >= m_dec.samples * getChannels())
 				return true;
 
 			return false;
 		}
 
 		[[nodiscard]]
-		std::vector<std::byte> readRawBytes(size_t count) override {
-			auto realCount = std::min(count, size_t(m_dec.samples * getSampleAlignment() * getChannels() - m_pos));
-
-			std::vector<std::byte> out{};
-
+		AudioData<mp3d_sample_t> readSamples(size_t count) {
+	
+			auto realCount = std::min(count, size_t(m_dec.samples * getChannels() - m_pos));
 			if (realCount == 0)
-				return out;
+				return AudioData<mp3d_sample_t>{getChannels(), getSampleRate()};
 
-			out.resize(realCount);
+			std::vector<mp3d_sample_t> out(realCount);
 
 			if (m_dirty) {
 				if (auto err = mp3dec_ex_seek(&m_dec, m_pos))
@@ -142,25 +128,14 @@ namespace sndx::audio {
 				m_dirty = false;
 			}
 
-			size_t read = mp3dec_ex_read(&m_dec, (mp3d_sample_t*)(out.data()), count / getSampleAlignment() / getChannels());
-			if (read != count / getSampleAlignment() / getChannels() && m_dec.last_error)
+			size_t read = mp3dec_ex_read(&m_dec, out.data(), count / getChannels());
+			if (read != count / getChannels() && m_dec.last_error)
 				throw deserialize_error("minimp3 returned read error " + std::to_string(m_dec.last_error));
-				
-			out.resize(read * getSampleAlignment() * getChannels());
+
+			out.resize(read * getChannels());
 			m_pos += out.size();
 
-			return out;
-		}
-
-		[[nodiscard]]
-		ALaudioData readSamples(size_t count) override {
-			ALaudioMeta meta{ getSampleRate(), determineALformat(16, short(getChannels())) };
-			
-			return ALaudioData{std::move(meta), readRawBytes(count * getSampleAlignment() * getChannels())};
+			return AudioData<mp3d_sample_t>{getChannels(), getSampleRate(), std::move(out)};
 		}
 	};
-
-	inline const bool _mp3DecoderRegisterer = []() {
-		return registerDecoder<MP3decoder>(".mp3");
-	}();
 }

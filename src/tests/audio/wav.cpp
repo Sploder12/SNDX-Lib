@@ -25,8 +25,6 @@ uint8_t goodHeader[] =
 	"\x5\x6\x7\x8\x9";
 
 TEST(WAVE, GoodHeader) {
-	ASSERT_TRUE(_wavDecoderRegisterer);
-
 	MemoryStream buf(goodHeader, sizeof(goodHeader) - 1);
 
 	WAVdecoder dec(buf);

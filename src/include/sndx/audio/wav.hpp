@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./audio_decoder.hpp"
+#include "./audio_data.hpp"
 
 #include "../utility/endian.hpp"
 #include "../data/RIFF.hpp"
@@ -205,22 +205,6 @@ namespace sndx::audio {
 
 			return size;
 		}
-
-		[[nodiscard]]
-		constexpr DataFormat getDataFormat() const noexcept {
-			switch (format) {
-			case WAVE_PCM_INT:
-				return DataFormat::pcm_int;
-			case WAVE_IEE_FLOAT:
-				return DataFormat::iee_float;
-			case WAVE_A_LAW:
-				return DataFormat::a_law;
-			case WAVE_MU_LAW:
-				return DataFormat::mu_law;
-			default:
-				return DataFormat::error;
-			}
-		}
 	};
 
 	struct FACTchunk : public RIFF::Chunk {
@@ -424,7 +408,7 @@ namespace sndx::audio {
 
 	// a WAV file decoder.
 	// seeking functionality requires the underlying istream to be seekable
-	class WAVdecoder : public AudioDecoder {
+	class WAVdecoder {
 		std::istream m_stream;
 
 		FMTchunk m_meta{};
@@ -493,32 +477,27 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		size_t getBitDepth() const noexcept override {
+		size_t getBitDepth() const noexcept {
 			return getMeta().bitDepth;
 		}
 
 		[[nodiscard]]
-		size_t getSampleAlignment() const noexcept override {
+		size_t getSampleAlignment() const noexcept {
 			return getMeta().blockAlign;
 		}
 
 		[[nodiscard]]
-		size_t getChannels() const noexcept override {
+		size_t getChannels() const noexcept {
 			return getMeta().channels;
 		}
 
 		[[nodiscard]]
-		size_t getSampleRate() const noexcept override {
+		size_t getSampleRate() const noexcept {
 			return getMeta().sampleRate;
 		}
 
-		[[nodiscard]]
-		DataFormat getFormat() const noexcept override {
-			return getMeta().getDataFormat();
-		}
-
 		// returns previous position
-		size_t seek(size_t pos) noexcept override {
+		size_t seek(size_t pos) noexcept {
 			if (pos >= m_size)
 				pos = m_size;
 
@@ -528,12 +507,12 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		size_t tell() const noexcept override {
+		size_t tell() const noexcept {
 			return m_pos;
 		}
 
 		[[nodiscard]]
-		bool done() const override {
+		bool done() const {
 			if (m_pos >= m_size)
 				return true;
 
@@ -541,7 +520,7 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		std::vector<std::byte> readRawBytes(size_t count) override {
+		std::vector<std::byte> readRawBytes(size_t count) {
 			auto realCount = std::min(count, size_t(m_size - m_pos));
 			
 			std::vector<std::byte> out{};
@@ -563,74 +542,83 @@ namespace sndx::audio {
 			return out;
 		}
 
-		[[nodiscard]]
-		ALaudioData readSamples(size_t count) override {
+		template <class SampleT> [[nodiscard]]
+		AudioData<SampleT> readSamples(size_t count)  {
 			switch (m_meta.format) {
 			case WAVE_PCM_INT:
-				return readPCMintSamples(count);
+				switch (getBitDepth()) {
+				case 1:
+					return convert<SampleT>(readPCMintSamples<1>(count));
+				case 2:
+					return convert<SampleT>(readPCMintSamples<2>(count));
+				case 3:
+					return convert<SampleT>(readPCMintSamples<3>(count));
+				case 4:
+					return convert<SampleT>(readPCMintSamples<4>(count));
+				case 5:
+					return convert<SampleT>(readPCMintSamples<5>(count));
+				case 6:
+					return convert<SampleT>(readPCMintSamples<6>(count));
+				case 7:
+					return convert<SampleT>(readPCMintSamples<7>(count));
+				case 8:
+					return convert<SampleT>(readPCMintSamples<8>(count));
+				case 16:
+					return convert<SampleT>(readPCMintSamples<16>(count));
+				default:
+					throw std::runtime_error("Strange PCM int formats not yet implemented");
+				}
 			default:
 				throw std::runtime_error("Unimplemented WAVE format");
 			}
 		}
 
 	private:
-		[[nodiscard]]
-		ALaudioData readPCMintSamples(size_t count) {
+		template <size_t depth> [[nodiscard]]
+		auto readPCMintSamples(size_t count) {
 			
 			auto channels = (short)(getChannels());
 			if (channels > 2 || channels == 0)
 				throw std::runtime_error("Unsupported WAVE PCM channels format");
 
-			auto bits = (short)(getBitDepth());
-			if (bits > 64 || bits == 0)
-				throw std::runtime_error("Unsupported WAVE PCM bit depth format");
+			auto bytes = readRawBytes(count * (depth / 8) * getChannels());
 
-			ALaudioMeta meta{};
-			meta.m_frequency = getSampleRate();
+			if constexpr (depth <= 8) {
+				std::vector<uint8_t> out{};
+				out.reserve(bytes.size());
 
-			std::vector<std::byte> out{};
-
-			if (bits <= 8) {
-				meta.m_format = determineALformat(8, channels);
-
-				auto data = readRawSamples(count);
-
-				if (bits == 8) {
-					out = std::move(data);
-				}
-				else {
-					out.reserve(data.size());
-
-					long double oldMax = std::exp2(bits) - 1;
-
-					for (const auto& d : data) {
-						auto val = math::remap((long double)d, 0.0l, oldMax, 0.0l, 255.0l);
-						out.emplace_back(static_cast<std::byte>(val));
+				if constexpr (depth == 8) {
+					for (const auto& b : bytes) {
+						out.emplace_back(std::to_integer<uint8_t>(b));
 					}
 				}
-			}
-			else {
-				meta.m_format = determineALformat(16, channels);
-
-				auto data = readRawSamples(count);
-
-				if (bits == 16) {
-					out = std::move(data);
-				}
 				else {
-					//out.reserve(count * channels * 2);
-					// @TODO
-					throw std::runtime_error("Strange PCM int formats not yet implemented");
+					auto oldMax = (uint8_t)(std::exp2(depth) - 1);
+
+					constexpr auto cmin = std::numeric_limits<uint8_t>::min();
+
+					for (const auto& b : bytes) {
+						auto val = math::remap(std::to_integer<uint8_t>(b), cmin, oldMax, cmin, std::numeric_limits<uint8_t>::max());
+						out.emplace_back(val);
+					}
 				}
+
+				return AudioData<uint8_t>{ getChannels(), getSampleRate(), std::move(out) };
 			}
-			
-			return ALaudioData{meta, std::move(out)};
+			else if constexpr (depth == 16) {
+				std::vector<uint16_t> out{};
+				out.reserve(bytes.size() / 2);
+
+				for (size_t sample = 0; sample < bytes.size() / 2; ++sample) {
+					uint16_t first = std::to_integer<uint16_t>(bytes[sample * 2]);
+					uint16_t second = std::to_integer<uint16_t>(bytes[sample * 2 + 1]);
+
+					uint16_t val = (first << 8) | second;
+					out.emplace_back(utility::fromEndianess<std::endian::little>(val));
+				}
+
+				return AudioData<uint16_t>{ getChannels(), getSampleRate(), std::move(out) };
+			}
 		}
 	};
-
-	inline const bool _wavDecoderRegisterer = []() {
-		return 
-			registerDecoder<WAVdecoder>(".wav") &&
-			registerDecoder<WAVdecoder>(".wave");
-	}();
 }

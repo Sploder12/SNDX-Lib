@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <compare>
+#include <utility>
 
 namespace sndx::utility {
 	namespace rid::category {

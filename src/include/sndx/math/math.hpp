@@ -12,6 +12,19 @@
 
 namespace sndx::math {
 
+	template <class T, class InputIt> [[nodiscard]]
+	constexpr T average(InputIt begin, InputIt end) {
+		T count = 0;
+		T avg = T(0);
+
+		for (auto it = begin; it != end; ++it) {
+			++count;
+			avg += (*it - avg) / count;
+		}
+
+		return avg;
+	}
+
 	[[nodiscard]]
 	constexpr size_t factorial(size_t n) noexcept {
 		assert(n < 123);

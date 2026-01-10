@@ -1,6 +1,7 @@
 #pragma once
 
-#include "./audio_decoder.hpp"
+#include "./audio_data.hpp"
+
 #include "../data/ogg_wrap.hpp"
 #include "../data/serialize.hpp"
 
@@ -237,7 +238,7 @@ namespace sndx::audio {
 		};
 	}
 
-	class VorbisDecoder : public AudioDecoder {
+	class VorbisDecoder {
 	protected:
 		ogg::Decoder m_decoder;
 
@@ -270,56 +271,42 @@ namespace sndx::audio {
 		}
 
 		[[nodiscard]]
-		constexpr size_t getBitDepth() const noexcept override {
+		constexpr size_t getBitDepth() const noexcept {
 			return sizeof(float) * 8;
 		}
 
 		[[nodiscard]]
-		constexpr size_t getSampleAlignment() const noexcept override {
+		constexpr size_t getSampleAlignment() const noexcept {
 			return sizeof(float);
 		}
 
 
 		[[nodiscard]]
-		size_t getChannels() const noexcept override {
+		size_t getChannels() const noexcept {
 			return getMeta().channels;
 		}
 
 		[[nodiscard]]
-		size_t getSampleRate() const noexcept override {
+		size_t getSampleRate() const noexcept {
 			return getMeta().rate;
 		}
 
 		[[nodiscard]]
-		DataFormat getFormat() const noexcept override {
-			return DataFormat::iee_float;
-		}
-
-		size_t seek(size_t) override {
-			throw std::runtime_error("Unimplemented");
-		}
-
-		[[nodiscard]]
-		size_t tell() const override {
-			throw std::runtime_error("Unimplemented");
-		}
-
-		[[nodiscard]]
-		bool done() const noexcept override {
+		bool done() const noexcept {
 			return m_decoder.done();
 		}
 
 		[[nodiscard]]
-		std::vector<std::byte> readRawBytes(size_t count) override {
-			std::vector<std::byte> out{};
+		AudioData<float> readSamples(size_t count) {
+			std::vector<float> out{};
 
 			while (count > 0) {
 				auto opckt = m_decoder.getNextPacket();
 				if (!opckt)
-					return out;
+					return AudioData<float>{getChannels(), getSampleRate(), std::move(out)};
 
 				if (m_block.decode(*opckt) && !m_state.blockIn(m_block))
-					return out;
+					return AudioData<float>{getChannels(), getSampleRate(), std::move(out)};
 
 				while (true) {
 					auto data = m_state.out(m_info);
@@ -327,20 +314,12 @@ namespace sndx::audio {
 					if (!data.empty() && data[0].size() > 0) {
 						for (size_t i = 0; i < data[0].size(); ++i) {
 							for (size_t c = 0; c < data.size(); ++c) {
-								int val = int(std::floor(data[c][i] * 32767.0f + 0.5f));
-
-								val = glm::clamp(val, -32768, 32767);
-
-								val = utility::fromEndianess<std::endian::little>(val);
-
-								auto bytes = std::bit_cast<std::array<std::byte, 2>>(int16_t(val));
-								out.emplace_back(bytes[0]);
-								out.emplace_back(bytes[1]);
+								out.emplace_back(data[c][i]);
 							}
 						}
 
 						m_state.consumeSamples(int(data[0].size()));
-						count -= std::min(count, data.size() * data[0].size() * sizeof(float));
+						count -= std::min(count, data.size() * data[0].size());
 					}
 					else {
 						break;
@@ -348,18 +327,7 @@ namespace sndx::audio {
 				}
 			}
 
-			return out;
-		}
-
-		[[nodiscard]]
-		ALaudioData readSamples(size_t count) override {
-			ALaudioMeta meta{ getSampleRate(), determineALformat(16, short(getChannels())) };
-
-			return ALaudioData{ std::move(meta), readRawBytes(count * getSampleAlignment() * getChannels()) };
+			return AudioData<float>{getChannels(), getSampleRate(), std::move(out)};
 		}
 	};
-
-	inline const bool _vorbisDecoderRegisterer = [](){
-		return registerDecoder<VorbisDecoder>(".ogg");
-	}();
 }
