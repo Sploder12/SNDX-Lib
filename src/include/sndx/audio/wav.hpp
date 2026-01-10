@@ -1,11 +1,12 @@
 #pragma once
 
-#include "./audio_data.hpp"
+#include "./audiodata.hpp"
 
 #include "../utility/endian.hpp"
 #include "../data/RIFF.hpp"
 
 #include <array>
+#include <bit>
 #include <concepts>
 #include <ios>
 #include <variant>
@@ -606,18 +607,20 @@ namespace sndx::audio {
 				return AudioData<uint8_t>{ getChannels(), getSampleRate(), std::move(out) };
 			}
 			else if constexpr (depth == 16) {
-				std::vector<uint16_t> out{};
+				std::vector<int16_t> out{};
 				out.reserve(bytes.size() / 2);
 
 				for (size_t sample = 0; sample < bytes.size() / 2; ++sample) {
-					uint16_t first = std::to_integer<uint16_t>(bytes[sample * 2]);
-					uint16_t second = std::to_integer<uint16_t>(bytes[sample * 2 + 1]);
+					uint16_t first = std::to_integer<int16_t>(bytes[sample * 2]);
+					uint16_t second = std::to_integer<int16_t>(bytes[sample * 2 + 1]);
 
 					uint16_t val = (first << 8) | second;
-					out.emplace_back(utility::fromEndianess<std::endian::little>(val));
+					val = utility::fromEndianess<std::endian::little>(val);
+
+					out.emplace_back(std::bit_cast<int16_t>(val));
 				}
 
-				return AudioData<uint16_t>{ getChannels(), getSampleRate(), std::move(out) };
+				return AudioData<int16_t>{ getChannels(), getSampleRate(), std::move(out) };
 			}
 		}
 	};

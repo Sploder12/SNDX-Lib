@@ -19,6 +19,8 @@ namespace sndx::audio {
 		size_t m_frequency = 1;
 
 	public:
+		using sample_type = SampleT;
+
 		[[nodiscard]]
 		constexpr size_t frequency() const noexcept {
 			return m_frequency;
@@ -100,30 +102,45 @@ namespace sndx::audio {
 
 	template <class NewT, class OldT>
 	inline AudioData<NewT> convert(const AudioData<OldT>& old) {
-		if constexpr (std::is_same_v<NewT, OldT>) {
-			return old;
-		}
-		else {
-			std::vector<NewT> data{};
-			data.reserve(old.totalSamples());
+		std::vector<NewT> data{};
+		data.reserve(old.totalSamples());
 
-			constexpr auto newMin = sampleMinValue<NewT>();
-			constexpr auto newMax = sampleMaxValue<NewT>();
-			constexpr auto newCenter = sampleCenterValue<NewT>();
+		constexpr auto newMin = sampleMinValue<NewT>();
+		constexpr auto newMax = sampleMaxValue<NewT>();
+		constexpr auto newCenter = sampleCenterValue<NewT>();
 
-			constexpr auto oldMin = sampleMinValue<OldT>();
-			constexpr auto oldMax = sampleMaxValue<OldT>();
-			constexpr auto oldCenter = sampleCenterValue<OldT>();
+		constexpr auto oldMin = sampleMinValue<OldT>();
+		constexpr auto oldMax = sampleMaxValue<OldT>();
+		constexpr auto oldCenter = sampleCenterValue<OldT>();
 
-			for (size_t sampleFrame = 0; sampleFrame < old.sampleFrames(); ++sampleFrame) {
-				for (size_t channel = 0; channel < old.channels(); ++channel) {
-					const auto& sample = old.getSample(sampleFrame, channel);
-					data.emplace_back(math::remapBalanced(sample, oldCenter, newCenter, oldMin, oldMax, newMin, newMax));
+		for (size_t sampleFrame = 0; sampleFrame < old.sampleFrames(); ++sampleFrame) {
+			for (size_t channel = 0; channel < old.channels(); ++channel) {
+				const auto& sample = old.getSample(sampleFrame, channel);
+
+				using T = decltype(oldCenter + newCenter);
+				if constexpr (std::is_floating_point_v<T>) {
+					T r = math::remapBalanced<T>((T)sample, (T)oldCenter, (T)newCenter, (T)oldMin, (T)oldMax, (T)newMin, (T)newMax);
+					data.emplace_back((NewT)r);
+				}
+				else {
+					data.emplace_back(math::remapBalanced<NewT>(sample, oldCenter, newCenter));
 				}
 			}
-
-			return AudioData<NewT>{ old.channels(), old.frequency(), std::move(data) };
 		}
+
+		return AudioData<NewT>{ old.channels(), old.frequency(), std::move(data) };
+	}
+
+	template <class T, class SameT>
+		requires std::is_same_v<T, SameT>
+	constexpr const AudioData<T>& convert(const AudioData<SameT>& self) {
+		return self;
+	}
+
+	template <class T, class SameT>
+		requires std::is_same_v<T, SameT>
+	constexpr AudioData<T>&& convert(AudioData<SameT>&& self) noexcept {
+		return std::move(self);
 	}
 
 	template <class SampleT>
@@ -134,8 +151,8 @@ namespace sndx::audio {
 		out.reserve(data.sampleFrames());
 
 		for (size_t sampleFrame = 0; sampleFrame < data.sampleFrames(); ++sampleFrame) {
-			auto span = std::span<SampleT>(data.data() + sampleFrame * data.channels(), data.channels());
-			out.emplace_back(math::average(span.begin(), span.end()));
+			auto span = std::span<const SampleT>{data.data() + sampleFrame * data.channels(), data.channels()};
+			out.emplace_back(math::average<SampleT>(span.begin(), span.end()));
 		}
 
 
