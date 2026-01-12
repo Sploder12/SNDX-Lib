@@ -19,6 +19,13 @@ namespace sndx::math {
 		return (v - x) / (y - x);
 	}
 
+	template <std::integral T>
+	constexpr auto invLerp(const T& x, const T& y, const T& v) noexcept {
+		assert(y != x);
+
+		return (long double)(v - x) / (long double)(y - x);
+	}
+
 	// taken from https://easings.net/
 
 	

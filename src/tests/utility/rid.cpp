@@ -7,7 +7,7 @@ using namespace sndx::utility;
 #include <unordered_map>
 
 namespace {
-	constexpr size_t test_category = 12951745512389773876;
+	constexpr size_t test_category = 12951745512389773876u;
 }
 
 TEST(Rids, ridsAreUnique) {
