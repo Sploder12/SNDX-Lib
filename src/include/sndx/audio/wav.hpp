@@ -543,41 +543,9 @@ namespace sndx::audio {
 			return out;
 		}
 
-		template <class SampleT> [[nodiscard]]
-		AudioData<SampleT> readSamples(size_t count)  {
-			switch (m_meta.format) {
-			case WAVE_PCM_INT:
-				switch (getBitDepth()) {
-				case 1:
-					return convert<SampleT>(readPCMintSamples<1>(count));
-				case 2:
-					return convert<SampleT>(readPCMintSamples<2>(count));
-				case 3:
-					return convert<SampleT>(readPCMintSamples<3>(count));
-				case 4:
-					return convert<SampleT>(readPCMintSamples<4>(count));
-				case 5:
-					return convert<SampleT>(readPCMintSamples<5>(count));
-				case 6:
-					return convert<SampleT>(readPCMintSamples<6>(count));
-				case 7:
-					return convert<SampleT>(readPCMintSamples<7>(count));
-				case 8:
-					return convert<SampleT>(readPCMintSamples<8>(count));
-				case 16:
-					return convert<SampleT>(readPCMintSamples<16>(count));
-				default:
-					throw std::runtime_error("Strange PCM int formats not yet implemented");
-				}
-			default:
-				throw std::runtime_error("Unimplemented WAVE format");
-			}
-		}
-
 	private:
 		template <size_t depth> [[nodiscard]]
 		auto readPCMintSamples(size_t count) {
-			
 			auto channels = (short)(getChannels());
 			if (channels > 2 || channels == 0)
 				throw std::runtime_error("Unsupported WAVE PCM channels format");
@@ -621,6 +589,39 @@ namespace sndx::audio {
 				}
 
 				return AudioData<int16_t>{ getChannels(), getSampleRate(), std::move(out) };
+			}
+		}
+
+	public:
+
+		template <class SampleT> [[nodiscard]]
+		AudioData<SampleT> readSamples(size_t count)  {
+			switch (m_meta.format) {
+			case WAVE_PCM_INT:
+				switch (getBitDepth()) {
+				case 1:
+					return convert<SampleT>(readPCMintSamples<1>(count));
+				case 2:
+					return convert<SampleT>(readPCMintSamples<2>(count));
+				case 3:
+					return convert<SampleT>(readPCMintSamples<3>(count));
+				case 4:
+					return convert<SampleT>(readPCMintSamples<4>(count));
+				case 5:
+					return convert<SampleT>(readPCMintSamples<5>(count));
+				case 6:
+					return convert<SampleT>(readPCMintSamples<6>(count));
+				case 7:
+					return convert<SampleT>(readPCMintSamples<7>(count));
+				case 8:
+					return convert<SampleT>(readPCMintSamples<8>(count));
+				case 16:
+					return convert<SampleT>(readPCMintSamples<16>(count));
+				default:
+					throw std::runtime_error("Strange PCM int formats not yet implemented");
+				}
+			default:
+				throw std::runtime_error("Unimplemented WAVE format");
 			}
 		}
 	};
