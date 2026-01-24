@@ -45,6 +45,16 @@ namespace sndx::math {
 		return T(1.0) - func(T(1.0) - a);
 	}
 
+	template <std::floating_point T, T(*Func)(T)> [[nodiscard]]
+	constexpr auto easeInOut(T a) noexcept {
+		if (a < T(0.5)) {
+			return Func(a * T(2.0)) / T(2.0);
+		}
+		else {
+			return (T(2.0) - Func((T(1.0) - a) * T(2.0))) / T(2.0);
+		}
+	}
+
 	template <std::floating_point T> [[nodiscard]]
 	constexpr auto easeLinear(T a) noexcept {
 			return a;
