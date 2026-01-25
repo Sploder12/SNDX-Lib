@@ -1,7 +1,10 @@
 #pragma once
 
-#include <functional>
+#include <cmath>
 #include <concepts>
+#include <functional>
+#include <numbers>
+#include <utility>
 
 #include <glm/glm.hpp>
 
@@ -55,9 +58,19 @@ namespace sndx::math {
 		}
 	}
 
+	template <std::floating_point T, class Func> [[nodiscard]]
+	constexpr auto easeInOut(Func&& func, T a) noexcept {
+		if (a < T(0.5)) {
+			return std::forward<Func>(func)(a * T(2.0)) / T(2.0);
+		}
+		else {
+			return (T(2.0) - std::forward<Func>(func)((T(1.0) - a) * T(2.0))) / T(2.0);
+		}
+	}
+
 	template <std::floating_point T> [[nodiscard]]
 	constexpr auto easeLinear(T a) noexcept {
-			return a;
+		return a;
 	}
 
 	template <std::floating_point T> [[nodiscard]]
@@ -78,5 +91,15 @@ namespace sndx::math {
 	template <std::floating_point T> [[nodiscard]]
 	constexpr auto easeOutCubic(T a) noexcept {
 		return easeOut<T, easeInCubic>(a);
+	}
+
+	template <std::floating_point T> [[nodiscard]]
+	constexpr auto easeInSine(T a) noexcept {
+		return T(1.0) - std::cos(a * std::numbers::pi_v<T> * T(0.5));
+	}
+
+	template <std::floating_point T> [[nodiscard]]
+	constexpr auto easeOutSine(T a) noexcept {
+		return std::sin(a * std::numbers::pi_v<T> * T(0.5));
 	}
 }
