@@ -72,7 +72,7 @@ namespace sndx::audio {
 					throw std::runtime_error("OpenAL does not support > 2 channels");
 
 				ALenum format = data.channels() == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
-				auto converted = convert<uint16_t>(data);
+				auto converted = convert<int16_t>(data);
 				alBufferData(m_id, format, converted.data(), size, ALsizei(converted.frequency()));
 			}
 
