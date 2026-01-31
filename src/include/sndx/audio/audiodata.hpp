@@ -10,7 +10,7 @@
 #include "../math/math.hpp"
 
 namespace sndx::audio {
-	template <class SampleT = uint16_t>
+	template <class SampleT = int16_t>
 	class AudioData {
 	private:
 		// interleaved 
