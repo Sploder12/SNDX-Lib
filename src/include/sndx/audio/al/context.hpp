@@ -2,7 +2,7 @@
 
 #include "./al.hpp"
 
-#include "./audio_data.hpp"
+#include "../audiodata.hpp"
 #include "./abo.hpp"
 #include "./source.hpp"
 #include "./device.hpp"
@@ -102,8 +102,8 @@ namespace sndx::audio {
 			return it->second;
 		}
 
-		[[nodiscard]]
-		ABOhandle createBuffer(const IdT& id, const ALaudioData& data) {
+		template <class T> [[nodiscard]]
+		ABOhandle createBuffer(const IdT& id, const AudioData<T>& data) {
 			auto handle = createBuffer(id);
 			handle->setData(data);
 

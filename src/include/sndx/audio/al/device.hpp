@@ -10,12 +10,35 @@
 #include "../../mixin/handle.hpp"
 
 namespace sndx::audio {
+	namespace detail {
+		[[nodiscard]]
+		inline std::vector<std::string> getAlStringList(ALCdevice* device, ALCenum enm) {
+			auto strings = alcGetString(device, enm);
+			if (strings == nullptr || *strings == '\0') return {};
+
+			std::vector<std::string> out{};
+
+			do {
+				out.emplace_back(strings);
+				strings += out.back().size() + 1;
+			} while (*strings != '\0');
+
+			return out;
+		}
+	}
 
 	[[nodiscard]]
 	inline bool isALEnumExtPresent() {
 		static bool present =
-			alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT") == AL_TRUE &&
-			alcIsExtensionPresent(nullptr, "ALC_ENUMERATE_ALL_EXT") == AL_TRUE;
+			alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT") == AL_TRUE;
+
+		return present;
+	}
+
+	[[nodiscard]]
+	inline bool isALCaptureExtPresent() {
+		static bool present =
+			alcIsExtensionPresent(nullptr, "ALC_EXT_CAPTURE") == AL_TRUE;
 
 		return present;
 	}
@@ -26,22 +49,34 @@ namespace sndx::audio {
 			return {};
 		}
 
-		auto devices = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
-		if (devices == nullptr || *devices == '\0') return {};
-
-		std::vector<std::string> out{};
-
-		do {
-			out.emplace_back(devices);
-			devices += out.back().size() + 1;
-		} while (*devices != '\0');
-
-		return out;
+		return detail::getAlStringList(nullptr, ALC_DEVICE_SPECIFIER);
 	}
 
 	[[nodiscard]]
+	inline std::vector<std::string> getAlCaptureDevices() {
+		if (!isALEnumExtPresent() && !isALCaptureExtPresent()) {
+			return {};
+		}
+
+		return detail::getAlStringList(nullptr, ALC_CAPTURE_DEVICE_SPECIFIER);
+	}
+
+
+	[[nodiscard]]
 	inline std::string getDefaultAlDevice() {
+		if (!isALEnumExtPresent()) {
+			return "";
+		}
+
 		return alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER);
+	}
+	
+	[[nodiscard]]
+	inline std::string getDefaultAlCaptureDevice() {
+		if (!isALCaptureExtPresent() && !isALCaptureExtPresent()) {
+			return "";
+		}
+		return alcGetString(nullptr, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER);
 	}
 
 	class ALdevice {
