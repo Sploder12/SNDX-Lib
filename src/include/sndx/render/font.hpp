@@ -12,8 +12,8 @@
 
 namespace sndx::render {
 	struct GlyphMetric {
-		glm::ivec2 bearing, dims;
-		float advance;
+		glm::ivec2 bearing{}, dims{};
+		float advance{};
 
 		constexpr GlyphMetric() = default;
 
@@ -23,7 +23,7 @@ namespace sndx::render {
 
 	template <class AtlasT = TextureAtlas<FT_ULong>> 
 	class Font {
-	private:
+	public:
 		AtlasT m_atlas;
 		std::unordered_map<FT_ULong, GlyphMetric> m_metrics{};
 
@@ -35,7 +35,6 @@ namespace sndx::render {
 		Font(AtlasT&& atlas, const std::unordered_map<FT_ULong, GlyphMetric>& metrics, int maxBearingY, bool sdf) :
 			m_atlas(std::move(atlas)), m_metrics(metrics), m_maxBearingY(maxBearingY), m_sdf(sdf) {}
 	
-	public:
 		// returns charcode if it exists, the charcode "white square" otherwise
 		[[nodiscard]]
 		FT_ULong getChar(FT_ULong charcode) const {
@@ -53,11 +52,6 @@ namespace sndx::render {
 		const GlyphMetric& getCharMetrics(FT_ULong charcode) const {
 			return m_metrics.at(getChar(charcode));
 		}
-
-		[[nodiscard]]
-		const auto& getAtlas() const {
-			return m_atlas;
-		}
 	};
 
 	class FontBuilder {
@@ -73,7 +67,7 @@ namespace sndx::render {
 
 		using DefaultPacker = decltype(m_builder)::DefaultPacker;
 
-		friend class FreetypeContext;
+		friend struct FreetypeContext;
 
 		FontBuilder(MetricsT&& metrics, GlyphsT&& glyphs, int maxBearingY, bool sdf) :
 			m_metrics(std::move(metrics)), m_glyphs(std::move(glyphs)), m_maxBearingY(maxBearingY), m_sdf(sdf) {

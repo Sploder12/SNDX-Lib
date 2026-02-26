@@ -13,8 +13,7 @@
 namespace sndx::render {
 	
 	template <class IdT = std::string>
-	class ImageAtlas {
-	private:
+	struct ImageAtlas {
 		struct Entry {
 			glm::vec<2, size_t> pos, dims;
 		};
@@ -27,33 +26,20 @@ namespace sndx::render {
 
 		ImageAtlas(decltype(m_entries)&& entries, ImageData&& image) :
 			m_entries(std::move(entries)), m_image(std::move(image)) {}
-	public:
-
-		[[nodiscard]]
-		const auto& getImage() const {
-			return m_image;
-		}
-
-		[[nodiscard]]
-		const auto& getEntry(const IdT& id) const {
-			return m_entries.at(id);
-		}
-
-		[[nodiscard]]
-		auto size() const {
-			return m_entries.size();
-		}
-
-		[[nodiscard]]
-		auto begin() const {
-			return m_entries.begin();
-		}
-
-		[[nodiscard]]
-		auto end() const {
-			return m_entries.end();
-		}
 	};
+
+	template <class IdT> [[nodiscard]]
+	inline std::unordered_map<IdT, std::pair<glm::vec2, glm::vec2>> normalizeAtlasEntries(const std::unordered_map<IdT, typename ImageAtlas<IdT>::Entry>& entries, glm::vec2 size) {
+		std::unordered_map<IdT, std::pair<glm::vec2, glm::vec2>> out{};
+		out.reserve(entries.size());
+
+		const glm::vec2 scaling = 1.0f / size;
+		for (const auto& [id, entry] : entries) {
+			out.emplace(id, std::pair{ entry.pos * scaling, entry.dims * scaling });
+		}
+
+		return out;
+	}
 
 	template <class TextureT, class IdT = std::string>
 	class TextureAtlas {
@@ -70,16 +56,21 @@ namespace sndx::render {
 	public:
 
 		TextureAtlas(const ImageAtlas<IdT>& atlas, bool compress = false):
-			m_entries{}, m_texture{atlas.getImage(), 0, compress } {
-			m_entries.reserve(atlas.size());
-			const auto& image = atlas.getImage();
+			m_entries{}, m_texture{atlas.m_image, 0, compress } {
+			m_entries.reserve(atlas.m_entries.size());
+			const auto& image = atlas.m_image;
 
 			glm::vec2 scaling = 1.0f / glm::vec2{ image.width(), image.height()};
 
-			for (const auto& [id, entry] : atlas) {
+			for (const auto& [id, entry] : atlas.m_entries) {
 				Entry e{ glm::vec2{entry.pos} *scaling, glm::vec2{entry.dims} *scaling };
 				m_entries.emplace(id, std::move(e));
 			}
+		}
+
+		[[nodiscard]]
+		const auto& getEntries() const {
+			return m_entries;
 		}
 		
 		[[nodiscard]]
