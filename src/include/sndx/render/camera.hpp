@@ -19,17 +19,17 @@ namespace sndx::render {
 
 		[[nodiscard]]
 		glm::vec3 getForward() const {
-			return orientation * glm::vec3(0.0, 0.0, 1.0);
+			return glm::inverse(orientation) * glm::vec3(0.0, 0.0, 1.0);
 		}
 
 		[[nodiscard]]
 		glm::vec3 getUp() const {
-			return orientation * glm::vec3(0.0, 1.0, 0.0);
+			return glm::inverse(orientation) * glm::vec3(0.0, 1.0, 0.0);
 		}
 
 		[[nodiscard]]
 		glm::vec3 getRight() const {
-			return orientation * glm::vec3(-1.0, 0.0, 0.0);
+			return glm::inverse(orientation) * glm::vec3(-1.0, 0.0, 0.0);
 		}
 
 		// in degrees! not radians!
