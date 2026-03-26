@@ -196,6 +196,30 @@ namespace sndx::collision {
 			auto q = glm::abs(tpoint) - size;
 			return glm::length(glm::max(q, Precision(0.0))) + glm::min(glm::compMax(q), Precision(0.0));
 		}
+
+		[[nodiscard]]
+		constexpr bool calcRayIntersection(const Vec& from, const Vec& dir, Precision& nearHit, Precision& farHit) const noexcept {
+			nearHit = Precision(0.0);
+			farHit = std::numeric_limits<Precision>::max();
+
+			for (typename Vec::length_type i = 0; i < dimensionality(); ++i) {
+				auto inv = Precision(1.0) / dir[i];
+				auto near = (getP1()[i] - from[i]) * inv;
+				auto far = (getP2()[i] - from[i]) * inv;
+
+				if (inv < Precision(0.0))
+					std::swap(near, far);
+
+				nearHit = std::max(near, nearHit);
+				farHit = std::min(far, farHit);
+
+				if (farHit < nearHit)
+					return false;
+			}
+
+			return true;
+		}
+
 	};
 
 	template <size_t n, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
