@@ -153,6 +153,15 @@ namespace sndx::collision {
 			return glm::mix(getP1(), getP2(), Precision(0.5));
 		}
 
+		[[nodiscard]]
+		constexpr Vec getCenter(uint8_t axis) const noexcept {
+			return glm::mix(getP1()[axis], getP2()[axis], Precision(0.5));
+		}
+
+		[[nodiscard]]
+		constexpr const Rect<VectorT>& getBounds() const noexcept {
+			return *this;
+		}
 		
 		/* Collision Related Methods */
 
@@ -197,10 +206,25 @@ namespace sndx::collision {
 			return glm::length(glm::max(q, Precision(0.0))) + glm::min(glm::compMax(q), Precision(0.0));
 		}
 
-		[[nodiscard]]
-		constexpr bool calcRayIntersection(const Vec& from, const Vec& dir, Precision& nearHit, Precision& farHit) const noexcept {
-			nearHit = Precision(0.0);
-			farHit = std::numeric_limits<Precision>::max();
+		struct RaycastResult {
+			const Rect<VectorT>* rect = nullptr;
+			Precision near = 0.0f, far = std::numeric_limits<Precision>::max();
+
+			[[nodiscard]]
+			constexpr bool hit() const noexcept {
+				return rect != nullptr;
+			}
+
+			[[nodiscard]]
+			constexpr float distance() const noexcept {
+				return near;
+			}
+		};
+		using result_type = RaycastResult;
+
+		[[nodiscard]] // cull is ignored
+		constexpr RaycastResult raycast(const Vec& from, const Vec& dir, bool = false) const noexcept {
+			RaycastResult out{};
 
 			for (typename Vec::length_type i = 0; i < dimensionality(); ++i) {
 				auto inv = Precision(1.0) / dir[i];
@@ -210,16 +234,16 @@ namespace sndx::collision {
 				if (inv < Precision(0.0))
 					std::swap(near, far);
 
-				nearHit = std::max(near, nearHit);
-				farHit = std::min(far, farHit);
+				out.near = std::max(near, out.near);
+				out.far = std::min(far, out.far);
 
-				if (farHit < nearHit)
-					return false;
+				if (out.far < out.near)
+					return out;
 			}
 
-			return true;
+			out.rect = this;
+			return out;
 		}
-
 	};
 
 	template <size_t n, typename InternalT = float, glm::qualifier Qualifier = glm::qualifier::defaultp>
