@@ -154,7 +154,7 @@ namespace sndx::collision {
 		}
 
 		[[nodiscard]]
-		constexpr Vec getCenter(uint8_t axis) const noexcept {
+		constexpr Precision getCenter(uint8_t axis) const noexcept {
 			return glm::mix(getP1()[axis], getP2()[axis], Precision(0.5));
 		}
 
@@ -208,7 +208,9 @@ namespace sndx::collision {
 
 		struct RaycastResult {
 			const Rect<VectorT>* rect = nullptr;
-			Precision near = 0.0f, far = std::numeric_limits<Precision>::max();
+			Precision near = std::numeric_limits<Precision>::min();
+			Precision far = std::numeric_limits<Precision>::max();
+			VectorT normalNear{}, normalFar{};
 
 			[[nodiscard]]
 			constexpr bool hit() const noexcept {
@@ -216,8 +218,21 @@ namespace sndx::collision {
 			}
 
 			[[nodiscard]]
-			constexpr float distance() const noexcept {
+			constexpr Precision distance() const noexcept {
 				return near;
+			}
+
+			[[nodiscard]]
+			constexpr VectorT normal() const noexcept {
+				return normalNear;
+			}
+
+			void setDistance(Precision dist) noexcept {
+				near = dist;
+			}
+
+			void setNormal(VectorT norm) noexcept {
+				normalNear = norm;
 			}
 		};
 		using result_type = RaycastResult;
@@ -231,11 +246,21 @@ namespace sndx::collision {
 				auto near = (getP1()[i] - from[i]) * inv;
 				auto far = (getP2()[i] - from[i]) * inv;
 
-				if (inv < Precision(0.0))
+				bool flipped = inv < Precision(0.0);
+				if (flipped)
 					std::swap(near, far);
 
-				out.near = std::max(near, out.near);
-				out.far = std::min(far, out.far);
+				if (near > out.near) {
+					out.near = near;
+					out.normalNear = Vec(0.0);
+					out.normalNear[i] = flipped ? Precision(-1.0) : Precision(1.0f);
+				}
+
+				if (far < out.far) {
+					out.far = far;
+					out.normalFar = Vec(0.0);
+					out.normalFar[i] = flipped ? Precision(1.0) : Precision(-1.0f);
+				}
 
 				if (out.far < out.near)
 					return out;
