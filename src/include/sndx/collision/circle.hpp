@@ -163,6 +163,11 @@ namespace sndx::collision {
 			return getPosition();
 		}
 
+		[[nodiscard]]
+		constexpr Precision getCenter(uint8_t axis) const noexcept {
+			return getCenter()[axis];
+		}
+
 
 		/* Collision Related Methods */
 
@@ -199,6 +204,79 @@ namespace sndx::collision {
 		template <class Volume> [[nodiscard]]
 		constexpr Precision distance(const Volume& other) const noexcept {
 			return other.distance(getPosition()) - getRadius();
+		}
+
+		[[nodiscard]] // direction should be normalized
+		constexpr Vec supportPoint(const Vec& direction) const noexcept {
+			return getPosition() + direction * getRadius();
+		}
+
+		struct RaycastResult {
+			const Circle<VectorT>* circle = nullptr;
+			Precision near = std::numeric_limits<Precision>::min();
+			Precision far = std::numeric_limits<Precision>::max();
+			VectorT normalNear{}, normalFar{};
+
+			[[nodiscard]]
+			constexpr bool hit() const noexcept {
+				return circle != nullptr;
+			}
+
+			[[nodiscard]]
+			constexpr Precision distance() const noexcept {
+				return near;
+			}
+
+			[[nodiscard]]
+			constexpr VectorT normal() const noexcept {
+				return normalNear;
+			}
+
+			void setDistance(Precision dist) noexcept {
+				near = dist;
+			}
+
+			void setNormal(VectorT norm) noexcept {
+				normalNear = norm;
+			}
+		};
+		using result_type = RaycastResult;
+
+		[[nodiscard]] // cull is ignored
+		constexpr RaycastResult raycast(const Vec& from, const Vec& dir, bool = false) const noexcept {
+			RaycastResult out{};
+
+			auto idealDir = from - getCenter();
+
+			auto dirDelta = glm::dot(idealDir, dir);
+			auto distSquared = glm::dot(idealDir, idealDir);
+			auto rad2 = getRadius() * getRadius();
+
+			auto discriminant = dirDelta * dirDelta - (distSquared - rad2);
+			if (discriminant < Precision(0.0)) {
+				return out;
+			}
+
+			discriminant = std::sqrt(discriminant);
+			
+			out.near = -dirDelta - discriminant;
+			out.far = -dirDelta + discriminant;
+
+			// ray started past the circle
+			if (out.near < Precision(0.0) && out.far < Precision(0.0)) {
+				return out;
+			}
+
+			// ray started inside the circle
+			if (out.near < Precision(0.0)) {
+				std::swap(out.near, out.far);
+			}
+
+			out.normalNear = glm::normalize((from + dir * out.near) - getCenter());
+			out.normalFar = glm::normalize((from + dir * out.far) - getCenter());
+
+			out.circle = this;
+			return out;
 		}
 	};
 

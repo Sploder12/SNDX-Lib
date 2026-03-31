@@ -155,7 +155,7 @@ namespace sndx::collision {
 
 		[[nodiscard]]
 		constexpr Precision getCenter(uint8_t axis) const noexcept {
-			return glm::mix(getP1()[axis], getP2()[axis], Precision(0.5));
+			return (getP1()[axis] + getP2()[axis]) / Precision(0.5);
 		}
 
 		[[nodiscard]]
@@ -204,6 +204,15 @@ namespace sndx::collision {
 
 			auto q = glm::abs(tpoint) - size;
 			return glm::length(glm::max(q, Precision(0.0))) + glm::min(glm::compMax(q), Precision(0.0));
+		}
+
+		[[nodiscard]] // direction should be normalized
+		constexpr Vec supportPoint(const Vec& direction) const noexcept {
+			Vec out{};
+			for (size_t axis = 0; axis < dimensionality(); ++axis) {
+				out[axis] = direction[axis] <= Precision(0.0) ? getP1()[axis] : getP2()[axis];
+			}
+			return out;
 		}
 
 		struct RaycastResult {

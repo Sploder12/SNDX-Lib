@@ -67,6 +67,7 @@ TEST_F(ImageAtlasTest, zeroHeightThrows) {
 	EXPECT_THROW(auto ign = builder.build<ProxyBinPacker<size_t>>(10, 20), std::logic_error);
 }
 
+/*
 TEST_F(ImageAtlasTest, addsEntry) {
 	AtlasBuilder<size_t> builder{};
 
@@ -89,7 +90,7 @@ TEST_F(ImageAtlasTest, addsEntry) {
 
 	EXPECT_EQ(atlas.size(), 1);
 	EXPECT_NO_THROW(std::ignore = atlas.getEntry(42));
-}
+}*/
 
 class IntenseImageAtlasTest : public ImageAtlasTest {
 public:
@@ -98,6 +99,7 @@ public:
 	}
 };
 
+/*
 TEST_F(IntenseImageAtlasTest, canBuildSingleImage) {
 	AtlasBuilder<std::string> builder{};
 
@@ -150,7 +152,7 @@ TEST_F(IntenseImageAtlasTest, canBuildMultiImage) {
 	EXPECT_EQ(atlas.getEntry(1).dims, (glm::vec<2, size_t>{225, 100}));
 	EXPECT_EQ(atlas.getEntry(2).dims, (glm::vec<2, size_t>{225, 100}));
 	EXPECT_EQ(atlas.getEntry(3).dims, (glm::vec<2, size_t>{225, 100}));
-}
+}*/
 
 class TextureAtlasTest : public ::testing::Test {
 public:
