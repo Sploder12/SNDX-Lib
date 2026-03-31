@@ -81,3 +81,17 @@ TEST(GJK, circleAndTriangleCollide) {
 	result = gjk(getSupportFn(std::span{ triangle }), getSupportFn(circle));
 	EXPECT_TRUE(result);
 }
+
+TEST(EPA, simpleBoxesGiveCorrectDirection) {
+	Rect3D boxA{ glm::vec3{-1.0f}, glm::vec3{0.0f} };
+	Rect3D boxB{ glm::vec3{-0.5f}, glm::vec3{0.5f} };
+
+	auto simplex = gjk(getSupportFn(boxA), getSupportFn(boxB));
+	ASSERT_TRUE(simplex);
+
+	auto result = epa(*simplex, getSupportFn(boxA), getSupportFn(boxB));
+	ASSERT_LE(std::abs(result.depth - 0.5f), 0.0001f);
+
+	boxB.translate(result.normal * (result.depth + 0.0001f));
+	EXPECT_FALSE(gjk(getSupportFn(boxA), getSupportFn(boxB)));
+}
