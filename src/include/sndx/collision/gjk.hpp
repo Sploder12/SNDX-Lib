@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./volume.hpp"
+#include "./triangle.hpp"
 
 #include <array>
 #include <optional>
@@ -12,10 +12,15 @@
 namespace sndx::collision {
 	// this is pretty much what is written in https://winter.dev/articles/gjk-algorithm and their epa article
 	namespace detail {
+		struct MinkowskiDiff {
+			glm::vec3 a, b, out;
+		};
+
 		template <class SFnA, class SFnB> [[nodiscard]]
-		glm::vec3 gjkMinkowski(SFnA&& supportA, SFnB&& supportB, glm::vec3 direction) {
-			assert(std::abs(glm::length(direction) - 1.0f) <= 0.0001f && "direction must be normalized!");
-			return std::forward<SFnA>(supportA)(direction) - std::forward<SFnB>(supportB)(-direction);
+		MinkowskiDiff gjkMinkowski(SFnA&& supportA, SFnB&& supportB, glm::vec3 direction) {
+			auto a = std::forward<SFnA>(supportA)(direction);
+			auto b = std::forward<SFnB>(supportB)(-direction);
+			return MinkowskiDiff{ a, b, a - b };
 		}
 
 		[[nodiscard]]
@@ -37,10 +42,10 @@ namespace sndx::collision {
 			return Vec::length();
 		}
 
-		std::array<Vec, 3 + 1> points{};
+		std::array<detail::MinkowskiDiff, 3 + 1> points{};
 		uint8_t size = 0;
 
-		void push_front(Vec point) {
+		void push_front(detail::MinkowskiDiff point) {
 			for (size_t i = points.size() - 1; i > 0; --i) {
 				points[i] = points[i - 1];
 			}
@@ -49,24 +54,43 @@ namespace sndx::collision {
 		}
 
 		bool lineOrigin(Vec& newDirection) {
-			auto ab = points[1] - points[0];
-			auto ao = -points[0];
+			auto ab = points[1].out - points[0].out;
+			auto ao = -points[0].out;
 
 			if (detail::similarDir(ab, ao)) { // we want to point towards the origin
-				newDirection = glm::normalize(detail::tripleProduct(ab, ao));
+				auto tp = detail::tripleProduct(ab, ao);
+				auto len = glm::length(tp);
+
+				// beware being near colinear with the origin
+				if (len < 0.00001f) {
+					auto mag = glm::abs(ab);
+					if (mag.x < mag.y && mag.x < mag.z) {
+						newDirection = glm::vec3(1.0f, 0.0f, 0.0f);
+					}
+					else if (mag.y < mag.z) {
+						newDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+					}
+					else {
+						newDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+					}
+					newDirection = glm::cross(ab, newDirection);
+					return false;
+				}
+
+				newDirection = tp / len;
 				return true;
 			}
 
 			// remove b from simplex
 			size = 1;
-			newDirection = glm::normalize(ao);
+			newDirection = ao;
 			return false;
 		}
 
 		bool triangleOrigin(Vec& newDirection) {
-			auto ab = points[1] - points[0];
-			auto ac = points[2] - points[0];
-			auto ao = -points[0];
+			auto ab = points[1].out - points[0].out;
+			auto ac = points[2].out - points[0].out;
+			auto ao = -points[0].out;
 
 			auto cross = glm::cross(ab, ac);
 
@@ -82,7 +106,7 @@ namespace sndx::collision {
 				// keep a and c
 				points[1] = points[2];
 				size = 2;
-				newDirection = glm::normalize(detail::tripleProduct(ac, ao));
+				newDirection = detail::tripleProduct(ac, ao);
 				return false;
 			}
 			
@@ -95,27 +119,28 @@ namespace sndx::collision {
 
 			// check direction for tetrahedon
 			if (detail::similarDir(cross, ao)) {
-				newDirection = glm::normalize(cross);
+				newDirection = cross;
 			}
 			else {
 				// flip b and c
 				std::swap(points[1], points[2]);
-				newDirection = glm::normalize(-cross);
+				newDirection = -cross;
 			}
 
 			return true;
 		}
 
 		bool tetrahedronOrigin(Vec& newDirection) {
-			auto ab = points[1] - points[0];
-			auto ac = points[2] - points[0];
-			auto ad = points[3] - points[0];
-			auto ao = -points[0];
+			auto ab = points[1].out - points[0].out;
+			auto ac = points[2].out - points[0].out;
+			auto ad = points[3].out - points[0].out;
+			auto ao = -points[0].out;
 
 			if (detail::similarDir(glm::cross(ab, ac), ao)) {
 				// remove d
 				size = 3;
-				return triangleOrigin(newDirection);
+				triangleOrigin(newDirection);
+				return false;
 			}
 
 			if (detail::similarDir(glm::cross(ac, ad), ao)) {
@@ -123,14 +148,17 @@ namespace sndx::collision {
 				points[1] = points[2];
 				points[2] = points[3];
 				size = 3;
-				return triangleOrigin(newDirection);
+				triangleOrigin(newDirection);
+				return false;
 			}
 
 			if (detail::similarDir(glm::cross(ad, ab), ao)) {
 				// remove c and flip b, d
 				points[2] = points[1];
 				points[1] = points[3];
-				return triangleOrigin(newDirection);
+				size = 3;
+				triangleOrigin(newDirection);
+				return false;
 			}
 
 			return true;
@@ -156,10 +184,12 @@ namespace sndx::collision {
 		SimplexGJK simplex{};
 		simplex.push_front(support);
 
-		auto dir = glm::normalize(-support);
+		size_t iterations = 0;
+
+		auto dir = glm::normalize(-support.out);
 		while (true) {
 			support = detail::gjkMinkowski(supportA, supportB, dir);
-			if (!detail::similarDir(support, dir)) {
+			if (!detail::similarDir(support.out, dir)) {
 				return std::nullopt;
 			}
 
@@ -167,143 +197,37 @@ namespace sndx::collision {
 			if (simplex.gjkOrigin(dir)) {
 				return simplex;
 			}
+
+			++iterations;
 		}
+		return std::nullopt;
 	}
 
 	struct EpaResult {
 		glm::vec3 normal;
 		float depth;
-	};
-
-	struct PolytopeEPA {
-		using Vertices = std::vector<glm::vec3>;
-		using Indices = std::vector<glm::vec<3, size_t>>;
-		using Edges = std::vector<std::pair<size_t, size_t>>;
-
-		Vertices verts{};
-		Indices indices{};
-
-		static void addUniqueEdge(Edges& out, const Indices& indices, size_t tri, size_t a, size_t b) {
-			auto reversed = std::find(out.begin(), out.end(), std::make_pair(indices[tri][b], indices[tri][a]));
-
-			if (reversed != out.end()) {
-				out.erase(reversed);
-			}
-			else {
-				out.emplace_back(indices[tri][a], indices[tri][b]);
-			}
-		}
 
 		[[nodiscard]]
-		static std::pair<std::vector<glm::vec4>, size_t> calcNormals(const Vertices& verts, const Indices& indices) {
-			size_t mTri = 0;
-			std::vector<glm::vec4> norms{};
-			norms.reserve(indices.size());
-			float minDist = std::numeric_limits<float>::max();
-			for (size_t i = 0; i < indices.size(); ++i) {
-				const auto& a = verts[indices[i].x];
-				const auto& b = verts[indices[i].y];
-				const auto& c = verts[indices[i].z];
+		EpaResult invTransform(const glm::mat3& inverse) const {
+			auto tInv = glm::transpose(inverse);
+			auto tNormal = tInv * normal;
+			auto len = glm::length(tNormal);
 
-				auto normal = glm::normalize(glm::cross(b - a, c - a));
-				auto dist = glm::dot(normal, a);
-				if (dist < 0) {
-					normal *= -1.0f;
-					dist *= -1.0f;
-				}
-
-				norms.emplace_back(normal, dist);
-				if (dist < minDist) {
-					mTri = i;
-					minDist = dist;
-				}
-			}
-
-			return { std::move(norms), mTri };
-		}
-
-		[[nodiscard]]
-		auto calcNormals() const {
-			return calcNormals(verts, indices);
-		}
-
-		PolytopeEPA(const SimplexGJK& simplex):
-			verts(simplex.points.begin(), simplex.points.begin() + simplex.size),
-			indices{ {0, 1, 2}, {0, 3, 1}, {0, 2, 3}, {1, 3, 2} } {
-
-			assert(simplex.size == 4);
+			return EpaResult{ tNormal / len, depth * len };
 		}
 	};
 
 	template <float epsilon = 0.00001f, class SFnA, class SFnB> [[nodiscard]]
 	EpaResult epa(const SimplexGJK& simplex, const SFnA& supportA, const SFnB& supportB) {
-		PolytopeEPA polytope{ simplex };
+		throw std::runtime_error("not implemented");
+	}
 
-		auto [normals, minTri] = polytope.calcNormals();
-
-		glm::vec3 minNorm{};
-		float minDist = std::numeric_limits<float>::max();
-
-		while (minDist == std::numeric_limits<float>::max()) {
-			minNorm = glm::vec3(normals[minTri]);
-			minDist = normals[minTri].w;
-
-			auto support = detail::gjkMinkowski(supportA, supportB, minNorm);
-			auto dist = glm::dot(minNorm, support);
-
-			if (std::abs(dist - minDist) > epsilon) {
-				minDist = std::numeric_limits<float>::max();
-
-				PolytopeEPA::Edges edges{};
-				edges.reserve(polytope.verts.size());
-
-				for (size_t i = 0; i < normals.size(); ++i) {
-					if (detail::similarDir(glm::vec3(normals[i]), support - polytope.verts[polytope.indices[i].x])) {
-
-						PolytopeEPA::addUniqueEdge(edges, polytope.indices, i, 0, 1);
-						PolytopeEPA::addUniqueEdge(edges, polytope.indices, i, 1, 2);
-						PolytopeEPA::addUniqueEdge(edges, polytope.indices, i, 2, 0);
-
-						polytope.indices[i] = polytope.indices.back();
-						polytope.indices.pop_back();
-
-						normals[i] = normals.back();
-						normals.pop_back();
-
-						--i;
-					}
-				}
-
-				PolytopeEPA::Indices newIndices{};
-				newIndices.reserve(edges.size() / 3);
-				for (auto [a, b] : edges) {
-					newIndices.emplace_back(a, b, polytope.verts.size());
-				}
-				polytope.verts.emplace_back(support);
-
-				auto [newNorms, newMinTri] = PolytopeEPA::calcNormals(polytope.verts, newIndices);
-
-				float oldMin = std::numeric_limits<float>::max();
-				for (size_t i = 0; i < normals.size(); ++i) {
-					if (normals[i].w < oldMin) {
-						oldMin = normals[i].w;
-						minTri = i;
-					}
-				}
-
-				if (newNorms[newMinTri].w < oldMin) {
-					minTri = newMinTri + normals.size();
-				}
-
-				polytope.indices.insert(polytope.indices.begin(), newIndices.begin(), newIndices.end());
-				normals.insert(normals.begin(), newNorms.begin(), newNorms.end());
-			}
-		}
-
-		EpaResult out{};
-		out.normal = minNorm;
-		out.depth = minDist + epsilon;
-		return out;
+	template <class Fn> [[nodiscard]]
+	auto transformSupportFn(Fn&& fnc, const glm::mat4& t, const glm::mat4& invT) {
+		return [f = std::forward<Fn>(fnc), t, iT = glm::mat3{ invT }](glm::vec3 dir) {
+			auto dirLocal = iT * dir;
+			return glm::vec3(t * glm::vec4(f(dirLocal), 1.0f));
+		};
 	}
 
 	template <VolumeN<3> T> [[nodiscard]]
@@ -325,5 +249,10 @@ namespace sndx::collision {
 			}
 			return out;
 		};
+	}
+
+	template <class T> [[nodiscard]]
+	auto getSupportFn(T&& shape, const glm::mat4& t, const glm::mat4& invT) {
+		return transformSupportFn(getSupportFn(std::forward<T>(shape)), t, invT);
 	}
 }

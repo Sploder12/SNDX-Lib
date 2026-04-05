@@ -206,9 +206,9 @@ namespace sndx::collision {
 			return other.distance(getPosition()) - getRadius();
 		}
 
-		[[nodiscard]] // direction should be normalized
+		[[nodiscard]]
 		constexpr Vec supportPoint(const Vec& direction) const noexcept {
-			return getPosition() + direction * getRadius();
+			return getPosition() + glm::normalize(direction) * getRadius();
 		}
 
 		struct RaycastResult {

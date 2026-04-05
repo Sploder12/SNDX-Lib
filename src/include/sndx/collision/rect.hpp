@@ -155,7 +155,7 @@ namespace sndx::collision {
 
 		[[nodiscard]]
 		constexpr Precision getCenter(uint8_t axis) const noexcept {
-			return (getP1()[axis] + getP2()[axis]) / Precision(0.5);
+			return (getP1()[axis] + getP2()[axis]) / Precision(2.0);
 		}
 
 		[[nodiscard]]
@@ -209,7 +209,7 @@ namespace sndx::collision {
 		[[nodiscard]] // direction should be normalized
 		constexpr Vec supportPoint(const Vec& direction) const noexcept {
 			Vec out{};
-			for (size_t axis = 0; axis < dimensionality(); ++axis) {
+			for (uint16_t axis = 0; axis < dimensionality(); ++axis) {
 				out[axis] = direction[axis] <= Precision(0.0) ? getP1()[axis] : getP2()[axis];
 			}
 			return out;

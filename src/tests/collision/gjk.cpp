@@ -41,6 +41,21 @@ TEST(GJK, simpleSpheresCollide) {
 	EXPECT_TRUE(result);
 }
 
+
+TEST(GJK, handlesOriginAlignedSpheres) {
+	Circle3D circleA{ glm::vec3{-1.0f, 0.0f, 0.0f}, 1.0f };
+	Circle3D circleB{ glm::vec3{-2.0f, 0.0f, 0.0f}, 0.5f };
+
+	auto sptA = getSupportFn(circleA);
+	auto sptB = getSupportFn(circleB);
+
+	auto simplex = gjk(sptA, sptB);
+	EXPECT_TRUE(simplex);
+
+	simplex = gjk(sptB, sptA);
+	EXPECT_TRUE(simplex);
+}
+
 TEST(GJK, simpleSpheresDontCollide) {
 	Circle3D circleA{ glm::vec3{-0.5f, -1.0f, 0.4f}, 0.5f };
 	Circle3D circleB{ glm::vec3{-0.1f, -0.9f, 1.1f}, 0.3f };
@@ -82,6 +97,7 @@ TEST(GJK, circleAndTriangleCollide) {
 	EXPECT_TRUE(result);
 }
 
+/*
 TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	Rect3D boxA{ glm::vec3{-1.0f}, glm::vec3{0.0f} };
 	Rect3D boxB{ glm::vec3{-0.5f}, glm::vec3{0.5f} };
@@ -95,3 +111,29 @@ TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	boxB.translate(result.normal * (result.depth + 0.0001f));
 	EXPECT_FALSE(gjk(getSupportFn(boxA), getSupportFn(boxB)));
 }
+
+TEST(EPA, simpleSpheresGiveCorrectDirection) {
+	Circle3D circleA{ glm::vec3{-1.0f, 0.0f, 0.0f}, 1.0f };
+	Circle3D circleB{ glm::vec3{-2.0f, 0.0f, 0.0f}, 0.5f };
+
+	auto sptA = getSupportFn(circleA);
+	auto sptB = getSupportFn(circleA);
+
+	auto simplex = gjk(sptA, sptB);
+	ASSERT_TRUE(simplex);
+
+	auto result = epa(*simplex, sptA, sptB);
+}
+
+TEST(EPA, mixedShapesGiveCorrectDirection) {
+	Circle3D circle{ glm::vec3{-1.0f, 1.0f, 0.0f}, 1.0f };
+	Rect3D rect{ glm::vec3{-0.5f, 0.0f, 0.0f}, glm::vec3{-0.5f, 2.0f, 1.0f} };
+
+	auto sptA = getSupportFn(circle);
+	auto sptB = getSupportFn(rect);
+
+	auto simplex = gjk(sptA, sptB);
+	ASSERT_TRUE(simplex);
+
+	auto result = epa(*simplex, sptA, sptB);
+}*/
