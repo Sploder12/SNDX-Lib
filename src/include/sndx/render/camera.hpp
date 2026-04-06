@@ -13,23 +13,23 @@ namespace sndx::render {
 
 		[[nodiscard]]
 		glm::mat4 getViewMatrix() const {
-			auto out = glm::translate(glm::mat4(1.0), pos);
-			return glm::mat4_cast(orientation) * out;
+			auto out = glm::translate(glm::mat4(1.0), -pos);
+			return glm::mat4_cast(glm::conjugate(orientation)) * out;
 		}
 
 		[[nodiscard]]
 		glm::vec3 getForward() const {
-			return glm::inverse(orientation) * glm::vec3(0.0, 0.0, 1.0);
+			return orientation * glm::vec3(0.0, 0.0, 1.0);
 		}
 
 		[[nodiscard]]
 		glm::vec3 getUp() const {
-			return glm::inverse(orientation) * glm::vec3(0.0, 1.0, 0.0);
+			return orientation * glm::vec3(0.0, 1.0, 0.0);
 		}
 
 		[[nodiscard]]
 		glm::vec3 getRight() const {
-			return glm::inverse(orientation) * glm::vec3(-1.0, 0.0, 0.0);
+			return orientation * glm::vec3(1.0, 0.0, 0.0);
 		}
 
 		// in degrees! not radians!
@@ -71,7 +71,7 @@ namespace sndx::render {
 			return *this;
 		}
 
-		Camera& lookAt(const glm::vec3& at) {
+		Camera& lookAt(const glm::vec3& at, const glm::vec3& up) {
 			auto direction = at - pos;
 			auto len = glm::length(direction);
 
@@ -79,9 +79,12 @@ namespace sndx::render {
 				return *this;
 
 			direction /= len;
-
-			orientation = glm::quatLookAt(direction, getUp());
+			orientation = glm::quatLookAt(direction, up);
 			return *this;
+		}
+
+		Camera& lookAt(const glm::vec3& at) {
+			return lookAt(at, getUp());
 		}
 	};
 }
