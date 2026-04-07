@@ -195,6 +195,11 @@ namespace sndx::collision {
 			return this->contains(Rect{ other });
 		}
 
+		[[nodiscard]]
+		constexpr Vec closestPoint(const Vec& point) const noexcept {
+			return glm::clamp(point, getP1(), getP2());
+		}
+
 		// get the signed distance from a point
 		// adapted from https://iquilezles.org/articles/distfunctions/
 		[[nodiscard]]
@@ -277,6 +282,20 @@ namespace sndx::collision {
 
 			out.rect = this;
 			return out;
+		}
+
+		[[nodiscard]]
+		constexpr RaycastResult spherecast(const Vec& from, const Vec& dir, Precision radius, bool cull = false) const noexcept {
+			Rect expanded{ getP1() - Vec{radius}, getP2() + Vec{radius} };
+			auto res = expanded.raycast(from, dir, cull);
+
+			if (res.hit()) {
+				auto spherePos = from + dir * res.distance();
+				auto closest = closestPoint(spherePos);
+				res.setNormal(glm::normalize(spherePos - closest));
+			}
+
+			return res;
 		}
 	};
 

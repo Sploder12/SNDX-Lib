@@ -24,7 +24,7 @@ namespace sndx::collision {
 		constexpr Tri(const Vec& p1, const Vec& p2, const Vec& p3) noexcept :
 			m_p1(p1), m_p2(p2), m_p3(p3) {}
 
-		constexpr const Tri& translate(const Vec& vec) const noexcept {
+		constexpr Tri& translate(const Vec& vec) noexcept {
 			m_p1 += vec;
 			m_p2 += vec;
 			m_p3 += vec;
@@ -32,7 +32,7 @@ namespace sndx::collision {
 			return *this;
 		}
 
-		constexpr const Tri& flipNormal() const noexcept {
+		constexpr Tri& flipNormal() noexcept {
 			std::swap(m_p2, m_p3);
 			return *this;
 		}

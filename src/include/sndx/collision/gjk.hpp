@@ -53,6 +53,51 @@ namespace sndx::collision {
 			size = std::min(uint8_t(size + 1u), uint8_t(points.size()));
 		}
 
+		auto pointClosest() const {
+			return points[0].out;
+		}
+
+		auto lineClosest() const {
+			auto ab = points[1].out - points[0].out;
+			auto abSqr = glm::dot(ab, ab);
+			if (abSqr < 0.0000001f) { // degenerate case
+				return points[0].out;
+			}
+
+			auto t = glm::dot(-points[0].out, ab) / abSqr;
+			return points[0].out + glm::clamp(t, 0.0f, 1.0f) * points[1].out;
+		}
+
+		auto triangleClosest() const {
+			// degenerate cases
+			if (points[0].out == points[1].out) {
+				SimplexGJK tmp{};
+				tmp.push_front(points[0]);
+				tmp.push_front(points[2]);
+				return tmp.lineClosest();
+			}
+			else if (points[0].out == points[2].out) {
+				return lineClosest();
+			}
+			else if (points[1].out == points[2].out) {
+				return lineClosest();
+			}
+
+			sndx::collision::Tri<Vec> tri{ points[0].out, points[1].out, points[2].out };
+			return tri.closestPoint(glm::vec3{ 0.0f });
+		}
+
+		[[nodiscard]]
+		Vec gjkClosest() const {
+			switch (size) {
+			case 1: return pointClosest();
+			case 2: return lineClosest();
+			case 3: return triangleClosest();
+			default:
+				throw std::logic_error("GJK had weird number of points in simplex");
+			}
+		}
+
 		bool lineOrigin(Vec& newDirection) {
 			auto ab = points[1].out - points[0].out;
 			auto ao = -points[0].out;
@@ -201,6 +246,135 @@ namespace sndx::collision {
 			++iterations;
 		}
 		return std::nullopt;
+	}
+
+	struct ResDistGJK {
+		bool hit = false; // hit IS NOT TO BE TRUSTED
+		glm::vec3 a{}, b{};
+	};
+
+	// if the two shapes ARE colliding this has a high chance of failure.
+	// use gjk to ensure no collision before using this.
+	template <class SFnA, class SFnB> [[nodiscard]]
+	ResDistGJK gjkDist(const SFnA& supportA, const SFnB& supportB) {
+		auto support = detail::gjkMinkowski(supportA, supportB, glm::vec3(1.0, 0.0, 0.0));
+
+		// force a triangle so we don't have to deal with lines or points later
+		SimplexGJK simplex{};
+		simplex.push_front(support);
+		simplex.push_front(detail::gjkMinkowski(supportA, supportB, -support.out));
+
+		auto dir = -simplex.gjkClosest();
+		if (glm::length(dir) <= 0.000001f) { // we hit the origin!
+			return ResDistGJK{ true };
+		}
+		simplex.push_front(detail::gjkMinkowski(supportA, supportB, dir));
+
+		size_t iterations = 0;
+		while (true) {
+			dir = -simplex.gjkClosest();
+			auto dirMag = glm::length(dir);
+			if (dirMag <= 0.000001f) { // we hit the origin!
+				return ResDistGJK{ true };
+			}
+
+			support = detail::gjkMinkowski(supportA, supportB, dir);
+
+			auto alignment = glm::dot(support.out, dir);
+			auto old = glm::dot(simplex.points[0].out, dir);
+
+			// check making progress
+			if (alignment - old < 0.000001f) {
+				break;
+			}
+
+			auto newAB = simplex;
+			newAB.points[2] = support;
+
+			auto newAC = simplex;
+			newAC.points[1] = support;
+
+			auto newBC = simplex;
+			newBC.points[0] = support;
+
+			auto pAB = newAB.gjkClosest();
+			auto pAC = newAC.gjkClosest();
+			auto pBC = newBC.gjkClosest();
+
+			auto abLen = glm::length(pAB);
+			auto acLen = glm::length(pAC);
+			auto bcLen = glm::length(pBC);
+
+			if (abLen < acLen) {
+				if (abLen < bcLen) {
+					simplex = newAB;
+					dir = -pAB;
+				}
+				else {
+					simplex = newBC;
+					dir = -pBC;
+				}
+			}
+			else {
+				if (acLen < bcLen) {
+					simplex = newAC;
+					dir = -pAC;
+				}
+				else {
+					simplex = newBC;
+					dir = -pBC;
+				}
+			}
+
+			++iterations;
+		}
+
+		ResDistGJK out{ false };
+
+		// degenerate cases
+		if (simplex.points[0].out == simplex.points[1].out) { // A == B
+			if (simplex.points[0].out == simplex.points[2].out) { // point
+				out.a = simplex.points[0].a;
+				out.b = simplex.points[0].b;
+				return out;
+			}
+
+			// line AC
+			auto ac = simplex.points[2].out - simplex.points[0].out;
+			auto t = glm::dot(-simplex.points[0].out, ac) / glm::dot(ac, ac);
+			t = glm::clamp(t, 0.0f, 1.0f);
+			out.a = simplex.points[0].a + t * simplex.points[2].a;
+			out.b = simplex.points[0].b + t * simplex.points[2].b;
+			return out;
+		}
+		else if (simplex.points[0].out == simplex.points[2].out) { // A == C
+			// line BC
+			auto bc = simplex.points[2].out - simplex.points[1].out;
+			auto t = glm::dot(-simplex.points[1].out, bc) / glm::dot(bc, bc);
+			t = glm::clamp(t, 0.0f, 1.0f);
+			out.a = simplex.points[1].a + t * simplex.points[2].a;
+			out.b = simplex.points[1].b + t * simplex.points[2].b;
+			return out;
+		}
+		else if (simplex.points[1].out == simplex.points[2].out) { // B == C
+			// line AB
+			auto ab = simplex.points[1].out - simplex.points[0].out;
+			auto t = glm::dot(-simplex.points[0].out, ab) / glm::dot(ab, ab);
+			t = glm::clamp(t, 0.0f, 1.0f);
+			out.a = simplex.points[0].a + t * simplex.points[1].a;
+			out.b = simplex.points[0].b + t * simplex.points[1].b;
+			return out;
+		}
+
+		sndx::collision::Tri3D tri{ simplex.points[0].out, simplex.points[1].out, simplex.points[2].out };
+		sndx::collision::Tri3D triA{ simplex.points[0].a, simplex.points[1].a, simplex.points[2].a };
+		sndx::collision::Tri3D triB{ simplex.points[0].b, simplex.points[1].b, simplex.points[2].b };
+
+		auto uvw = tri.uvw(glm::vec3{ 0.0f });
+		out.a = triA.fromUVW(uvw);
+		out.b = triB.fromUVW(uvw);
+
+		return out;
 	}
 
 	struct EpaResult {

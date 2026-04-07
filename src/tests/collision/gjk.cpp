@@ -97,6 +97,53 @@ TEST(GJK, circleAndTriangleCollide) {
 	EXPECT_TRUE(result);
 }
 
+// because EXPECT_FLOAT_EQ is WAYYYYY too strict.
+bool floatEq(float a, float b) {
+	return std::abs(a - b) <= 0.000001f;
+}
+
+TEST(Dist_GJK, simpleBoxesGiveDist) {
+	Rect3D boxA{ glm::vec3{-0.5f}, glm::vec3{0.1f} };
+	Rect3D boxB{ glm::vec3{0.11f}, glm::vec3{0.5f} };
+
+	auto result = gjkDist(getSupportFn(boxA), getSupportFn(boxB));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(boxA.contains(result.a));
+	EXPECT_TRUE(boxB.contains(result.b));
+
+	auto dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.01732f));
+
+	result = gjkDist(getSupportFn(boxB), getSupportFn(boxA));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(boxB.contains(result.a));
+	EXPECT_TRUE(boxA.contains(result.b));
+
+	dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.01732f));
+}
+
+TEST(Dist_GJK, axisAlignedSpheresGiveDist) {
+	Circle3D circleA{ glm::vec3{-1.0f, 0.0f, 0.0f}, 1.0f };
+	Circle3D circleB{ glm::vec3{-3.0f, 0.0f, 0.0f}, 0.5f };
+
+	auto result = gjkDist(getSupportFn(circleA), getSupportFn(circleB));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(circleA.contains(result.a));
+	EXPECT_TRUE(circleB.contains(result.b));
+
+	auto dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.5f));
+
+	result = gjkDist(getSupportFn(circleB), getSupportFn(circleA));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(circleB.contains(result.a));
+	EXPECT_TRUE(circleA.contains(result.b));
+
+	dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.5f));
+}
+
 /*
 TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	Rect3D boxA{ glm::vec3{-1.0f}, glm::vec3{0.0f} };
