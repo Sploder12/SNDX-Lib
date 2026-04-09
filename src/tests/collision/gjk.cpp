@@ -144,6 +144,27 @@ TEST(Dist_GJK, axisAlignedSpheresGiveDist) {
 	EXPECT_TRUE(floatEq(dist, 0.5f));
 }
 
+TEST(Dist_GJK, MixedShapesGiveDist) {
+	Circle3D circle{ glm::vec3{ 0.0f, 1.0f, 0.0f }, 0.5f };
+	Tri3D tri{ glm::vec3{-1.0f, 0.0f, 1.0f}, glm::vec3{1.0f, 0.0f, 1.0f} , glm::vec3{1.0f, 0.0f, -1.0f} };
+
+	auto result = gjkDist(getSupportFn(circle), getSupportFn(tri));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(circle.contains(result.a));
+	EXPECT_TRUE(tri.contains(result.b));
+
+	auto dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.5f));
+
+	result = gjkDist(getSupportFn(tri), getSupportFn(circle));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(tri.contains(result.a));
+	EXPECT_TRUE(circle.contains(result.b));
+
+	dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.5f));
+}
+
 /*
 TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	Rect3D boxA{ glm::vec3{-1.0f}, glm::vec3{0.0f} };

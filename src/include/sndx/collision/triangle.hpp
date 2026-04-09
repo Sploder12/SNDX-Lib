@@ -62,6 +62,10 @@ namespace sndx::collision {
 
 			auto denom = abSqr * acSqr - abc * abc;
 
+			if (std::abs(denom) < 0.00001f) [[unlikely]] {
+				return glm::vec3{ 0.0f };
+			}
+
 			auto v = (acSqr * abp - abc * acp) / denom;
 			auto w = (abSqr * acp - abc * abp) / denom;
 
@@ -128,61 +132,45 @@ namespace sndx::collision {
 
 		[[nodiscard]] // from Ericson's Real Time Collision Detection
 		constexpr Vec closestPoint(const Vec& point) const noexcept {
-			auto ab = m_p2 - m_p1;
-			auto ac = m_p3 - m_p1;
-			auto ap = point - m_p1;
+			auto ab = getP2() - getP1();
+			auto ac = getP3() - getP1();
+			auto bc = getP3() - getP2();
 
-			auto d1 = glm::dot(ab, ap);
-			auto d2 = glm::dot(ac, ap);
+			auto snom = glm::dot(point - getP1(), ab);
+			auto sdenom = glm::dot(point - getP2(), -ab);
 
-			// Vertex region A
-			if (d1 <= Precision(0.0) && d2 <= Precision(0.0))
-				return m_p1;
+			auto tnom = glm::dot(point - getP1(), ac);
+			auto tdenom = glm::dot(point - getP3(), -ac);
 
-			auto bp = point - m_p2;
-			auto d3 = glm::dot(ab, bp);
-			auto d4 = glm::dot(ac, bp);
+			if (snom <= Precision(0.0) && tnom <= Precision(0.0))
+				return getP1();
 
-			// Vertex region B
-			if (d3 >= Precision(0.0) && d4 <= d3)
-				return m_p2;
+			auto unom = glm::dot(point - getP2(), bc);
+			auto udenom = glm::dot(point - getP3(), -bc);
 
-			// Edge region AB
-			auto vc = d1 * d4 - d3 * d2;
-			if (vc <= Precision(0.0) && d1 >= Precision(0.0) && d3 <= Precision(0.0)) {
-				float v = d1 / (d1 - d3);
-				return m_p1 + ab * v;
-			}
+			if (sdenom <= Precision(0.0) && unom <= Precision(0.0))
+				return getP2();
 
-			auto cp = point - m_p2;
-			auto d5 = glm::dot(ab, cp);
-			auto d6 = glm::dot(ac, cp);
+			if (tdenom <= Precision(0.0) && udenom <= Precision(0.0))
+				return getP3();
 
-			// Vertex region C
-			if (d6 >= Precision(0.0) && d5 <= d6)
-				return m_p3;
+			auto n = glm::cross(ab, ac);
+			auto vc = glm::dot(n, glm::cross(getP1() - point, getP2() - point));
+			if (vc <= Precision(0.0) && snom >= Precision(0.0) && sdenom >= Precision(0.0))
+				return getP1() + snom / (snom + sdenom) * ab;
 
-			// Edge region AC
-			auto vb = d5 * d2 - d1 * d6;
-			if (vb <= Precision(0.0) && d2 >= Precision(0.0) && d6 <= Precision(0.0)) {
-				auto w = d2 / (d2 - d6);
-				return m_p1 + ac * w;
-			}
+			auto va = glm::dot(n, glm::cross(getP2() - point, getP3() - point));
+			if (va <= Precision(0.0) && unom >= Precision(0.0) && udenom >= Precision(0.0))
+				return getP2() + unom / (unom + udenom) * bc;
 
-			// Edge region BC
-			auto va = d3 * d6 - d5 * d4;
-			if (va <= Precision(0.0) && (d4 - d3) >= Precision(0.0) && (d5 - d6) >= Precision(0.0)) {
-				auto bc = m_p3 - m_p2;
-				auto w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-				return m_p2 + bc * w;
-			}
+			auto vb = glm::dot(n, glm::cross(getP3() - point, getP1() - point));
+			if (vb <= Precision(0.0) && tnom > Precision(0.0) && tdenom >= Precision(0.0))
+				return getP1() + tnom / (tnom + tdenom) * ac;
 
-			// Inside face region
-			auto denom = Precision(1.0) / (va + vb + vc);
-			auto v = vb * denom;
-			auto w = vc * denom;
-
-			return m_p1 + ab * v + ac * w;
+			auto u = va / (va + vb + vc);
+			auto v = vb / (va + vb + vc);
+			auto w = 1.0f - u - v;
+			return fromUVW(glm::vec3(u, v, w));
 		}
 
 		[[nodiscard]]
