@@ -44,32 +44,56 @@ namespace sndx::collision {
 
 		[[nodiscard]] // will return < 0.0 when outside triangle
 		constexpr glm::vec3 uvw(Vec p) const noexcept {
-			auto ab = m_p2 - m_p1;
-			auto ac = m_p3 - m_p1;
-			auto ap = p - m_p1;
+			auto ab = getP2() - getP1();
+			auto ac = getP3() - getP1();
+			auto bc = getP3() - getP2();
 
-			// project p
-			auto n = glm::normalize(glm::cross(ab, ac));
-			p = p - glm::dot(p - m_p1, n) * n;
-			ap = p - m_p1;
+			auto snom = glm::dot(p - getP1(), ab);
+			auto sdenom = glm::dot(p - getP2(), -ab);
 
-			// solve for uvw
-			auto abSqr = glm::dot(ab, ab);
-			auto abc = glm::dot(ab, ac);
-			auto acSqr = glm::dot(ac, ac);
-			auto abp = glm::dot(ap, ab);
-			auto acp = glm::dot(ap, ac);
+			auto tnom = glm::dot(p - getP1(), ac);
+			auto tdenom = glm::dot(p - getP3(), -ac);
 
-			auto denom = abSqr * acSqr - abc * abc;
+			if (snom <= Precision(0.0) && tnom <= Precision(0.0))
+				return glm::vec3(1.0f, 0.0f, 0.0f);
 
-			if (std::abs(denom) < 0.00001f) [[unlikely]] {
-				return glm::vec3{ 0.0f };
+			auto unom = glm::dot(p - getP2(), bc);
+			auto udenom = glm::dot(p - getP3(), -bc);
+
+			if (sdenom <= Precision(0.0) && unom <= Precision(0.0))
+				return glm::vec3(0.0f, 1.0f, 0.0f);
+
+			if (tdenom <= Precision(0.0) && udenom <= Precision(0.0))
+				return glm::vec3(0.0f, 0.0f, 1.0f);
+
+			auto n = glm::cross(ab, ac);
+			auto vc = glm::dot(n, glm::cross(getP1() - p, getP2() - p));
+			if (vc <= Precision(0.0) && snom >= Precision(0.0) && sdenom >= Precision(0.0)) {
+				auto v = snom / (snom + sdenom);
+				return glm::vec3(1.0f - v, v, 0.0f);
 			}
 
-			auto v = (acSqr * abp - abc * acp) / denom;
-			auto w = (abSqr * acp - abc * abp) / denom;
+			auto va = glm::dot(n, glm::cross(getP2() - p, getP3() - p));
+			if (va <= Precision(0.0) && unom >= Precision(0.0) && udenom >= Precision(0.0)) {
+				auto w = unom / (unom + udenom);
+				return glm::vec3(0.0f, 1.0f - w, w);
+			}
 
-			return glm::vec3{ 1.0f - v - w, v, w };
+			auto vb = glm::dot(n, glm::cross(getP3() - p, getP1() - p));
+			if (vb <= Precision(0.0) && tnom > Precision(0.0) && tdenom >= Precision(0.0)) {
+				auto w = tnom / (tnom + tdenom);
+				return glm::vec3(1.0f - w, 0.0f, w);
+			}
+
+			auto denom = (va + vb + vc);
+			if (denom == 0.0f) [[unlikely]] {
+				return glm::vec3(0.0f);
+			}
+
+			auto u = va / denom;
+			auto v = vb / denom;
+			auto w = 1.0f - u - v;
+			return glm::vec3(u, v, w);
 		}
 
 		[[nodiscard]]
@@ -132,45 +156,7 @@ namespace sndx::collision {
 
 		[[nodiscard]] // from Ericson's Real Time Collision Detection
 		constexpr Vec closestPoint(const Vec& point) const noexcept {
-			auto ab = getP2() - getP1();
-			auto ac = getP3() - getP1();
-			auto bc = getP3() - getP2();
-
-			auto snom = glm::dot(point - getP1(), ab);
-			auto sdenom = glm::dot(point - getP2(), -ab);
-
-			auto tnom = glm::dot(point - getP1(), ac);
-			auto tdenom = glm::dot(point - getP3(), -ac);
-
-			if (snom <= Precision(0.0) && tnom <= Precision(0.0))
-				return getP1();
-
-			auto unom = glm::dot(point - getP2(), bc);
-			auto udenom = glm::dot(point - getP3(), -bc);
-
-			if (sdenom <= Precision(0.0) && unom <= Precision(0.0))
-				return getP2();
-
-			if (tdenom <= Precision(0.0) && udenom <= Precision(0.0))
-				return getP3();
-
-			auto n = glm::cross(ab, ac);
-			auto vc = glm::dot(n, glm::cross(getP1() - point, getP2() - point));
-			if (vc <= Precision(0.0) && snom >= Precision(0.0) && sdenom >= Precision(0.0))
-				return getP1() + snom / (snom + sdenom) * ab;
-
-			auto va = glm::dot(n, glm::cross(getP2() - point, getP3() - point));
-			if (va <= Precision(0.0) && unom >= Precision(0.0) && udenom >= Precision(0.0))
-				return getP2() + unom / (unom + udenom) * bc;
-
-			auto vb = glm::dot(n, glm::cross(getP3() - point, getP1() - point));
-			if (vb <= Precision(0.0) && tnom > Precision(0.0) && tdenom >= Precision(0.0))
-				return getP1() + tnom / (tnom + tdenom) * ac;
-
-			auto u = va / (va + vb + vc);
-			auto v = vb / (va + vb + vc);
-			auto w = 1.0f - u - v;
-			return fromUVW(glm::vec3(u, v, w));
+			return fromUVW(uvw(point));
 		}
 
 		[[nodiscard]]
@@ -180,7 +166,7 @@ namespace sndx::collision {
 
 		[[nodiscard]]
 		constexpr bool contains(const Vec& point) const noexcept {
-			return distance(point) <= Precision(0.0);
+			return distance(point) <= Precision(0.000001);
 		}
 
 		[[nodiscard]]

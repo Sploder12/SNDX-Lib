@@ -131,7 +131,8 @@ namespace sndx::collision {
 			}
 			case 3: {
 				sndx::collision::Tri<Vec> tri{ points[0].out, points[1].out, points[2].out };
-				return tri.uvw(tri.closestPoint(glm::vec3{ 0.0f }));
+				assert(!tri.isDegenerate());
+				return tri.uvw(glm::vec3{ 0.0f });
 			}
 			default:
 				throw std::logic_error("can't get UV for strange simplex");
@@ -216,7 +217,7 @@ namespace sndx::collision {
 				auto acLen = glm::length2(pAC);
 				auto bcLen = glm::length2(pBC);
 
-				if (curLen < abLen && curLen < acLen && curLen < bcLen) {
+				if (curLen <= abLen && curLen <= acLen && curLen <= bcLen) {
 					return false;
 				}
 
@@ -420,7 +421,7 @@ namespace sndx::collision {
 		while (iterations < 1024) {
 			auto dir = -simplex.gjkClosest();
 			auto dirMag = glm::length2(dir);
-			if (dirMag <= 0.00001f) { // we hit the origin!
+			if (dirMag <= 0.0f) { // we hit the origin!
 				return ResDistGJK{ true };
 			}
 
@@ -430,7 +431,7 @@ namespace sndx::collision {
 			auto old = glm::dot(simplex.points[0].out, dir);
 
 			// check making progress
-			if (alignment - old < 0.00001f) {
+			if (alignment - old < 0.000001f) {
 				break;
 			}
 
@@ -454,22 +455,149 @@ namespace sndx::collision {
 	}
 
 	struct EpaResult {
+		glm::vec3 a, b;
 		glm::vec3 normal;
 		float depth;
-
-		[[nodiscard]]
-		EpaResult invTransform(const glm::mat3& inverse) const {
-			auto tInv = glm::transpose(inverse);
-			auto tNormal = tInv * normal;
-			auto len = glm::length(tNormal);
-
-			return EpaResult{ tNormal / len, depth * len };
-		}
 	};
 
-	template <float epsilon = 0.00001f, class SFnA, class SFnB> [[nodiscard]]
+	[[nodiscard]]
+	inline std::pair<std::vector<glm::vec4>, size_t> GetFaceNormals(const std::vector<detail::MinkowskiDiff>& polytope, const std::vector<size_t>& faces) {
+		std::vector<glm::vec4> normals{};
+		size_t minTriangle = 0;
+		float  minDistance = FLT_MAX;
+
+		for (size_t i = 0; i < faces.size(); i += 3) {
+			glm::vec3 a = polytope[faces[i]].out;
+			glm::vec3 b = polytope[faces[i + 1]].out;
+			glm::vec3 c = polytope[faces[i + 2]].out;
+
+			glm::vec3 normal = glm::normalize(glm::cross(b - a, c - a));
+			float distance = dot(normal, a);
+
+			if (distance < 0) {
+				normal *= -1;
+				distance *= -1;
+			}
+
+			normals.emplace_back(normal, distance);
+
+			if (distance < minDistance) {
+				minTriangle = i / 3;
+				minDistance = distance;
+			}
+		}
+
+		return { normals, minTriangle };
+	}
+
+	inline void AddIfUniqueEdge(std::vector<std::pair<size_t, size_t>>& edges, const std::vector<size_t>& faces, size_t a, size_t b) {
+		auto reverse = std::find(
+			edges.begin(),
+			edges.end(),
+			std::make_pair(faces[b], faces[a])
+		);
+
+		if (reverse != edges.end()) {
+			edges.erase(reverse);
+		}
+		else {
+			edges.emplace_back(faces[a], faces[b]);
+		}
+	}
+
+	template <class SFnA, class SFnB> [[nodiscard]]
 	EpaResult epa(const SimplexGJK& simplex, const SFnA& supportA, const SFnB& supportB) {
-		throw std::runtime_error("not implemented");
+		std::vector<detail::MinkowskiDiff> polytope{ simplex.points[0], simplex.points[1], simplex.points[2], simplex.points[3] };
+		std::vector<size_t> faces{
+			0, 1, 2,
+			0, 3, 1,
+			0, 2, 3,
+			1, 3, 2,
+		};
+
+		auto [normals, minFace] = GetFaceNormals(polytope, faces);
+
+		glm::vec3 minNormal{};
+		float minDistance = FLT_MAX;
+		size_t i = 0;
+
+		while (minDistance == FLT_MAX) {
+			++i;
+			minNormal = glm::vec3(normals[minFace]);
+			minDistance = normals[minFace].w;
+
+			if (i >= 1024) {
+				break;
+			}
+
+			auto support = detail::gjkMinkowski(supportA, supportB, minNormal);
+			float sDistance = glm::dot(minNormal, support.out);
+
+			if (abs(sDistance - minDistance) > 0.0001f) {
+				minDistance = FLT_MAX;
+
+				std::vector<std::pair<size_t, size_t>> uniqueEdges;
+
+				for (size_t i = 0; i < normals.size(); i++) {
+					if (detail::similarDir(glm::vec3(normals[i]), support.out - polytope[faces[i * 3]].out)) {
+						size_t f = i * 3;
+
+						AddIfUniqueEdge(uniqueEdges, faces, f, f + 1);
+						AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
+						AddIfUniqueEdge(uniqueEdges, faces, f + 2, f);
+
+						faces[f + 2] = faces.back(); faces.pop_back();
+						faces[f + 1] = faces.back(); faces.pop_back();
+						faces[f] = faces.back(); faces.pop_back();
+
+						normals[i] = normals.back(); // pop-erase
+						normals.pop_back();
+
+						i--;
+					}
+				}
+
+				std::vector<size_t> newFaces;
+				for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
+					newFaces.emplace_back(edgeIndex1);
+					newFaces.emplace_back(edgeIndex2);
+					newFaces.emplace_back(polytope.size());
+				}
+
+				polytope.emplace_back(support);
+
+				auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
+
+				float oldMinDistance = FLT_MAX;
+				for (size_t i = 0; i < normals.size(); i++) {
+					if (normals[i].w < oldMinDistance) {
+						oldMinDistance = normals[i].w;
+						minFace = i;
+					}
+				}
+
+				if (newNormals[newMinFace].w < oldMinDistance) {
+					minFace = newMinFace + normals.size();
+				}
+
+				faces.insert(faces.end(), newFaces.begin(), newFaces.end());
+				normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+			}
+		}
+
+		EpaResult result{};
+
+		sndx::collision::Tri3D tri{ polytope[faces[minFace * 3]].out, polytope[faces[minFace * 3 + 1]].out, polytope[faces[minFace * 3 + 2]].out };
+		sndx::collision::Tri3D triA{ polytope[faces[minFace * 3]].a, polytope[faces[minFace * 3 + 1]].a, polytope[faces[minFace * 3 + 2]].a };
+		sndx::collision::Tri3D triB{ polytope[faces[minFace * 3]].b, polytope[faces[minFace * 3 + 1]].b, polytope[faces[minFace * 3 + 2]].b };
+		auto uvw = tri.uvw(glm::vec3(0.0f));
+
+		result.a = triA.fromUVW(uvw);
+		result.b = triB.fromUVW(uvw);
+		result.normal = minNormal;
+		result.depth = minDistance + 0.00001f;
+
+		return result;
 	}
 
 	template <class Fn> [[nodiscard]]

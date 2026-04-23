@@ -6,6 +6,10 @@
 
 #include <glm/glm.hpp>
 
+// for length2
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/norm.hpp>
+
 #include "./math.hpp"
 
 namespace sndx::math {
@@ -21,7 +25,7 @@ namespace sndx::math {
 
 	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
 	constexpr bool areColinear(const glm::vec<3, I, Q>& p, const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& b) noexcept {
-		return glm::length(surfaceNormal(p, a, b)) <= std::numeric_limits<I>::epsilon();
+		return glm::length2(surfaceNormal(p, a, b)) <= I(0.00001f);
 	}
 
 	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]

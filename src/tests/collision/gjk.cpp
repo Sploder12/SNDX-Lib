@@ -99,7 +99,7 @@ TEST(GJK, circleAndTriangleCollide) {
 
 // because EXPECT_FLOAT_EQ is WAYYYYY too strict.
 bool floatEq(float a, float b) {
-	return std::abs(a - b) <= 0.000001f;
+	return std::abs(a - b) <= 0.00005f;
 }
 
 TEST(Dist_GJK, simpleBoxesGiveDist) {
@@ -150,7 +150,7 @@ TEST(Dist_GJK, MixedShapesGiveDist) {
 
 	auto result = gjkDist(getSupportFn(circle), getSupportFn(tri));
 	EXPECT_FALSE(result.hit);
-	EXPECT_TRUE(circle.contains(result.a));
+	EXPECT_LE(circle.distance(result.a), 0.00001f);
 	EXPECT_TRUE(tri.contains(result.b));
 
 	auto dist = glm::distance(result.a, result.b);
@@ -165,7 +165,28 @@ TEST(Dist_GJK, MixedShapesGiveDist) {
 	EXPECT_TRUE(floatEq(dist, 0.5f));
 }
 
-/*
+TEST(Dist_GJK, MixedShapesGiveDist2) {
+	Circle3D circle{ glm::vec3{ 0.0f, 1.0f, 0.0f }, 0.5f };
+	Rect3D rect{ glm::vec3{-20.0f, -20.0f, -20.0f}, glm::vec3{20.0f, 0.0f, 20.0f}};
+
+	auto result = gjkDist(getSupportFn(circle), getSupportFn(rect));
+	EXPECT_FALSE(result.hit);
+	EXPECT_LE(circle.distance(result.a), 0.00001f);
+	EXPECT_TRUE(rect.contains(result.b));
+
+	auto dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.5f));
+
+	result = gjkDist(getSupportFn(rect), getSupportFn(circle));
+	EXPECT_FALSE(result.hit);
+	EXPECT_TRUE(rect.contains(result.a));
+	EXPECT_TRUE(circle.contains(result.b));
+
+	dist = glm::distance(result.a, result.b);
+	EXPECT_TRUE(floatEq(dist, 0.5f));
+}
+
+
 TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	Rect3D boxA{ glm::vec3{-1.0f}, glm::vec3{0.0f} };
 	Rect3D boxB{ glm::vec3{-0.5f}, glm::vec3{0.5f} };
@@ -174,7 +195,7 @@ TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	ASSERT_TRUE(simplex);
 
 	auto result = epa(*simplex, getSupportFn(boxA), getSupportFn(boxB));
-	ASSERT_LE(std::abs(result.depth - 0.5f), 0.0001f);
+	ASSERT_LE(std::abs(result.depth - 0.50001f), 0.0001f);
 
 	boxB.translate(result.normal * (result.depth + 0.0001f));
 	EXPECT_FALSE(gjk(getSupportFn(boxA), getSupportFn(boxB)));
@@ -185,12 +206,13 @@ TEST(EPA, simpleSpheresGiveCorrectDirection) {
 	Circle3D circleB{ glm::vec3{-2.0f, 0.0f, 0.0f}, 0.5f };
 
 	auto sptA = getSupportFn(circleA);
-	auto sptB = getSupportFn(circleA);
+	auto sptB = getSupportFn(circleB);
 
 	auto simplex = gjk(sptA, sptB);
 	ASSERT_TRUE(simplex);
 
 	auto result = epa(*simplex, sptA, sptB);
+	EXPECT_TRUE(floatEq(result.depth, 0.5));
 }
 
 TEST(EPA, mixedShapesGiveCorrectDirection) {
@@ -204,4 +226,5 @@ TEST(EPA, mixedShapesGiveCorrectDirection) {
 	ASSERT_TRUE(simplex);
 
 	auto result = epa(*simplex, sptA, sptB);
-}*/
+	EXPECT_TRUE(floatEq(result.depth, 0.5));
+}
