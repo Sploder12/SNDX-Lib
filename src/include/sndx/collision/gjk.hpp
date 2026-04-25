@@ -382,9 +382,11 @@ namespace sndx::collision {
 		size_t iterations = 0;
 
 		auto dir = glm::normalize(-support.out);
-		while (true) {
+		while (iterations < 1024) {
 			support = detail::gjkMinkowski(supportA, supportB, dir);
-			if (!detail::similarDir(support.out, dir)) {
+
+			// it is okay for the 2nd point to have a negative dot product.
+			if (!detail::similarDir(support.out, dir) && iterations > 0) {
 				return std::nullopt;
 			}
 
@@ -534,8 +536,6 @@ namespace sndx::collision {
 			float sDistance = glm::dot(minNormal, support.out);
 
 			if (abs(sDistance - minDistance) > 0.0001f) {
-				minDistance = FLT_MAX;
-
 				std::vector<std::pair<size_t, size_t>> uniqueEdges;
 
 				for (size_t i = 0; i < normals.size(); i++) {
@@ -556,6 +556,12 @@ namespace sndx::collision {
 						i--;
 					}
 				}
+
+				if (uniqueEdges.empty()) {
+					// @TODO figure out why this happens
+					return EpaResult{};
+				}
+				assert(uniqueEdges.size() > 0);
 
 				std::vector<size_t> newFaces;
 				for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
@@ -582,6 +588,8 @@ namespace sndx::collision {
 
 				faces.insert(faces.end(), newFaces.begin(), newFaces.end());
 				normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+
+				minDistance = FLT_MAX;
 			}
 		}
 

@@ -97,6 +97,27 @@ TEST(GJK, circleAndTriangleCollide) {
 	EXPECT_TRUE(result);
 }
 
+TEST(GJK, circleAndTriangleCollide2) {
+	Circle3D circle{ glm::vec3{4.41356277f, 3.2411015f, -2.31648755f}, 0.5f };
+	const std::array<glm::vec3, 3> triangle{
+		glm::vec3{1.0f, 1.0f, -1.0f},
+		glm::vec3{-1.0f, 1.0f, -1.0f},
+		glm::vec3{-1.0f, 1.0f, 1.0f},
+	};
+
+	glm::mat4 transform = glm::translate(glm::mat4{ 1.0f }, glm::vec3(5.0, 1.5, 0.0));
+	transform = glm::scale(transform, glm::vec3(2.0, 1.5, 5.0));
+	auto inv = glm::inverse(transform);
+
+	auto ttri = transformSupportFn(getSupportFn(std::span{ triangle }), transform, inv);
+
+	auto result = gjk(getSupportFn(circle), ttri);
+	EXPECT_TRUE(result);
+
+	result = gjk(ttri, getSupportFn(circle));
+	EXPECT_TRUE(result);
+}
+
 // because EXPECT_FLOAT_EQ is WAYYYYY too strict.
 bool floatEq(float a, float b) {
 	return std::abs(a - b) <= 0.00005f;
