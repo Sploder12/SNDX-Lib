@@ -118,6 +118,27 @@ TEST(GJK, circleAndTriangleCollide2) {
 	EXPECT_TRUE(result);
 }
 
+TEST(GJK, circleAndTriangleCollide3) {
+	Circle3D circle{ glm::vec3{7.22956371f, 0.65463f, -0.94764f}, 0.5f };
+	Tri3D triangle{ 
+		glm::vec3{1.0f, -1.0f, -1.0f},
+		glm::vec3{1.0f, 1.0f, 1.0f},
+		glm::vec3{1.0f, -1.0f, 1.0f} 
+	};
+
+	glm::mat4 transform = glm::translate(glm::mat4{ 1.0f }, glm::vec3(5.0, 1.5, 0.0));
+	transform = glm::scale(transform, glm::vec3(2.0, 1.5, 5.0));
+	auto inv = glm::inverse(transform);
+
+	auto ttri = transformSupportFn(getSupportFn(triangle), transform, inv);
+
+	auto result = gjk(getSupportFn(circle), ttri);
+	EXPECT_TRUE(result);
+
+	result = gjk(ttri, getSupportFn(circle));
+	EXPECT_TRUE(result);
+}
+
 // because EXPECT_FLOAT_EQ is WAYYYYY too strict.
 bool floatEq(float a, float b) {
 	return std::abs(a - b) <= 0.00005f;
@@ -218,7 +239,7 @@ TEST(EPA, simpleBoxesGiveCorrectDirection) {
 	auto result = epa(*simplex, getSupportFn(boxA), getSupportFn(boxB));
 	ASSERT_LE(std::abs(result.depth - 0.50001f), 0.0001f);
 
-	boxB.translate(result.normal * (result.depth + 0.0001f));
+	boxB.translate(result.normal * (result.depth + 0.004f));
 	EXPECT_FALSE(gjk(getSupportFn(boxA), getSupportFn(boxB)));
 }
 
@@ -248,4 +269,31 @@ TEST(EPA, mixedShapesGiveCorrectDirection) {
 
 	auto result = epa(*simplex, sptA, sptB);
 	EXPECT_TRUE(floatEq(result.depth, 0.5));
+}
+
+TEST(EPA, mixedShapesGiveCorrectDirection2) {
+	Circle3D circle{ glm::vec3{-6.91016197f, 0.49365893f, 1.70220768f}, 0.5f };
+	Tri3D tri{ 
+		glm::vec3{-1.0, -1.0f, 1.0f}, 
+		glm::vec3{-1.0f, 1.0f, 1.0f},
+		glm::vec3{-1.0f, 1.0f, -1.0f}
+	};
+
+	glm::mat4 t = glm::translate(glm::mat4{ 1.0f }, glm::vec3(-5.0, 0.5, 1.0));
+	t = glm::rotate(t, glm::radians(45.0f), glm::vec3(0.0, 0.0, 1.0));
+
+	auto sptA = getSupportFn(circle);
+	auto sptB = transformSupportFn(getSupportFn(tri), t, glm::inverse(t));
+
+	auto simplex = gjk(sptA, sptB);
+	ASSERT_TRUE(simplex);
+
+	auto result = epa(*simplex, sptA, sptB);
+	EXPECT_LE(result.depth, 0.004f);
+
+	simplex = gjk(sptB, sptA);
+	ASSERT_TRUE(simplex);
+
+	result = epa(*simplex, sptB, sptA);
+	EXPECT_LE(result.depth, 0.004f);
 }

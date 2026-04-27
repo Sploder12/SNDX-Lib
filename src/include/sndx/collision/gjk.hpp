@@ -287,6 +287,15 @@ namespace sndx::collision {
 			auto ac = points[2].out - points[0].out;
 			auto ao = -points[0].out;
 
+			if (glm::length2(ab) <= 0.00001f || glm::length2(ac) <= 0.00001f) {
+				// keep b and c
+				size = 2;
+				points[0] = points[1];
+				points[1] = points[2];
+				lineOrigin(newDirection);
+				return false;
+			}
+
 			auto cross = glm::cross(ab, ac);
 
 			if (detail::similarDir(glm::cross(cross, ac), ao)) {
@@ -386,9 +395,13 @@ namespace sndx::collision {
 			support = detail::gjkMinkowski(supportA, supportB, dir);
 
 			// it is okay for the 2nd point to have a negative dot product.
-			if (!detail::similarDir(support.out, dir) && iterations > 0) {
+			auto alignment = glm::dot(glm::normalize(support.out), glm::normalize(dir));
+			if (alignment < -0.05f && iterations > 0) {
 				return std::nullopt;
 			}
+
+			assert(!std::isnan(support.out.x));
+			
 
 			simplex.push_front(support);
 			if (simplex.gjkOrigin(dir)) {
@@ -473,8 +486,14 @@ namespace sndx::collision {
 			glm::vec3 b = polytope[faces[i + 1]].out;
 			glm::vec3 c = polytope[faces[i + 2]].out;
 
-			glm::vec3 normal = glm::normalize(glm::cross(b - a, c - a));
-			float distance = dot(normal, a);
+			glm::vec3 normal = glm::cross(b - a, c - a);
+			auto l = glm::length(normal);
+
+			float distance = 0.0f;
+			if (l > 0.000001f) {
+				normal /= l;
+				distance = dot(normal, a);
+			}
 
 			if (distance < 0) {
 				normal *= -1;
@@ -528,12 +547,19 @@ namespace sndx::collision {
 			minNormal = glm::vec3(normals[minFace]);
 			minDistance = normals[minFace].w;
 
-			if (i >= 1024) {
+			if (i >= 64) {
 				break;
 			}
 
 			auto support = detail::gjkMinkowski(supportA, supportB, minNormal);
 			float sDistance = glm::dot(minNormal, support.out);
+
+			for (const auto& pnt : polytope) {
+				if (glm::distance2(pnt.out, support.out) < 0.000001f) {
+					sDistance = minDistance;
+					break;
+				}
+			}
 
 			if (abs(sDistance - minDistance) > 0.0001f) {
 				std::vector<std::pair<size_t, size_t>> uniqueEdges;
