@@ -394,9 +394,12 @@ namespace sndx::collision {
 		while (iterations < 1024) {
 			support = detail::gjkMinkowski(supportA, supportB, dir);
 
-			// it is okay for the 2nd point to have a negative dot product.
-			auto alignment = glm::dot(glm::normalize(support.out), glm::normalize(dir));
-			if (alignment < -0.05f && iterations > 0) {
+			// some unalignment is okay
+			auto align = glm::dot(support.out, dir);
+			auto lenSq = glm::dot(dir, dir) * glm::dot(support.out, support.out);
+
+			constexpr float threshold = -0.05f;
+			if (align < 0.0f && align * align > threshold * threshold * lenSq && iterations > 0) {
 				return std::nullopt;
 			}
 

@@ -149,6 +149,13 @@ namespace sndx::collision {
 			return distance(point) <= Precision(0.0);
 		}
 
+		[[nodiscard]]
+		constexpr Vec supportPoint(const Vec& dir) const noexcept {
+			auto p = (glm::dot(getPointA(), dir) > glm::dot(getPointB(), dir)) ? getPointA() : getPointB();
+			auto norm = glm::normalize(dir);
+			return p + norm * getRadius();
+		}
+
 		struct RaycastResult {
 			const Capsule<VectorT>* capsule = nullptr;
 			Precision near = std::numeric_limits<Precision>::min();
