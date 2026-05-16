@@ -311,4 +311,18 @@ namespace sndx::collision {
 	static_assert(VolumeN<Rect2D, 2>);
 	static_assert(VolumeN<Rect3D, 3>);
 	static_assert(VolumeN<Rect4D, 4>);
+
+	[[nodiscard]]
+	inline Rect3D transform(const Rect3D& in, const glm::mat4& tform) {
+		glm::vec3 center{ tform * glm::vec4(in.getCenter(), 1.0f) };
+
+		auto absT = glm::mat3{
+			glm::abs(glm::vec3(tform[0])),
+			glm::abs(glm::vec3(tform[1])),
+			glm::abs(glm::vec3(tform[2]))
+		};
+		glm::vec3 extents{ absT * in.getSize() };
+
+		return sndx::collision::Rect3D{ center - extents, center + extents };
+	}
 }
