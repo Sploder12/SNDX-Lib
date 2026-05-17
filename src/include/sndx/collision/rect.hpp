@@ -211,7 +211,7 @@ namespace sndx::collision {
 			return glm::length(glm::max(q, Precision(0.0))) + glm::min(glm::compMax(q), Precision(0.0));
 		}
 
-		[[nodiscard]] // direction should be normalized
+		[[nodiscard]]
 		constexpr Vec supportPoint(const Vec& direction) const noexcept {
 			Vec out{};
 			for (uint16_t axis = 0; axis < dimensionality(); ++axis) {
@@ -312,8 +312,8 @@ namespace sndx::collision {
 	static_assert(VolumeN<Rect3D, 3>);
 	static_assert(VolumeN<Rect4D, 4>);
 
-	[[nodiscard]]
-	inline Rect3D transform(const Rect3D& in, const glm::mat4& tform) {
+	[[nodiscard]] // the resulting Rect3D surrounds the true transformed box
+	inline Rect3D transformApprox(const Rect3D& in, const glm::mat4& tform) {
 		glm::vec3 center{ tform * glm::vec4(in.getCenter(), 1.0f) };
 
 		auto absT = glm::mat3{

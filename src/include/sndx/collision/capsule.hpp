@@ -49,13 +49,13 @@ namespace sndx::collision {
 		/* Transformation Methods */
 
 		// set the position
-		constexpr Capsule& setPositionA(const Vec& pos) noexcept {
+		constexpr Capsule& setPointA(const Vec& pos) noexcept {
 			m_a = pos;
 
 			return *this;
 		}
 
-		constexpr Capsule& setPositionB(const Vec& pos) noexcept {
+		constexpr Capsule& setPointB(const Vec& pos) noexcept {
 			m_b = pos;
 
 			return *this;
