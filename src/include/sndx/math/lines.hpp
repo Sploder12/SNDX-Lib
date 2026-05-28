@@ -24,6 +24,12 @@ namespace sndx::math {
 	}
 
 	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
+	constexpr auto projectOnPlane(const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& planeNormal) {
+		return a - planeNormal * glm::dot(a, planeNormal);
+	}
+
+
+	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
 	constexpr bool areColinear(const glm::vec<3, I, Q>& p, const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& b) noexcept {
 		return glm::length2(surfaceNormal(p, a, b)) <= I(0.00001f);
 	}
