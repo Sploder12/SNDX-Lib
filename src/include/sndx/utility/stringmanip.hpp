@@ -125,7 +125,7 @@ namespace sndx::utility {
 		Str<CharT> out{};
 		out.reserve(str.size());
 
-		for (int i = 0; i < str.size(); ++i) {
+		for (size_t i = 0; i < str.size(); ++i) {
 			CharT cur = str[i];
 			if (cur == '\\') {
 				++i;

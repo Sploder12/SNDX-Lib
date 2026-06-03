@@ -54,10 +54,10 @@ namespace sndx::audio {
 	namespace FMTextension {
 		struct ExtendedNone {
 			template <class DeserializeIt>
-			static constexpr void deserialize(DeserializeIt&, DeserializeIt) {};
+			static constexpr void deserialize(DeserializeIt&, DeserializeIt) {}
 
 			template <class SerializeIt>
-			static constexpr void serialize(SerializeIt&) {};
+			static constexpr void serialize(SerializeIt&) {}
 
 			static constexpr uint32_t size() noexcept {
 				return 0 + 16;
@@ -72,12 +72,12 @@ namespace sndx::audio {
 
 				if (size != 0)
 					throw deserialize_error("Extended0 didn't have size 0");
-			};
+			}
 
 			template <class SerializeIt>
 			static constexpr void serialize(SerializeIt& out) noexcept {
 				serializeToAdjust(out, static_cast<uint16_t>(0));
-			};
+			}
 
 			static constexpr uint32_t size() noexcept {
 				return 0 + sizeof(uint16_t) + 16;
@@ -102,7 +102,7 @@ namespace sndx::audio {
 				deserializeFromAdjust(validBitsPerSample, in, end);
 				deserializeFromAdjust(channelMask, in, end);
 				deserializeFromAdjust(guid, in, end);
-			};
+			}
 
 			template <class SerializeIt>
 			void serialize(SerializeIt& out) const {
@@ -111,7 +111,7 @@ namespace sndx::audio {
 				serializeToAdjust(out, validBitsPerSample);
 				serializeToAdjust(out, channelMask);
 				serializeToAdjust(out, guid);
-			};
+			}
 
 			static constexpr uint32_t size() noexcept {
 				return dataSize + sizeof(uint16_t) + 16;

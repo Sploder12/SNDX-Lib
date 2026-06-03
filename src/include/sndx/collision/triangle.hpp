@@ -5,6 +5,8 @@
 
 #include "../math/lines.hpp"
 
+#include <cmath>
+
 namespace sndx::collision {
 	// A Triangle as described by three points.
 	template <Vector VectorT = glm::vec3>
@@ -93,6 +95,8 @@ namespace sndx::collision {
 			auto u = va / denom;
 			auto v = vb / denom;
 			auto w = 1.0f - u - v;
+
+			assert(!std::isnan(u) && !std::isnan(v));
 			return glm::vec3(u, v, w);
 		}
 

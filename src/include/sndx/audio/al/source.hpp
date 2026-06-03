@@ -124,7 +124,7 @@ namespace sndx::audio {
 				alGetSourcei(m_id, param, &out);
 				return out;
 			}
-		};
+		}
 
 		const ALsource& setPos(glm::vec3 pos) const {
 			setParam(AL_POSITION, pos);

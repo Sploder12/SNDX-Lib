@@ -73,7 +73,7 @@ namespace sndx::collision {
 			scale = glm::length(basis[0]);
 
 			// avoid non-uniform scale
-			assert(scale == glm::length(basis[1]) && scale == glm::length(basis[2]));
+			assert(std::abs(scale - glm::length(basis[1])) < 0.0001f && std::abs(scale - glm::length(basis[2])) < 0.0001f);
 
 			rot = glm::quat_cast(basis / scale);
 
@@ -169,6 +169,8 @@ namespace sndx::collision {
 		//out.a = a.getCenter() - out.normal * a.getRadius();
 		//out.b = closest;
 
+		assert(!std::isnan(out.depth));
+
 		return out;
 	}
 
@@ -200,7 +202,6 @@ namespace sndx::collision {
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const Rect<VectorT>& a, const Rect<VectorT>& b) {
 		using Precision = typename Rect<VectorT>::Precision;
-		using LenT = typename VectorT::length_type;
 
 		auto minMaxes = glm::min(a.getP2(), b.getP2());
 		auto maxMins = glm::max(a.getP1(), b.getP1());
@@ -336,14 +337,11 @@ namespace sndx::collision {
 	constexpr std::optional<Collision<VectorT>> getCollision(const OriRect<VectorT>& a, const Circle<VectorT>& b) {
 		using Precision = typename Rect<VectorT>::Precision;
 
-		auto basis = glm::mat3_cast(a.getRotation());
+		auto basis = glm::mat3_cast(glm::normalize(a.getRotation()));
 
 		auto ab = b.getCenter() - a.getCenter();
 
-		VectorT local{};
-		for (uint8_t i = 0; i < a.dimensionality(); ++i) {
-			local[i] = glm::dot(ab, basis[typename decltype(basis)::length_type(i)]);
-		}
+		VectorT local = glm::transpose(basis) * ab;
 
 		auto closest = glm::clamp(local, -a.getHalfExtents(), a.getHalfExtents());
 		auto world = a.getCenter() + basis * closest;
