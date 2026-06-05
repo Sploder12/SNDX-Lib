@@ -243,7 +243,7 @@ namespace sndx::collision {
 
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const Rect<VectorT>& a, const Tri<VectorT>& b) {
-		return getCollision(OriRect<VectorT>{a}, b);
+		return getCollision(sndx::collision::getSupportFn(a), sndx::collision::getSupportFn(b));
 	}
 
 	// ===============
@@ -279,61 +279,6 @@ namespace sndx::collision {
 
 			if (overlap < Precision(0))
 				return false;
-
-			if (overlap < minOverlap) {
-				minOverlap = overlap;
-				bestAxis = axis;
-			}
-
-			return true;
-		}
-
-		template <Vector VectorT = glm::vec3> [[nodiscard]]
-		bool testAxis(VectorT axis, const OriRect<VectorT>& a, const Tri<VectorT>& b, typename OriRect<VectorT>::Precision& minOverlap, VectorT& bestAxis) {
-			using Precision = typename OriRect<VectorT>::Precision;
-
-			auto len2 = glm::length2(axis);
-			if (len2 < Precision(0.00000001))
-				return true;
-
-			// normalize axis
-			axis /= std::sqrt(len2);
-
-			auto tri0 = glm::dot(b.getP1(), axis);
-			auto tri1 = glm::dot(b.getP2(), axis);
-			auto tri2 = glm::dot(b.getP3(), axis);
-			auto triMin = std::min(tri0, std::min(tri1, tri2));
-			auto triMax = std::max(tri0, std::max(tri1, tri2));
-
-			auto axes = glm::mat3_cast(glm::normalize(a.getRotation()));
-			auto ori = glm::dot(a.getCenter(), axis);
-			auto r =
-				a.getHalfExtents().x * glm::abs(glm::dot(axes[0], axis)) +
-				a.getHalfExtents().y * glm::abs(glm::dot(axes[1], axis)) +
-				a.getHalfExtents().z * glm::abs(glm::dot(axes[2], axis));
-
-			auto obbMin = ori - r;
-			auto obbMax = ori + r;
-
-			auto overlap = std::min(obbMax, triMax) - std::max(obbMin, triMin);
-
-			if (overlap < Precision(0))
-				return false;
-
-			// this edge case is so common that it's not really edge
-			// basically the triangle projects to a point and the overlap becomes 0.0
-			// the true overlap is how far the triangle is inside the interval defined by the OBB
-			if (triMax - triMin <= Precision(0.00001)) {
-				auto dm = std::abs(obbMin - triMin);
-				auto dM = std::abs(obbMax - triMin);
-				if (dm < dM) {
-					overlap = dm;
-				}
-				else {
-					overlap = dM;
-					axis *= Precision(-1.0);
-				}
-			}
 
 			if (overlap < minOverlap) {
 				minOverlap = overlap;
@@ -434,42 +379,8 @@ namespace sndx::collision {
 
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const OriRect<VectorT>& a, const Tri<VectorT>& b) {
-		using Precision = typename OriRect<VectorT>::Precision;
-
-		std::array<VectorT, 3> triEdges { 
-			b.getP2() - b.getP1(),
-			b.getP3() - b.getP2(),
-			b.getP1() - b.getP3()
-		};
-		auto triNorm = glm::normalize(sndx::math::surfaceNormal(b.getP1(), b.getP2(), b.getP3()));
-		glm::mat3 axes = glm::mat3_cast(glm::normalize(a.getRotation()));
-
-		Precision minOverlap = std::numeric_limits<Precision>::max();
-		VectorT minAxis{};
-
-		for (uint8_t i = 0; i < axes.length(); ++i) {
-			if (!detail::testAxis(axes[i], a, b, minOverlap, minAxis)) {
-				return std::nullopt;
-			}
-		}
-
-		if (!detail::testAxis(triNorm, a, b, minOverlap, minAxis)) {
-			return std::nullopt;
-		}
-
-		for (uint8_t i = 0; i < axes.length(); ++i) {
-			for (size_t j = 0; j < triEdges.size(); ++j) {
-				auto axis = glm::cross(axes[i], triEdges[j]);
-				if (!detail::testAxis(axis, a, b, minOverlap, minAxis)) {
-					return std::nullopt;
-				}
-			}
-		}
-
-		Collision<VectorT> out{};
-		out.normal = minAxis;
-		out.depth = minOverlap;
-		return out;
+		// GJK + EPA wins over SAT in this case
+		return getCollision(sndx::collision::getSupportFn(a), sndx::collision::getSupportFn(b));
 	}
 
 	// ===================
@@ -493,7 +404,7 @@ namespace sndx::collision {
 	}
 
 	template <Vector VectorT> [[nodiscard]]
-		constexpr std::optional<Collision<VectorT>> getCollision(const Tri<VectorT>& a, const OriRect<VectorT>& b) {
+	constexpr std::optional<Collision<VectorT>> getCollision(const Tri<VectorT>& a, const OriRect<VectorT>& b) {
 		if (auto r = getCollision(b, a)) {
 			return r->swapped();
 		}
@@ -511,7 +422,7 @@ namespace sndx::collision {
 
 			return Collision3D{
 			//	.a = res.a, .b = res.b,
-				.normal = res.normal, .depth = res.depth
+				.normal = -res.normal, .depth = res.depth
 			};
 		}
 		return std::nullopt;

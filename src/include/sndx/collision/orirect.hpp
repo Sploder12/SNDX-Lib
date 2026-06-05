@@ -40,9 +40,6 @@ namespace sndx::collision {
 		constexpr explicit OriRect(const Rect<Vec>& other, const glm::quat& rot = glm::quat{}):
 			OriRect(other.getCenter(), other.getSize() * Precision(0.5), rot) {}
 
-
-		
-
 		constexpr OriRect& setCenter(const Vec& vec) noexcept {
 			center = vec;
 			return *this;
@@ -104,7 +101,7 @@ namespace sndx::collision {
 
 			Vec out = getCenter();
 			for (uint16_t axis = 0; axis < dimensionality(); ++axis) {
-				out[axis] += glm::dot(direction, axes[axis]) <= Precision(0.0) ? -getHalfExtents()[axis] : getHalfExtents()[axis];
+				out += axes[axis] * (glm::dot(direction, axes[axis]) <= Precision(0.0) ? -getHalfExtents()[axis] : getHalfExtents()[axis]);
 			}
 			return out;
 		}
