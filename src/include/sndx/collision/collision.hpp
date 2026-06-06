@@ -87,9 +87,9 @@ namespace sndx::collision {
 	template <class ShapeT>
 	auto transform(const ShapeT& shape, const Transform& tform) {
 		if constexpr (std::is_same_v<ShapeT, sndx::collision::Rect3D>) {
-			return sndx::collision::OriRect3D{ 
-				shape.getCenter() * tform.scale + tform.pos,
-				shape.getSize() * tform.scale * 0.5f, 
+			return sndx::collision::OriRect3D{
+				tform.pos + tform.rot * (shape.getCenter() * tform.scale),
+				shape.getSize() * 0.5f * tform.scale,
 				tform.rot 
 			};
 		}
