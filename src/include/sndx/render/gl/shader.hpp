@@ -133,7 +133,7 @@ namespace sndx::render {
 		}
 
 		template <class T>
-		explicit ShaderProgram(T& shaders) :
+		explicit ShaderProgram(T& shaders, bool detach = true) :
 			m_id(glCreateProgram()), uniformCache{} {
 
 			for (const auto& shader : shaders) {
@@ -144,13 +144,20 @@ namespace sndx::render {
 
 			auto err = checkErr();
 
-			for (const auto& shader : shaders) {
-				glDetachShader(m_id, shader.m_id);
+			if (detach) {
+				for (const auto& shader : shaders) {
+					glDetachShader(m_id, shader.m_id);
+				}
 			}
 
 			if (err.has_value()) [[unlikely]] {
 				throw std::runtime_error(err.value());
 			}
+		}
+
+		[[nodiscard]]
+		GLuint getID() const noexcept {
+			return m_id;
 		}
 
 		void use() const {

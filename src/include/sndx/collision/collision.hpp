@@ -190,6 +190,10 @@ namespace sndx::collision {
 		return std::nullopt;
 	}
 
+	// =================
+	// = Capsule VS ... =
+	// =================
+
 	// ===============
 	// = AABB VS ... =
 	// ===============
