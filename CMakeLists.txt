@@ -22,11 +22,12 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(Freetype REQUIRED)
 find_package(Vorbis CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 include_directories(lib/include src/include/sndx)
 
 include_directories(${Stb_INCLUDE_DIR} ${MINIMP3_INCLUDE_DIRS})
-link_libraries(OpenAL::OpenAL glm::glm glfw GLEW::GLEW Freetype::Freetype Vorbis::vorbis)
+link_libraries(OpenAL::OpenAL glm::glm glfw GLEW::GLEW Freetype::Freetype Vorbis::vorbis imgui::imgui)
 
 enable_testing()
 add_subdirectory(src/tests)
