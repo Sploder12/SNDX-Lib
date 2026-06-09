@@ -65,7 +65,7 @@ namespace sndx::audio {
 			
 			if constexpr (std::is_same_v<SampleT, uint8_t> || std::is_same_v<SampleT, int16_t>) {
 				ALformat format = determineALformat(sizeof(SampleT) * 8, (short)data.channels());
-				alBufferData(m_id, (ALenum)format, data.data(), (ALsizei)data.totalSamples(), ALsizei(data.frequency()));
+				alBufferData(m_id, (ALenum)format, data.data(), (ALsizei)data.byteSize(), ALsizei(data.frequency()));
 			}
 			else {
 				if (data.channels() > 2)
@@ -73,7 +73,7 @@ namespace sndx::audio {
 
 				ALenum format = data.channels() == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16;
 				auto converted = convert<int16_t>(data);
-				alBufferData(m_id, format, converted.data(), (ALsizei)converted.totalSamples(), ALsizei(converted.frequency()));
+				alBufferData(m_id, format, converted.data(), (ALsizei)converted.byteSize(), ALsizei(converted.frequency()));
 			}
 
 			return *this;
