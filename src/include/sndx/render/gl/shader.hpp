@@ -15,6 +15,12 @@
 #include <vector>
 #include <sstream>
 
+#ifndef SNDX_NO_DSA
+#define SNDX_USE_DSA 1
+#else
+#define SNDX_USE_DSA 0
+#endif
+
 namespace sndx::render {
 	enum class ShaderType : GLenum {
 		Vertex = GL_VERTEX_SHADER,
@@ -115,6 +121,7 @@ namespace sndx::render {
 		}
 
 	public:
+		static constexpr bool useDSA = bool(SNDX_USE_DSA);
 
 		explicit ShaderProgram() = default;
 
@@ -178,39 +185,84 @@ namespace sndx::render {
 
 
 		void uniform(const std::string& uid, int data) const {
-			glUniform1i(getUniformLocation(uid), data);
+			if constexpr (!useDSA) {
+				glUniform1i(getUniformLocation(uid), data);
+			}
+			else {
+				glProgramUniform1i(m_id, getUniformLocation(uid), data);
+			}
 		}
 
 		void uniform(const std::string& uid, unsigned int data) const {
-			glUniform1ui(getUniformLocation(uid), data);
+			if constexpr (!useDSA) {
+				glUniform1ui(getUniformLocation(uid), data);
+			}
+			else {
+				glProgramUniform1ui(m_id, getUniformLocation(uid), data);
+			}
 		}
 
 		void uniform(const std::string& uid, float data) const {
-			glUniform1f(getUniformLocation(uid), data);
+			if constexpr (!useDSA) {
+				glUniform1f(getUniformLocation(uid), data);
+			}
+			else {
+				glProgramUniform1f(m_id, getUniformLocation(uid), data);
+			}
 		}
 
 		void uniform(const std::string& uid, glm::vec2 data) const {
-			glUniform2f(getUniformLocation(uid), data.x, data.y);
+			if constexpr (!useDSA) {
+				glUniform2f(getUniformLocation(uid), data.x, data.y);
+			}
+			else {
+				glProgramUniform2f(m_id, getUniformLocation(uid), data.x, data.y);
+			}
 		}
 
 		void uniform(const std::string& uid, glm::vec3 data) const {
-			glUniform3f(getUniformLocation(uid), data.x, data.y, data.z);
+			if constexpr (!useDSA) {
+				glUniform3f(getUniformLocation(uid), data.x, data.y, data.z);
+			}
+			else {
+				glProgramUniform3f(m_id, getUniformLocation(uid), data.x, data.y, data.z);
+			}
 		}
 
 		void uniform(const std::string& uid, glm::vec4 data) const {
-			glUniform4f(getUniformLocation(uid), data.x, data.y, data.z, data.w);
+			if constexpr (!useDSA) {
+				glUniform4f(getUniformLocation(uid), data.x, data.y, data.z, data.w);
+			}
+			else {
+				glProgramUniform4f(m_id, getUniformLocation(uid), data.x, data.y, data.z, data.w);
+			}
 		}
 
 		void uniform(const std::string& uid, glm::mat2 data) const {
-			glUniformMatrix2fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			if constexpr (!useDSA) {
+				glUniformMatrix2fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			}
+			else {
+				glProgramUniformMatrix2fv(m_id, getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			}
 		}
 
 		void uniform(const std::string& uid, glm::mat3 data) const {
-			glUniformMatrix3fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			if constexpr (!useDSA) {
+				glUniformMatrix3fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			}
+			else {
+				glProgramUniformMatrix3fv(m_id, getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			}
 		}
 
 		void uniform(const std::string& uid, glm::mat4 data) const {
-			glUniformMatrix4fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			if constexpr (!useDSA) {
+				glUniformMatrix4fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			}
+			else {
+				glProgramUniformMatrix4fv(m_id, getUniformLocation(uid), 1, false, glm::value_ptr(data));
+			}
 		}
 
 	protected:
