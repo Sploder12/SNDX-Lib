@@ -147,6 +147,19 @@ namespace sndx::collision {
 			return glm::compMul(getSize());
 		}
 
+		// get the Surface Area of the Rect
+		[[nodiscard]]
+		constexpr Precision getSurfaceArea() const noexcept {
+			auto sz = getSize();
+			if constexpr (dimensionality() == 3) {
+				return Precision(2.0) * (sz.x * sz.y + sz.x * sz.z + sz.z * sz.y);
+			}
+			else if constexpr (dimensionality() == 2) {
+				// perimeter is kinda like surface area...
+				return Precision(2.0) * (sz.x + sz.y);
+			}
+		}
+
 		// get the center point of the Rect
 		[[nodiscard]]
 		constexpr Vec getCenter() const noexcept {

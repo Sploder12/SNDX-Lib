@@ -123,6 +123,11 @@ namespace sndx::collision {
 	// = Sphere VS ... =
 	// =================
 
+	[[nodiscard]]
+	inline Rect3D getBounds(const Circle3D& a) {
+		return Rect3D{glm::vec3(a.getCenter() - glm::vec3(a.getRadius())), glm::vec3(a.getCenter() + glm::vec3(a.getRadius())) };
+	}
+
 	template <Vector VectorT, Volume T> [[nodiscard]]
 	constexpr bool hasCollision(const Circle<VectorT>& a, const Circle<VectorT>& b) {
 		return a.overlaps(b);
@@ -194,9 +199,21 @@ namespace sndx::collision {
 	// = Capsule VS ... =
 	// =================
 
+	[[nodiscard]]
+	inline Rect3D getBounds(const Capsule3D& a) {
+		auto r = glm::vec3{ a.getRadius() };
+		Rect3D t{ a.getPointA(), a.getPointB() };
+		return Rect3D{ t.getP1() - r, t.getP2() + r };
+	}
+
 	// ===============
 	// = AABB VS ... =
 	// ===============
+
+	[[nodiscard]]
+	inline Rect3D getBounds(const Rect3D& a) {
+		return a;
+	}
 
 	template <Vector VectorT> [[nodiscard]]
 	constexpr bool hasCollision(const Rect<VectorT>& a, const Rect<VectorT>& b) {
@@ -253,6 +270,18 @@ namespace sndx::collision {
 	// ===============
 	// = OBB VS ... =
 	// ===============
+
+	[[nodiscard]]
+	inline Rect3D getBounds(const OriRect3D& obb) {
+		auto axes = glm::mat3_cast(obb.getRotation());
+		glm::vec3 extent{ 0.0f };
+		for (glm::length_t i = 0; i < 3; ++i) {
+			extent[i] = glm::dot(glm::abs(axes[i]), obb.getHalfExtents());
+		}
+
+		return Rect3D{ obb.getCenter() - extent, obb.getCenter() + extent };
+	}
+
 	namespace detail {
 		// helper for SAT
 		template <Vector VectorT = glm::vec3> [[nodiscard]]
@@ -391,6 +420,12 @@ namespace sndx::collision {
 	// = Triangle VS ... =
 	// ===================
 
+	[[nodiscard]]
+	inline Rect3D getBounds(const Tri3D& tri) {
+		auto a = Rect3D{ tri.getP1(), tri.getP2() };
+		return a.combine(Rect3D{ tri.getP3(), tri.getP2() });
+	}
+
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const Tri<VectorT>& a, const Circle<VectorT>& b) {
 		if (auto r = getCollision(b, a)) {
@@ -418,6 +453,16 @@ namespace sndx::collision {
 	// ==========================
 	// = Arbitrary Convex (gjk) =
 	// ==========================
+	template <std::invocable<glm::vec3> FnA, std::invocable<glm::vec3> FnB> [[nodiscard]]
+	bool hasCollision(FnA&& sptA, FnB&& sptB) {
+		return bool(gjk(sptA, sptB));
+	}
+
+	template <class T, class U> [[nodiscard]]
+	bool hasCollision(const T& a, const U& b) {
+		// slow fallback, avoid where possible
+		return bool(getCollision(a, b));
+	}
 
 	template <std::invocable<glm::vec3> FnA, std::invocable<glm::vec3> FnB> [[nodiscard]]
 	std::optional<Collision3D> getCollision(FnA&& sptA, FnB&& sptB) {
@@ -431,5 +476,4 @@ namespace sndx::collision {
 		}
 		return std::nullopt;
 	}
-
 }
