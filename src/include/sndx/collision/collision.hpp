@@ -56,6 +56,15 @@ namespace sndx::collision {
 				glm::scale(glm::mat4{ 1.0f }, glm::vec3(scale));
 		}
 
+		[[nodiscard]]
+		Transform inverse() const {
+			Transform out{};
+			out.rot = glm::inverse(rot);
+			out.scale = 1.0f / scale;
+			out.pos = out.rot * (-pos * out.scale);
+			return out;
+		}
+
 		explicit Transform(glm::vec3 pos = {}, const glm::quat& rot = {}, float scale = 1.0f):
 			pos(pos), rot(rot), scale(scale) {}
 
@@ -131,6 +140,14 @@ namespace sndx::collision {
 	template <Vector VectorT> [[nodiscard]]
 	constexpr bool hasCollision(const Circle<VectorT>& a, const Circle<VectorT>& b) {
 		return a.overlaps(b);
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr bool hasCollision(const Circle<VectorT>& a, const Rect<VectorT>& b) {
+		auto closest = glm::clamp(a.getCenter(), b.getP1(), b.getP2());
+		auto delta = a.getCenter() - closest;
+
+		return glm::length2(delta) <= a.getRadius() * a.getRadius();
 	}
 
 	template <Vector VectorT> [[nodiscard]]
@@ -229,6 +246,11 @@ namespace sndx::collision {
 	template <Vector VectorT> [[nodiscard]]
 	constexpr bool hasCollision(const Rect<VectorT>& a, const Rect<VectorT>& b) {
 		return a.overlaps(b);
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr bool hasCollision(const Rect<VectorT>& a, const Circle<VectorT>& b) {
+		return hasCollision(b, a);
 	}
 
 	template <Vector VectorT> [[nodiscard]]
