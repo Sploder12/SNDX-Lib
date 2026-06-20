@@ -111,10 +111,10 @@ namespace sndx::collision {
 			return out;
 		}
 		else if constexpr (std::is_same_v<ShapeT, sndx::collision::Tri3D>) {
-			auto matform = tform.asMatrix();
-			glm::vec3 p1 = matform * glm::vec4(shape.getP1(), 1.0f);
-			glm::vec3 p2 = matform * glm::vec4(shape.getP2(), 1.0f);
-			glm::vec3 p3 = matform * glm::vec4(shape.getP3(), 1.0f);
+			auto rs = glm::mat3_cast(tform.rot) * tform.scale;
+			glm::vec3 p1 = tform.pos + rs * shape.getP1();
+			glm::vec3 p2 = tform.pos + rs * shape.getP2();
+			glm::vec3 p3 = tform.pos + rs * shape.getP3();
 			return ShapeT{ p1, p2, p3 };
 		}
 	}
@@ -128,9 +128,20 @@ namespace sndx::collision {
 		return Rect3D{glm::vec3(a.getCenter() - glm::vec3(a.getRadius())), glm::vec3(a.getCenter() + glm::vec3(a.getRadius())) };
 	}
 
-	template <Vector VectorT, Volume T> [[nodiscard]]
+	template <Vector VectorT> [[nodiscard]]
 	constexpr bool hasCollision(const Circle<VectorT>& a, const Circle<VectorT>& b) {
 		return a.overlaps(b);
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr bool hasCollision(const Circle<VectorT>& a, const OriRect<VectorT>& b) {
+		auto center = a.getCenter() - b.getCenter();
+		auto local = glm::inverse(b.getRotation()) * center;
+
+		auto closest = glm::clamp(local, -b.getHalfExtents(), b.getHalfExtents());
+		auto delta = local - closest;
+
+		return glm::length2(delta) <= a.getRadius() * a.getRadius();
 	}
 
 	template <Vector VectorT> [[nodiscard]]
@@ -280,6 +291,11 @@ namespace sndx::collision {
 		}
 
 		return Rect3D{ obb.getCenter() - extent, obb.getCenter() + extent };
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr bool hasCollision(const OriRect<VectorT>& a, const Circle<VectorT>& b) {
+		return hasCollision(b, a);
 	}
 
 	namespace detail {
