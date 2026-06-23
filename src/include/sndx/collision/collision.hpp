@@ -50,10 +50,12 @@ namespace sndx::collision {
 
 		[[nodiscard]]
 		glm::mat4 asMatrix() const {
-			return 
-				glm::translate(glm::mat4{ 1.0f }, pos) *
-				glm::mat4_cast(rot) *
-				glm::scale(glm::mat4{ 1.0f }, glm::vec3(scale));
+			glm::mat4 out = glm::mat4_cast(rot);
+			out[0] *= scale;
+			out[1] *= scale;
+			out[2] *= scale;
+			out[3] = glm::vec4{ pos, 1.0f };
+			return out;
 		}
 
 		[[nodiscard]]
