@@ -6,6 +6,8 @@
 
 #include "../image/imagedata.hpp"
 
+// WARNING: DEPRECATED
+
 namespace sndx::render {
 	[[nodiscard]]
 	constexpr GLenum formatFromChannels(int channels, bool compressed = false) {

@@ -113,6 +113,7 @@ namespace sndx::render {
 	class ShaderProgram {
 	private:
 		mutable std::unordered_map<std::string, GLint> uniformCache{};
+		mutable std::unordered_map<std::string, GLuint> ssboSlots{};
 
 		GLuint m_id{0};
 
@@ -130,12 +131,15 @@ namespace sndx::render {
 		}
 
 		ShaderProgram(ShaderProgram&& other) noexcept :
-			m_id(std::exchange(other.m_id, 0)), uniformCache(std::exchange(other.uniformCache, {})) {
+			m_id(std::exchange(other.m_id, 0)),
+			uniformCache(std::exchange(other.uniformCache, {})),
+			ssboSlots(std::exchange(other.ssboSlots, {})) {
 		}
 
 		ShaderProgram& operator=(ShaderProgram&& other) noexcept {
 			std::swap(m_id, other.m_id);
 			std::swap(uniformCache, other.uniformCache);
+			std::swap(ssboSlots, other.ssboSlots);
 			return *this;
 		}
 
@@ -173,8 +177,7 @@ namespace sndx::render {
 
 		[[nodiscard]]
 		GLint getUniformLocation(const std::string& uid) const {
-			auto it = uniformCache.find(uid);
-			if (it != uniformCache.end()) [[likely]] {
+			if (auto it = uniformCache.find(uid); it != uniformCache.end()) [[likely]] {
 				return it->second;
 			}
 
@@ -183,6 +186,35 @@ namespace sndx::render {
 			return ret;
 		}
 
+		[[nodiscard]]
+		GLuint getSSBOlocation(const std::string& sid) const {
+			return glGetProgramResourceLocation(m_id, GL_SHADER_STORAGE_BLOCK, sid.c_str());
+		}
+
+		[[nodiscard]]
+		GLuint getSSBOslot(const std::string& sid) const {
+			if (auto it = ssboSlots.find(sid); it != ssboSlots.end()) {
+				return it->second;
+			}
+
+			GLint out = GL_INVALID_INDEX;
+			if (auto loc = getSSBOlocation(sid); loc != GL_INVALID_INDEX) {
+				GLenum prop = GL_BUFFER_BINDING;
+				GLsizei len;
+				glGetProgramResourceiv(m_id, GL_SHADER_STORAGE_BLOCK, loc, 1, &prop, 1, &len, &out);
+			}
+			ssboSlots.emplace(sid, out);
+			return out;
+		}
+
+		bool setSSBOslot(const std::string& sid, GLuint slot) {
+			auto loc = getSSBOlocation(sid);
+			if (loc == GL_INVALID_INDEX) return false;
+
+			glShaderStorageBlockBinding(m_id, loc, slot);
+			ssboSlots.emplace(sid, slot);
+			return true;
+		}
 
 		void uniform(const std::string& uid, int data) const {
 			if constexpr (!useDSA) {
