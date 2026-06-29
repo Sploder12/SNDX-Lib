@@ -4,6 +4,8 @@
 
 #include "buffer.hpp"
 
+#include <stdexcept>
+
 namespace sndx::render::gl {
 
 	[[nodiscard]]
