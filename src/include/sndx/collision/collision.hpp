@@ -110,7 +110,7 @@ namespace sndx::collision {
 		else if constexpr (std::is_same_v<ShapeT, sndx::collision::Circle3D>) {
 			ShapeT out = shape;
 			out.setRadius(shape.getRadius() * tform.scale);
-			out.translate(tform.pos);
+			out.setPosition(tform.pos + tform.rot * (shape.getCenter() * tform.scale));
 			return out;
 		}
 		else if constexpr (std::is_same_v<ShapeT, sndx::collision::Capsule3D>) {

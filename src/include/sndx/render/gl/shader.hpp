@@ -217,83 +217,110 @@ namespace sndx::render {
 		}
 
 		void uniform(const std::string& uid, int data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniform1i(getUniformLocation(uid), data);
+				glUniform1i(location, data);
 			}
 			else {
-				glProgramUniform1i(m_id, getUniformLocation(uid), data);
+				glProgramUniform1i(m_id, location, data);
 			}
 		}
 
 		void uniform(const std::string& uid, unsigned int data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniform1ui(getUniformLocation(uid), data);
+				glUniform1ui(location, data);
 			}
 			else {
-				glProgramUniform1ui(m_id, getUniformLocation(uid), data);
+				glProgramUniform1ui(m_id, location, data);
 			}
 		}
 
 		void uniform(const std::string& uid, float data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniform1f(getUniformLocation(uid), data);
+				glUniform1f(location, data);
 			}
 			else {
-				glProgramUniform1f(m_id, getUniformLocation(uid), data);
+				glProgramUniform1f(m_id, location, data);
 			}
 		}
 
 		void uniform(const std::string& uid, glm::vec2 data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniform2f(getUniformLocation(uid), data.x, data.y);
+				glUniform2f(location, data.x, data.y);
 			}
 			else {
-				glProgramUniform2f(m_id, getUniformLocation(uid), data.x, data.y);
+				glProgramUniform2f(m_id, location, data.x, data.y);
 			}
 		}
 
 		void uniform(const std::string& uid, glm::vec3 data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniform3f(getUniformLocation(uid), data.x, data.y, data.z);
+				glUniform3f(location, data.x, data.y, data.z);
 			}
 			else {
-				glProgramUniform3f(m_id, getUniformLocation(uid), data.x, data.y, data.z);
+				glProgramUniform3f(m_id, location, data.x, data.y, data.z);
 			}
 		}
 
 		void uniform(const std::string& uid, glm::vec4 data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniform4f(getUniformLocation(uid), data.x, data.y, data.z, data.w);
+				glUniform4f(location, data.x, data.y, data.z, data.w);
 			}
 			else {
-				glProgramUniform4f(m_id, getUniformLocation(uid), data.x, data.y, data.z, data.w);
+				glProgramUniform4f(m_id, location, data.x, data.y, data.z, data.w);
 			}
 		}
 
 		void uniform(const std::string& uid, glm::mat2 data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniformMatrix2fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+				glUniformMatrix2fv(location, 1, false, glm::value_ptr(data));
 			}
 			else {
-				glProgramUniformMatrix2fv(m_id, getUniformLocation(uid), 1, false, glm::value_ptr(data));
+				glProgramUniformMatrix2fv(m_id, location, 1, false, glm::value_ptr(data));
 			}
 		}
 
 		void uniform(const std::string& uid, glm::mat3 data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniformMatrix3fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+				glUniformMatrix3fv(location, 1, false, glm::value_ptr(data));
 			}
 			else {
-				glProgramUniformMatrix3fv(m_id, getUniformLocation(uid), 1, false, glm::value_ptr(data));
+				glProgramUniformMatrix3fv(m_id, location, 1, false, glm::value_ptr(data));
 			}
 		}
 
 		void uniform(const std::string& uid, glm::mat4 data) const {
+			auto location = getUniformLocation(uid);
+			if (location == -1) return;
+
 			if constexpr (!useDSA) {
-				glUniformMatrix4fv(getUniformLocation(uid), 1, false, glm::value_ptr(data));
+				glUniformMatrix4fv(location, 1, false, glm::value_ptr(data));
 			}
 			else {
-				glProgramUniformMatrix4fv(m_id, getUniformLocation(uid), 1, false, glm::value_ptr(data));
+				glProgramUniformMatrix4fv(m_id, location, 1, false, glm::value_ptr(data));
 			}
 		}
 
