@@ -93,7 +93,24 @@ namespace sndx::render::gl {
 
 				glVertexArrayVertexBuffer(id, curBufs, vbo.id, 0, entry.stride);
 				glEnableVertexArrayAttrib(id, curIdx);
-				glVertexArrayAttribFormat(id, curIdx, entry.count, type, entry.normalized, entry.offset);
+
+				if (entry.normalized) {
+					glVertexArrayAttribFormat(id, curIdx, entry.count, type, entry.normalized, entry.offset);
+				}
+				else {
+					switch (entry.type) {
+					case Type::halfFloats:
+					case Type::floats:
+						glVertexArrayAttribFormat(id, curIdx, entry.count, type, entry.normalized, entry.offset);
+						break;
+					case Type::doubles:
+						glVertexArrayAttribLFormat(id, curIdx, entry.count, type, entry.offset);
+						break;
+					default:
+						glVertexArrayAttribIFormat(id, curIdx, entry.count, type, entry.offset);
+						break;
+					}
+				}
 				glVertexArrayAttribBinding(id, curIdx, curBufs);
 
 				if (entry.instanced) {

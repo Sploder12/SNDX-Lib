@@ -188,7 +188,7 @@ namespace sndx::render {
 
 		[[nodiscard]]
 		GLuint getSSBOlocation(const std::string& sid) const {
-			return glGetProgramResourceLocation(m_id, GL_SHADER_STORAGE_BLOCK, sid.c_str());
+			return glGetProgramResourceIndex(m_id, GL_SHADER_STORAGE_BLOCK, sid.c_str());
 		}
 
 		[[nodiscard]]
