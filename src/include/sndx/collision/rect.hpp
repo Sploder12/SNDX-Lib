@@ -334,7 +334,7 @@ namespace sndx::collision {
 			glm::abs(glm::vec3(tform[1])),
 			glm::abs(glm::vec3(tform[2]))
 		};
-		glm::vec3 extents{ absT * in.getSize() };
+		glm::vec3 extents{ absT * in.getSize() * 0.5f };
 
 		return sndx::collision::Rect3D{ center - extents, center + extents };
 	}
