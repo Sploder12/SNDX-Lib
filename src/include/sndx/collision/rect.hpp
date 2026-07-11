@@ -175,6 +175,28 @@ namespace sndx::collision {
 		constexpr const Rect<VectorT>& getBounds() const noexcept {
 			return *this;
 		}
+
+		[[nodiscard]]
+		constexpr Precision getInertia(Precision mass) const noexcept requires (dimensionality() == 2) {
+			constexpr Precision oneTwelveth = Precision(1.0) / Precision(12.0);
+			const auto& size = getSize();
+			return oneTwelveth * mass * (size.x * size.x + size.y * size.y);
+		}
+
+		[[nodiscard]]
+		constexpr auto getInertia(Precision mass) const noexcept requires (dimensionality() == 3) {
+			constexpr Precision oneTwelveth = Precision(1.0) / Precision(12.0);
+			const auto& size = getSize();
+			auto x2 = size.x * size.x;
+			auto y2 = size.y * size.y;
+			auto z2 = size.z * size.z;
+			auto m = oneTwelveth * mass;
+			return glm::mat<3, 3, Precision>{
+				m * (y2 + z2), Precision(0.0), Precision(0.0),
+				Precision(0.0), m * (x2 + z2), Precision(0.0),
+				Precision(0.0), Precision(0.0), m * (x2 + y2)
+			};
+		}
 		
 		/* Collision Related Methods */
 

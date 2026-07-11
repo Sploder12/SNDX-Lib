@@ -107,6 +107,35 @@ namespace sndx::collision {
 		}
 
 		[[nodiscard]]
+		constexpr Precision getInertia(Precision mass) const noexcept requires (dimensionality() == 2) {
+			constexpr Precision oneThird = Precision(1.0) / Precision(3.0);
+			const auto& size = getHalfExtents();
+			return oneThird * mass * (size.x * size.x + size.y * size.y);
+		}
+
+		[[nodiscard]]
+		constexpr auto getInertiaLocal(Precision mass) const noexcept requires (dimensionality() == 3) {
+			constexpr Precision oneThird = Precision(1.0) / Precision(3.0);
+			const auto& size = getHalfExtents();
+			auto x2 = size.x * size.x;
+			auto y2 = size.y * size.y;
+			auto z2 = size.z * size.z;
+			auto m = oneThird * mass;
+			return glm::mat<3, 3, Precision>{
+				m * (y2 + z2), Precision(0.0), Precision(0.0),
+				Precision(0.0), m * (x2 + z2), Precision(0.0),
+				Precision(0.0), Precision(0.0), m * (x2 + y2)
+			};
+		}
+
+		[[nodiscard]]
+		constexpr auto getInertia(Precision mass) const noexcept requires (dimensionality() == 3) {
+			auto local = getInertiaLocal(mass);
+			auto rot = glm::mat3_cast(getRotation());
+			return rot * local * glm::transpose(rot);
+		}
+
+		[[nodiscard]]
 		constexpr bool contains(const Vec& point) const noexcept {
 			return distance(point) <= Precision(0.0);
 		}

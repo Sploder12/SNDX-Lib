@@ -168,6 +168,16 @@ namespace sndx::collision {
 			return getCenter()[axis];
 		}
 
+		[[nodiscard]]
+		constexpr Precision getInertia(Precision mass) const noexcept requires (dimensionality() == 2) {
+			return Precision(0.5) * mass * getRadius() * getRadius();
+		}
+
+		[[nodiscard]]
+		constexpr auto getInertia(Precision mass) const noexcept requires (dimensionality() == 3) {
+			constexpr Precision twoFifths = Precision(2.0) / Precision(5.0);
+			return glm::mat<3, 3, Precision>{twoFifths * mass * getRadius() * getRadius()};
+		}
 
 		/* Collision Related Methods */
 

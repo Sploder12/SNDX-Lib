@@ -14,6 +14,14 @@
 #include <optional>
 
 namespace sndx::collision {
+
+	// difference is the center of mass - the geometric center (or vice versa)
+	// make sure the difference and tensor are in the same vector space
+	[[nodiscard]]
+	inline glm::mat3 parallelAxisTheorem(const glm::mat3& tensor, float mass, const glm::vec3& difference) {
+		return tensor + mass * (glm::mat3{ glm::length2(difference) } - glm::outerProduct(difference, difference));
+	}
+
 	template <Vector VectorT = glm::vec3>
 	struct Collision {
 		using Vec = VectorT;
