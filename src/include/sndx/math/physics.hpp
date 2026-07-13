@@ -47,4 +47,26 @@ namespace sndx::math {
 
 		return collisionNormal * j / denom;
 	}
+
+	template <class T> [[nodiscard]]
+	constexpr float rigidbodyImpulse(const T& rA, const T& rB, const T& linearA, const T& linearB, const T& angularA, const T& angularB, const glm::mat3& inertiaA, const glm::mat3& inertiaB, const T& collisionNormal, float restitution, float invMassA, float invMassB = 0.0f) {
+		auto velA = contactVelocity(linearA, angularA, rA);
+		auto velB = contactVelocity(linearB, angularB, rB);
+		auto relativeVelocity = velA - velB;
+
+		auto alignment = glm::dot(relativeVelocity, collisionNormal);
+		if (alignment >= 0.0f) {
+			return 0.0f;
+		}
+
+		auto angA = glm::cross(rA, angularA);
+		auto angB = glm::cross(rB, angularB);
+
+		auto rotA = glm::dot(collisionNormal, glm::cross(inertiaA * angA, rA));
+		auto rotB = glm::dot(collisionNormal, glm::cross(inertiaB * angB, rB));
+
+		auto denom = invMassA + invMassB + rotA + rotB;
+		auto j = -(1.0f + restitution) * alignment;
+		return j / denom;
+	}
 }

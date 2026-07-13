@@ -32,10 +32,14 @@ namespace sndx::collision {
 		VectorT normal{};
 		Precision depth{};
 
+		// contact points
+		VectorT a{}, b{};
+
 		[[nodiscard]]
 		constexpr Collision swapped() const noexcept {
 			Collision out = *this;
-			//std::swap(a, b);
+			out.a = b;
+			out.b = a;
 			out.normal *= Precision(-1.0);
 			return out;
 		}
@@ -184,9 +188,9 @@ namespace sndx::collision {
 
 		Collision<VectorT> out{};
 		out.normal = (l > Precision(0.00001)) ? ab / l : getFallbackNormal<VectorT>();
-		//out.a = a.getCenter() + out.normal * a.getRadius();
-		//out.b = b.getCenter() - out.normal * b.getRadius();
 		out.depth = a.getRadius() + b.getRadius() - l;
+		out.a = a.getCenter() + out.normal * a.getRadius();
+		out.b = b.getCenter() - out.normal * b.getRadius();
 		return out;
 	}
 
@@ -209,8 +213,8 @@ namespace sndx::collision {
 			out.normal = delta / len;
 		}
 		out.depth = a.getRadius() - len;
-		//out.a = a.getCenter() - out.normal * a.getRadius();
-		//out.b = closest;
+		out.a = a.getCenter() - out.normal * a.getRadius();
+		out.b = closest;
 
 		assert(!std::isnan(out.depth));
 
@@ -283,11 +287,11 @@ namespace sndx::collision {
 		Collision<VectorT> out{};
 		out.normal[minAxis] = b.getCenter(minAxis) > a.getCenter(minAxis) ? Precision(1.0) : Precision(-1.0);
 		out.depth = overlap[minAxis];
-		//out.a = glm::clamp(a.getCenter(), maxMins, minMaxes);
-		//out.a[minAxis] = out.normal[minAxis] > Precision(0.0) ? a.getP2()[minAxis] : a.getP1()[minAxis];
+		out.a = glm::clamp(a.getCenter(), maxMins, minMaxes);
+		out.a[minAxis] = out.normal[minAxis] > Precision(0.0) ? a.getP2()[minAxis] : a.getP1()[minAxis];
 
-		//out.b = glm::clamp(b.getCenter(), maxMins, minMaxes);
-		//out.b[minAxis] = out.normal[minAxis] > Precision(0.0) ? b.getP2()[minAxis] : b.getP1()[minAxis];
+		out.b = glm::clamp(b.getCenter(), maxMins, minMaxes);
+		out.b[minAxis] = out.normal[minAxis] > Precision(0.0) ? b.getP2()[minAxis] : b.getP1()[minAxis];
 
 		return out;
 	}
@@ -372,6 +376,7 @@ namespace sndx::collision {
 
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const OriRect<VectorT>& a, const OriRect<VectorT>& b) {
+		/*
 		using Precision = typename OriRect<VectorT>::Precision;
 
 		glm::mat3 axesA = glm::mat3_cast(a.getRotation());
@@ -410,7 +415,8 @@ namespace sndx::collision {
 		Collision<VectorT> out{};
 		out.normal = minAxis;
 		out.depth = minOverlap * 2.0f;
-		return out;
+		return out;*/
+		return getCollision(getSupportFn(a), getSupportFn(b));
 	}
 
 	template <Vector VectorT> [[nodiscard]]
@@ -518,8 +524,8 @@ namespace sndx::collision {
 			EpaResult res = epa(*simplex, std::forward<FnA>(sptA), std::forward<FnB>(sptB));
 
 			return Collision3D{
-			//	.a = res.a, .b = res.b,
-				.normal = -res.normal, .depth = res.depth
+				.normal = -res.normal, .depth = res.depth,
+				.a = res.a, .b = res.b,
 			};
 		}
 		return std::nullopt;
