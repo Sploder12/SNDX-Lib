@@ -382,7 +382,7 @@ namespace sndx::collision {
 	};
 
 	template <class SFnA, class SFnB> [[nodiscard]]
-	std::optional<SimplexGJK> gjk(const SFnA& supportA, const SFnB& supportB) {
+	std::optional<SimplexGJK> gjk(const SFnA& supportA, const SFnB& supportB, uint16_t maxIterations = 32) {
 		auto support = detail::gjkMinkowski(supportA, supportB, glm::vec3(1.0, 0.0, 0.0));
 
 		SimplexGJK simplex{};
@@ -391,7 +391,7 @@ namespace sndx::collision {
 		size_t iterations = 0;
 
 		auto dir = glm::normalize(-support.out);
-		while (iterations < 1024) {
+		while (iterations < maxIterations) {
 			support = detail::gjkMinkowski(supportA, supportB, dir);
 
 			// some unalignment is okay

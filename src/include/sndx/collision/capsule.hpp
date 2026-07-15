@@ -132,6 +132,51 @@ namespace sndx::collision {
 			return getCenter()[axis];
 		}
 
+		[[nodiscard]]
+		constexpr auto getInertia(Precision mass) const noexcept requires (dimensionality() == 3) {
+			auto ab = m_b - m_a;
+			auto height = glm::length(ab);
+			if (height < Precision(0.00001)) {
+				return glm::mat<3, 3, Precision>{1.0f};
+			}
+			auto axis = ab / height;
+
+			auto tan1 = glm::cross(axis, VectorT{ 0, 1, 0 });
+			auto l = glm::length(tan1);
+			if (l < Precision(0.0001)) {
+				tan1 = glm::normalize(glm::cross(axis, VectorT{ 1, 0, 0 }));
+			}
+			else {
+				tan1 /= l;
+			}
+
+			auto tan2 = glm::cross(axis, tan1);
+			glm::mat<3, 3, Precision> rot{
+				tan1,
+				axis,
+				tan2
+			};
+
+			// pi * r^2 is cancelled out in these equations
+			constexpr Precision fourThirds = Precision(4.0) / Precision(3.0);
+			auto volume = fourThirds * m_radius + height;
+			auto cylinderM = mass * height / volume;
+			auto sphereM = mass * fourThirds * m_radius / volume;
+
+			auto axisI = (Precision(0.5) * cylinderM + Precision(0.4) * sphereM) * m_radius * m_radius;
+
+			auto tanI =
+				(cylinderM / Precision(12.0) * Precision(3.0) * height * height + Precision(0.4) * sphereM) * m_radius * m_radius +
+				sphereM * height * height * Precision(0.25);
+
+			glm::mat<3, 3, Precision> localI{
+				tanI, Precision(0.0), Precision(0.0),
+				Precision(0.0), axisI, Precision(0.0),
+				Precision(0.0), Precision(0.0), tanI
+			};
+			return rot * localI * glm::transpose(rot);
+		}
+
 
 		/* Collision Related Methods */
 

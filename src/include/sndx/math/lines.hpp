@@ -23,6 +23,59 @@ namespace sndx::math {
 		return glm::cross(u, v);
 	}
 
+	// closest points of two lines segments as described by Ericson's realtime collision detection
+	template <class VecT> [[nodiscard]]
+	constexpr std::pair<VecT, VecT> closestPoints(const VecT& p1, const VecT& q1, const VecT& p2, const VecT& q2) {
+		auto d1 = q1 - p1;
+		auto d2 = q2 - p2;
+		auto ab = p1 - p2;
+		auto la2 = glm::length2(d1);
+		auto lb2 = glm::length2(d2);
+		auto f = glm::dot(d2, ab);
+
+		if (la2 <= 0.00001f && lb2 <= 0.00001f) [[unlikely]] {
+			// both are degenerate
+			return std::make_pair(p1, p2);
+		}
+
+		float s = 0.0f;
+		float t = 0.0f;
+		if (la2 <= 0.00001f) [[unlikely]] {
+			// a is degenerate
+			t = glm::clamp(f / lb2, 0.0f, 1.0f);
+		}
+		else {
+			float c = glm::dot(d1, ab);
+			if (lb2 <= 0.00001f) {
+				// b is degenerate
+				s = glm::clamp(-c / la2, 0.0f, 1.0f);
+			}
+			else {
+				auto b = glm::dot(d1, d2);
+				auto denom = la2 * lb2 - b * b;
+				if (denom != 0.0) {
+					s = glm::clamp((b * f - c * lb2) / denom, 0.0f, 1.0f);
+				}
+				else {
+					// parallel lines
+					s = 0.0f;
+				}
+
+				t = (b * s + f) / lb2;
+				if (t < 0.0f) {
+					t = 0.0f;
+					s = glm::clamp(-c / la2, 0.0f, 1.0f);
+				}
+				else if (t > 1.0f) {
+					t = 1.0f;
+					s = glm::clamp((b - lb2) / la2, 0.0f, 1.0f);
+				}
+			}
+		}
+
+		return std::make_pair(p1 + d1 * s, p2 + d2 * t);
+	}
+
 	template <class I = float, glm::qualifier Q = glm::qualifier::defaultp> [[nodiscard]]
 	constexpr auto projectOnPlane(const glm::vec<3, I, Q>& a, const glm::vec<3, I, Q>& planeNormal) {
 		return a - planeNormal * glm::dot(a, planeNormal);

@@ -237,6 +237,14 @@ namespace sndx::collision {
 		return std::nullopt;
 	}
 
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Circle<VectorT>& a, const Capsule<VectorT>& b) {
+		if (auto r = getCollision(b, a)) {
+			return r->swapped();
+		}
+		return std::nullopt;
+	}
+
 	// =================
 	// = Capsule VS ... =
 	// =================
@@ -246,6 +254,204 @@ namespace sndx::collision {
 		auto r = glm::vec3{ a.getRadius() };
 		Rect3D t{ a.getPointA(), a.getPointB() };
 		return Rect3D{ t.getP1() - r, t.getP2() + r };
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Capsule<VectorT>& a, const Capsule<VectorT>& b) {
+		auto [centerA, centerB] = sndx::math::closestPoints(a.getPointA(), a.getPointB(), b.getPointA(), b.getPointB());
+		return getCollision(Circle<VectorT>(centerA, a.getRadius()), Circle<VectorT>(centerB, b.getRadius()));
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Capsule<VectorT>& a, const Circle<VectorT>& b) {
+		using Precision = typename Circle<VectorT>::Precision;
+
+		auto ab = a.getPointB() - a.getPointA();
+		auto l2 = glm::length2(ab);
+
+		if (l2 <= Precision(0.00001)) [[unlikely]] { // degenerate capsule
+			return getCollision(Circle<VectorT>(ab, a.getRadius()), b);
+		}
+
+		auto t = glm::dot(b.getCenter() - a.getPointA(), ab) / l2;
+		t = glm::clamp(t, 0.0f, 1.0f);
+
+		auto closestOnLine = a.getPointA() + t * ab;
+		auto delta = b.getCenter() - closestOnLine;
+
+		auto dist = glm::length(delta);
+		if (dist > a.getRadius() + b.getRadius()) {
+			return std::nullopt;
+		}
+
+		Collision<VectorT> out{};
+		out.normal = (dist > Precision(0.00001)) ? delta / dist : getFallbackNormal<VectorT>();
+		out.depth = a.getRadius() + b.getRadius() - dist;
+		out.a = closestOnLine + out.normal * a.getRadius();
+		out.b = b.getCenter() - out.normal * b.getRadius();
+		return out;
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Capsule<VectorT>& a, const Rect<VectorT>& b) {
+		using Precision = typename OriRect<VectorT>::Precision;
+
+		auto ab = a.getPointB() - a.getPointA();
+		auto l2 = glm::length2(ab);
+		if (l2 < Precision(0.00001)) [[unlikely]] {
+			// degenerate capsule
+			Collision<VectorT> out{};
+			out.a = a.getPointA();
+			out.b = glm::clamp(out.a, b.getP1(), b.getP2());
+
+			auto dist = glm::distance(out.a, out.b);
+			if (dist > a.getRadius()) {
+				return std::nullopt;
+			}
+
+			out.normal = (dist > Precision(0.00001)) ? (out.b - out.a) / dist : getFallbackNormal<VectorT>();
+			out.depth = a.getRadius() - dist;
+			return out;
+		}
+
+		// line segment vs aabb closest point
+		auto halfExtent = b.getSize() * Precision(0.5);
+
+		auto center = a.getCenter() - b.getCenter();
+		auto halfDir = ab * Precision(0.5);
+
+		auto best2 = std::numeric_limits<Precision>::max();
+		VectorT bestSeg{}, bestBox{};
+
+		for (auto t : {Precision(-1.0), Precision(1.0)}) {
+			auto s = center + halfDir * t;
+			auto b = glm::clamp(s, -halfExtent, halfExtent);
+			auto dist2 = glm::distance2(s, b);
+			if (dist2 < best2) {
+				best2 = dist2;
+				bestSeg = s;
+				bestBox = b;
+			}
+		}
+
+		for (uint16_t axis = 0; axis < a.dimensionality(); ++axis) {
+			if (std::abs(halfDir[axis]) < Precision(0.00001)) {
+				continue;
+			}
+
+			for (auto side : { Precision(-1.0), Precision(1.0) }) {
+				auto t = (side * halfExtent[axis] - center[axis]) / halfDir[axis];
+				if (t < Precision(-1.0) || t > Precision(1.0)) {
+					continue;
+				}
+
+				auto s = center + halfDir * t;
+				auto b = glm::clamp(s, -halfExtent, halfExtent);
+				auto dist2 = glm::distance2(s, b);
+				if (dist2 < best2) {
+					best2 = dist2;
+					bestSeg = s;
+					bestBox = b;
+				}
+			}
+		}
+
+		if (best2 > a.getRadius() * a.getRadius()) {
+			return std::nullopt;
+		}
+		auto dist = std::sqrt(best2);
+
+		Collision<VectorT> out{};
+		out.depth = a.getRadius() - dist;
+		out.normal = out.depth <= Precision(0.00001) ? getFallbackNormal<VectorT>() : (bestBox - bestSeg) / dist;
+		out.a = bestSeg + out.normal * a.getRadius();
+		out.b = bestBox;
+		return out;
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Capsule<VectorT>& a, const OriRect<VectorT>& b) {
+		using Precision = typename OriRect<VectorT>::Precision;
+
+		auto invRot = glm::inverse(b.getRotation());
+
+		auto localA = invRot * (a.getPointA() - b.getCenter());
+		auto localB = invRot * (a.getPointB() - b.getCenter());
+
+		auto localRect = Rect<VectorT>(-b.getHalfExtents(), b.getHalfExtents());
+		
+		auto localRes = getCollision(Capsule<VectorT>{localA, localB, a.getRadius()}, localRect);
+		if (!localRes) {
+			return std::nullopt;
+		}
+
+		Collision<VectorT> out{};
+		out.normal = b.getRotation() * (localRes->normal * localRes->depth);
+		out.depth = glm::length(out.normal);
+		out.normal = out.depth <= Precision(0.00001) ? getFallbackNormal<VectorT>() : out.normal / out.depth;
+		out.a = b.getCenter() + b.getRotation() * localRes->a;
+		out.b = b.getCenter() + b.getRotation() * localRes->b;
+		return out;
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Capsule<VectorT>& a, const Tri<VectorT>& b) {
+		using Precision = typename Tri<VectorT>::Precision;
+
+		// based on Ericson's collision detection
+		std::pair<VectorT, VectorT> best{};
+		Precision minDist2 = std::numeric_limits<Precision>::max();
+
+		// test edges and segment ends
+		auto ab = sndx::math::closestPoints(a.getPointA(), a.getPointB(), b.getP1(), b.getP2());
+		if (auto l2 = glm::distance2(ab.first, ab.second); l2 < minDist2) {
+			best = ab;
+			minDist2 = l2;
+		}
+
+		auto bc = sndx::math::closestPoints(a.getPointA(), a.getPointB(), b.getP2(), b.getP3());
+		if (auto l2 = glm::distance2(bc.first, bc.second); l2 < minDist2) {
+			best = bc;
+			minDist2 = l2;
+		}
+
+		auto ac = sndx::math::closestPoints(a.getPointA(), a.getPointB(), b.getP1(), b.getP3());
+		if (auto l2 = glm::distance2(ac.first, ac.second); l2 < minDist2) {
+			best = ac;
+			minDist2 = l2;
+		}
+
+		auto uvwA = b.uvw(a.getPointA());
+		if (!glm::any(glm::lessThan(uvwA, VectorT(0.0)))) {
+			auto p1 = a.getPointA();
+			auto p2 = b.fromUVW(uvwA);
+			if (auto l2 = glm::distance2(p1, p2); l2 < minDist2) {
+				best = std::make_pair(p1, p2);
+				minDist2 = l2;
+			}
+		}
+
+		auto uvwB = b.uvw(a.getPointB());
+		if (!glm::any(glm::lessThan(uvwB, VectorT(0.0)))) {
+			auto p1 = a.getPointB();
+			auto p2 = b.fromUVW(uvwB);
+			if (auto l2 = glm::distance2(p1, p2); l2 < minDist2) {
+				best = std::make_pair(p1, p2);
+				minDist2 = l2;
+			}
+		}
+
+		auto dist = std::sqrt(minDist2);
+		if (dist > a.getRadius()) {
+			return std::nullopt;
+		}
+
+		Collision<VectorT> out{};
+		out.normal = (dist > Precision(0.00001)) ? (best.first - best.second) / dist : getFallbackNormal<VectorT>();
+		out.depth = a.getRadius() - dist;
+		out.a = best.second;
+		out.b = best.first + out.normal * a.getRadius();
+		return out;
 	}
 
 	// ===============
@@ -310,8 +516,16 @@ namespace sndx::collision {
 	}
 
 	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Rect<VectorT>& a, const Capsule<VectorT>& b) {
+		if (auto r = getCollision(b, a)) {
+			return r->swapped();
+		}
+		return std::nullopt;
+	}
+
+	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const Rect<VectorT>& a, const Tri<VectorT>& b) {
-		return getCollision(sndx::collision::getSupportFn(a), sndx::collision::getSupportFn(b));
+		return getCollision(sndx::collision::getSupportFn(a), sndx::collision::getSupportFn(b), 3 + 8);
 	}
 
 	// ===============
@@ -332,6 +546,14 @@ namespace sndx::collision {
 	template <Vector VectorT> [[nodiscard]]
 	constexpr bool hasCollision(const OriRect<VectorT>& a, const Circle<VectorT>& b) {
 		return hasCollision(b, a);
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const OriRect<VectorT>& a, const Capsule<VectorT>& b) {
+		if (auto r = getCollision(b, a)) {
+			return r->swapped();
+		}
+		return std::nullopt;
 	}
 
 	namespace detail {
@@ -375,8 +597,43 @@ namespace sndx::collision {
 	}
 
 	template <Vector VectorT> [[nodiscard]]
+	constexpr bool hasCollision(const OriRect<VectorT>& a, const OriRect<VectorT>& b) {
+		using Precision = typename OriRect<VectorT>::Precision;
+
+		glm::mat3 axesA = glm::mat3_cast(a.getRotation());
+		glm::mat3 axesB = glm::mat3_cast(b.getRotation());
+
+		Precision minOverlap = std::numeric_limits<Precision>::max();
+		VectorT minAxis{};
+
+		// test a faces
+		for (uint8_t i = 0; i < axesA.length(); ++i) {
+			if (!detail::testAxis(axesA[i], a, b, minOverlap, minAxis))
+				return false;
+		}
+
+		// test b faces
+		for (uint8_t i = 0; i < axesB.length(); ++i) {
+			if (!detail::testAxis(axesB[i], a, b, minOverlap, minAxis))
+				return false;
+		}
+
+		// test edges
+		for (uint8_t i = 0; i < axesA.length(); ++i) {
+			for (uint8_t j = 0; j < axesB.length(); ++j) {
+				auto axis = glm::cross(axesA[i], axesB[j]);
+
+				if (!detail::testAxis(axis, a, b, minOverlap, minAxis))
+					return false;
+			}
+		}
+
+		return true;
+	}
+
+	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const OriRect<VectorT>& a, const OriRect<VectorT>& b) {
-		/*
+		
 		using Precision = typename OriRect<VectorT>::Precision;
 
 		glm::mat3 axesA = glm::mat3_cast(a.getRotation());
@@ -415,8 +672,15 @@ namespace sndx::collision {
 		Collision<VectorT> out{};
 		out.normal = minAxis;
 		out.depth = minOverlap * 2.0f;
-		return out;*/
-		return getCollision(getSupportFn(a), getSupportFn(b));
+
+		// @TODO figure out why GJK-EPA MTV is wrong (but collision points are right)
+		auto points = getCollision(getSupportFn(a), getSupportFn(b), 8 + 8);
+		if (!points) {
+			return std::nullopt;
+		}
+		out.a = points->a;
+		out.b = points->b;
+		return out;
 	}
 
 	template <Vector VectorT> [[nodiscard]]
@@ -461,13 +725,16 @@ namespace sndx::collision {
 			out.normal = delta / l;
 			out.depth = b.getRadius() - l;
 		}
+
+		out.a = world;
+		out.b = b.getCenter() + out.normal * b.getRadius();
 		return out;
 	}
 
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const OriRect<VectorT>& a, const Tri<VectorT>& b) {
 		// GJK + EPA wins over SAT in this case
-		return getCollision(sndx::collision::getSupportFn(a), sndx::collision::getSupportFn(b));
+		return getCollision(sndx::collision::getSupportFn(a), sndx::collision::getSupportFn(b), 3 + 8);
 	}
 
 	// ===================
@@ -482,6 +749,14 @@ namespace sndx::collision {
 
 	template <Vector VectorT> [[nodiscard]]
 	constexpr std::optional<Collision<VectorT>> getCollision(const Tri<VectorT>& a, const Circle<VectorT>& b) {
+		if (auto r = getCollision(b, a)) {
+			return r->swapped();
+		}
+		return std::nullopt;
+	}
+
+	template <Vector VectorT> [[nodiscard]]
+	constexpr std::optional<Collision<VectorT>> getCollision(const Tri<VectorT>& a, const Capsule<VectorT>& b) {
 		if (auto r = getCollision(b, a)) {
 			return r->swapped();
 		}
@@ -508,8 +783,8 @@ namespace sndx::collision {
 	// = Arbitrary Convex (gjk) =
 	// ==========================
 	template <std::invocable<glm::vec3> FnA, std::invocable<glm::vec3> FnB> [[nodiscard]]
-	bool hasCollision(FnA&& sptA, FnB&& sptB) {
-		return bool(gjk(sptA, sptB));
+	bool hasCollision(FnA&& sptA, FnB&& sptB, uint16_t maxIterations = 32) {
+		return bool(gjk(sptA, sptB, maxIterations));
 	}
 
 	template <class T, class U> [[nodiscard]]
@@ -519,8 +794,8 @@ namespace sndx::collision {
 	}
 
 	template <std::invocable<glm::vec3> FnA, std::invocable<glm::vec3> FnB> [[nodiscard]]
-	std::optional<Collision3D> getCollision(FnA&& sptA, FnB&& sptB) {
-		if (auto simplex = gjk(sptA, sptB)) {
+	std::optional<Collision3D> getCollision(FnA&& sptA, FnB&& sptB, uint16_t maxIterations = 32) {
+		if (auto simplex = gjk(sptA, sptB, maxIterations)) {
 			EpaResult res = epa(*simplex, std::forward<FnA>(sptA), std::forward<FnB>(sptB));
 
 			return Collision3D{
