@@ -35,9 +35,9 @@ namespace sndx::render {
 			if (channels == 0) channels = chan;
 
 			std::vector<std::byte> dat{};
-			dat.reserve(width * height * channels);
+			dat.resize(width * height * channels);
 
-			std::copy_n(bdata, width * height * channels, std::back_inserter(dat));
+			std::copy_n(bdata, width * height * channels, dat.begin());
 			stbi_image_free(bdata);
 
 			return ImageData{ size_t(width), size_t(height), channels, std::move(dat) };
@@ -57,9 +57,9 @@ namespace sndx::render {
 			if (channels == 0) channels = chan;
 
 			std::vector<std::byte> dat{};
-			dat.reserve(width * height * channels);
+			dat.resize(width * height * channels);
 
-			std::copy_n(bdata, width * height * channels, std::back_inserter(dat));
+			std::copy_n(bdata, width * height * channels, dat.begin());
 			stbi_image_free(bdata);
 
 			return ImageData{ size_t(width), size_t(height), channels, std::move(dat) };

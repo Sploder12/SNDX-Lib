@@ -57,8 +57,8 @@ namespace sndx::render {
 			if (size != data.size())
 				throw std::domain_error("Data size mismatch");
 
-			m_data.reserve(size);
-			std::copy_n(data.begin(), size, std::back_inserter(m_data));
+			m_data.resize(size);
+			std::copy_n(data.begin(), size, m_data.begin());
 		}
 
 		[[nodiscard]] auto width() const noexcept {
