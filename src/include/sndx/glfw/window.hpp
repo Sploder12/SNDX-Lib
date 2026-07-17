@@ -2,6 +2,8 @@
 
 #include "./glfw.hpp"
 
+#include "../render/window.hpp"
+
 #include <glm/glm.hpp>
 
 #include <algorithm>
@@ -15,15 +17,14 @@
 
 
 namespace sndx::glfw {
-	class Window {
+	class Window final : public sndx::Window {
 		friend class WindowBuilder;
 
-		std::string m_title{};
 		GLFWwindow* m_window = nullptr;
 
-		explicit Window(std::nullptr_t, const char* = "") = delete;
-		explicit Window(GLFWwindow* window, const char* title = "") :
-			m_title{title}, m_window{ window } {
+		explicit Window(std::nullptr_t) = delete;
+		explicit Window(GLFWwindow* window) :
+			m_window{ window } {
 
 			if (!m_window)
 				throw std::runtime_error("Could not create glfwWindow");
@@ -33,7 +34,7 @@ namespace sndx::glfw {
 
 	public:
 		Window(const char* title, int width, int height, GLFWmonitor* monitor = nullptr, GLFWwindow* share = nullptr) :
-			Window(glfwCreateWindow(width, height, title ? title : "", monitor, share), title ? title : "") {}
+			Window(glfwCreateWindow(width, height, title ? title : "", monitor, share)) {}
 
 		Window(std::nullptr_t, int, int, GLFWmonitor* = nullptr, GLFWwindow* = nullptr) = delete;
 
@@ -67,66 +68,102 @@ namespace sndx::glfw {
 		}
 
 		[[nodiscard]]
-		bool shouldClose() const noexcept {
+		bool shouldClose() const noexcept override {
 			return glfwWindowShouldClose(m_window);
 		}
 
-		void bind() const noexcept {
+		void bind() noexcept override {
 			glfwMakeContextCurrent(m_window);
 		}
 
-		void setPosition(const glm::ivec2& pos) noexcept {
+		void swapBuffers() noexcept override {
+			glfwSwapBuffers(m_window);
+		}
+
+		void setPosition(const glm::ivec2& pos) noexcept override {
 			glfwSetWindowPos(m_window, pos.x, pos.y);
 		}
 
-		void resize(const glm::ivec2& dims) {
+		void resize(const glm::ivec2& dims) override {
 			glfwSetWindowSize(m_window, dims.x, dims.y);
 		}
 
-		void focusWindow() {
+		void captureMouse(bool capture) override {
+			if (capture) {
+				glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			}
+			else {
+				glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			}
+		}
+
+		void forceFocus() override {
 			glfwFocusWindow(m_window);
 		}
 
-		void requestAttention() {
+		void requestAttention() override {
 			glfwRequestWindowAttention(m_window);
 		}
 
-		void setVisibility(bool visible) {
+		void setVisibility(bool visible) override {
 			if (visible) glfwShowWindow(m_window);
 			else glfwHideWindow(m_window);
 		}
 
-		decltype(auto) setTitle(const std::string& newTitle) {
+		void setTitle(const std::string& newTitle) override {
 			glfwSetWindowTitle(m_window, newTitle.c_str());
-			return std::exchange(m_title, newTitle);
 		}
 
-		void tryClose() {
+		void signalClose() override {
 			glfwSetWindowShouldClose(m_window, GLFW_TRUE);
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getPosition() const noexcept {
+		glm::ivec2 getPosition() const noexcept override {
 			glm::ivec2 out{};
 			glfwGetWindowPos(m_window, &out.x, &out.y);
 			return out;
 		}
 
 		[[nodiscard]]
-		glm::ivec2 getSize() const noexcept {
+		glm::ivec2 getSize() const noexcept override {
 			glm::ivec2 out{};
 			glfwGetWindowSize(m_window, &out.x, &out.y);
 			return out;
 		}
 
 		[[nodiscard]]
-		bool isVisible() const noexcept {
+		glm::ivec2 getFramebufferSize() const noexcept override {
+			glm::ivec2 out{};
+			glfwGetFramebufferSize(m_window, &out.x, &out.y);
+			return out;
+		}
+
+		[[nodiscard]]
+		glm::vec2 getContentScale() const noexcept override {
+			glm::vec2 out{};
+			glfwGetWindowContentScale(m_window, &out.x, &out.y);
+			return out;
+		}
+
+		[[nodiscard]]
+		bool isMouseCaptured() const noexcept override {
+			return glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+		}
+
+		[[nodiscard]]
+		bool isVisible() const noexcept override {
 			return glfwGetWindowAttrib(m_window, GLFW_VISIBLE) == GLFW_TRUE;
 		}
 
 		[[nodiscard]]
-		const std::string& getTitle() const noexcept {
-			return m_title;
+		bool isFocused() const noexcept override {
+			return glfwGetWindowAttrib(m_window, GLFW_FOCUSED) == GLFW_TRUE;
+		}
+
+		[[nodiscard]]
+		std::string_view getTitle() const noexcept {
+			return glfwGetWindowTitle(m_window);
 		}
 	};
 
@@ -319,7 +356,7 @@ namespace sndx::glfw {
 				}
 			}
 
-			return Window{ window, m_title.c_str() };
+			return sndx::glfw::Window{ window };
 		}
 	};
 }

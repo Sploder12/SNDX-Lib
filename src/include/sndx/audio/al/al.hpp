@@ -33,6 +33,16 @@ namespace sndx::audio {
 		alThrowIfError(alGetError());
 	}
 
+	using AL_SOFT_LOG_CALLBACK = void (ALC_APIENTRY*)(void*, char, const char*, int);
+	inline bool alSetLogCallback(AL_SOFT_LOG_CALLBACK callback, void* userptr = nullptr) {
+		using AL_SOFT_SET_LOG = void (ALC_APIENTRY*)(AL_SOFT_LOG_CALLBACK, void*);
+		auto adr = static_cast<AL_SOFT_SET_LOG>(alcGetProcAddress(NULL, "alsoft_set_log_callback"));
+		if (!adr) return false;
+
+		adr(callback, userptr);
+		return true;
+	}
+
 	enum class ALformat : ALenum {
 		mono8 = AL_FORMAT_MONO8,
 		mono16 = AL_FORMAT_MONO16,
