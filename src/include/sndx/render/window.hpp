@@ -38,6 +38,7 @@ namespace sndx {
 		virtual void signalClose() = 0;
 
 		virtual void bind() = 0;
+		virtual void unbind() {};
 		virtual void swapBuffers() = 0;
 
 		virtual void setPosition(const glm::ivec2& pos) = 0;

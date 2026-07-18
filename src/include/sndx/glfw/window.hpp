@@ -72,6 +72,10 @@ namespace sndx::glfw {
 			return glfwWindowShouldClose(m_window);
 		}
 
+		void unbind() noexcept override {
+			glfwMakeContextCurrent(nullptr);
+		}
+
 		void bind() noexcept override {
 			glfwMakeContextCurrent(m_window);
 		}
