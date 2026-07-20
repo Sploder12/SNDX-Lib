@@ -40,7 +40,7 @@ TEST(PrefixTrie, ValidityIsChecked) {
 	EXPECT_TRUE(trie.isValidString("Aardvark"));
 
 	EXPECT_FALSE(trie.isValidString("the quick brown fox jumped over the lazy dog"));
-	EXPECT_FALSE(trie.isValidString("??!"));
+	EXPECT_FALSE(trie.isValidString("?\?!"));
 	EXPECT_FALSE(trie.isValidString(" </3"));
 	EXPECT_FALSE(trie.isValidString("and;"));
 	EXPECT_FALSE(trie.isValidString("true^false"));

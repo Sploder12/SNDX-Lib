@@ -103,6 +103,6 @@ TEST_F(GLFWwindowTest, CanTransform) {
     EXPECT_EQ(window.getSize(), glm::ivec2(450, 290));
 
     EXPECT_FALSE(window.shouldClose());
-    window.tryClose();
+    window.signalClose();
     EXPECT_TRUE(window.shouldClose());
 }
