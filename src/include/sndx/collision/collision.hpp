@@ -54,66 +54,129 @@ namespace sndx::collision {
 		return f;
 	}
 
+	namespace detail {
+		template <bool uniformScale = true>
+		struct Transform {
+			using ScaleT = std::conditional_t<uniformScale, float, glm::vec3>;
+
+			glm::vec3 pos{};
+			glm::quat rot{};
+			ScaleT scale{ 1.0f };
+
+			[[nodiscard]]
+			bool isIsotropic() const noexcept {
+				if constexpr (uniformScale) {
+					return true;
+				}
+				else {
+					return std::abs(scale.x - scale.y) < 0.0001f && std::abs(scale.y - scale.z) < 0.0001f;
+				}
+			}
+
+			[[nodiscard]]
+			glm::mat4 asMatrix() const {
+				glm::mat4 out = glm::mat4_cast(rot);
+				if constexpr (uniformScale) {
+					out[0] *= scale;
+					out[1] *= scale;
+					out[2] *= scale;
+				}
+				else {
+					out[0] *= scale.x;
+					out[1] *= scale.y;
+					out[2] *= scale.z;
+				}
+				out[3] = glm::vec4{ pos, 1.0f };
+				return out;
+			}
+
+			[[nodiscard]]
+			Transform inverse() const {
+				Transform out{};
+				out.rot = glm::inverse(rot);
+				out.scale = 1.0f / scale;
+				out.pos = out.rot * (-pos * out.scale);
+				return out;
+			}
+
+			explicit Transform(glm::vec3 pos = {}, const glm::quat& rot = {}, ScaleT scale = ScaleT{ 1.0f }):
+				pos(pos), rot(rot), scale(scale) {
+			}
+
+			explicit Transform(const glm::mat4& matrix):
+				pos(matrix[3]) {
+
+				auto basis = glm::mat3{ matrix };
+				if constexpr (uniformScale) {
+					scale = glm::length(basis[0]);
+
+					// avoid non-uniform scale
+					assert(std::abs(scale - glm::length(basis[1])) < 0.0001f && std::abs(scale - glm::length(basis[2])) < 0.0001f);
+					rot = glm::quat_cast(basis / scale);
+
+					// avoid skew
+					assert(std::abs(glm::dot(basis[0] / scale, basis[1] / scale)) < 0.0001f);
+					assert(std::abs(glm::dot(basis[1] / scale, basis[2] / scale)) < 0.0001f);
+					assert(std::abs(glm::dot(basis[2] / scale, basis[0] / scale)) < 0.0001f);
+				}
+				else {
+					scale.x = glm::length(basis[0]);
+					scale.y = glm::length(basis[1]);
+					scale.z = glm::length(basis[2]);
+
+					glm::mat3 rotMat{
+						basis[0] / scale.x,
+						basis[1] / scale.y,
+						basis[2] / scale.z
+					};
+					rot = glm::quat_cast(rotMat);
+
+					// avoid skew
+					assert(std::abs(glm::dot(basis[0] / scale.x, basis[1] / scale.y)) < 0.0001f);
+					assert(std::abs(glm::dot(basis[1] / scale.y, basis[2] / scale.z)) < 0.0001f);
+					assert(std::abs(glm::dot(basis[2] / scale.z, basis[0] / scale.x)) < 0.0001f);
+				}
+
+				// no perspective
+				assert(matrix[0][3] == 0.0f);
+				assert(matrix[1][3] == 0.0f);
+				assert(matrix[2][3] == 0.0f);
+				assert(matrix[3][3] == 1.0f);
+			}
+		};
+	}
+
 	// no shear, only uniform scale.
-	struct Transform {
-		glm::vec3 pos{};
-		glm::quat rot{};
-		float scale = 1.0f;
+	using TransformIsotropic = detail::Transform<true>;
 
-		[[nodiscard]]
-		glm::mat4 asMatrix() const {
-			glm::mat4 out = glm::mat4_cast(rot);
-			out[0] *= scale;
-			out[1] *= scale;
-			out[2] *= scale;
-			out[3] = glm::vec4{ pos, 1.0f };
-			return out;
-		}
+	// no shear, non-uniform scale.
+	using Transform = detail::Transform<false>;
 
-		[[nodiscard]]
-		Transform inverse() const {
-			Transform out{};
-			out.rot = glm::inverse(rot);
-			out.scale = 1.0f / scale;
-			out.pos = out.rot * (-pos * out.scale);
-			return out;
-		}
+	[[nodiscard]]
+	inline auto transform(const sndx::collision::Rect3D& shape, const Transform& tform) {
 
-		explicit Transform(glm::vec3 pos = {}, const glm::quat& rot = {}, float scale = 1.0f):
-			pos(pos), rot(rot), scale(scale) {}
+		return sndx::collision::OriRect3D{
+			tform.pos + tform.rot * (shape.getCenter() * tform.scale),
+			shape.getSize() * 0.5f * glm::abs(tform.scale),
+			tform.rot
+		};
+	}
 
-		explicit Transform(const glm::mat4 matrix):
-			pos(matrix[3]) {
-			
-			// no perspective
-			assert(matrix[0][3] == 0.0f);
-			assert(matrix[1][3] == 0.0f);
-			assert(matrix[2][3] == 0.0f);
-			assert(matrix[3][3] == 1.0f);
+	[[nodiscard]]
+	inline auto transform(const sndx::collision::Tri3D& shape, const Transform& tform) {
+		glm::vec3 p1{ tform.pos + tform.rot * (shape.getP1() * tform.scale) };
+		glm::vec3 p2{ tform.pos + tform.rot * (shape.getP2() * tform.scale) };
+		glm::vec3 p3{ tform.pos + tform.rot * (shape.getP3() * tform.scale) };
+		return Tri3D{ p1, p2, p3 };
+	}
 
-			glm::mat3 basis{ matrix };
-
-			scale = glm::length(basis[0]);
-
-			// avoid non-uniform scale
-			assert(std::abs(scale - glm::length(basis[1])) < 0.0001f && std::abs(scale - glm::length(basis[2])) < 0.0001f);
-
-			rot = glm::quat_cast(basis / scale);
-
-			// avoid skew
-			assert(std::abs(glm::dot(basis[0] / scale, basis[1] / scale)) < 0.0001f);
-			assert(std::abs(glm::dot(basis[1] / scale, basis[2] / scale)) < 0.0001f);
-			assert(std::abs(glm::dot(basis[2] / scale, basis[0] / scale)) < 0.0001f);
-		}
-	};
-
-	template <class ShapeT>
-	auto transform(const ShapeT& shape, const Transform& tform) {
+	template <class ShapeT> [[nodiscard]]
+	auto transform(const ShapeT& shape, const TransformIsotropic& tform) {
 		if constexpr (std::is_same_v<ShapeT, sndx::collision::Rect3D>) {
 			return sndx::collision::OriRect3D{
 				tform.pos + tform.rot * (shape.getCenter() * tform.scale),
 				shape.getSize() * 0.5f * tform.scale,
-				tform.rot 
+				tform.rot
 			};
 		}
 		else if constexpr (std::is_same_v<ShapeT, sndx::collision::OriRect3D>) {
@@ -139,6 +202,9 @@ namespace sndx::collision {
 			glm::vec3 p2 = tform.pos + rs * shape.getP2();
 			glm::vec3 p3 = tform.pos + rs * shape.getP3();
 			return ShapeT{ p1, p2, p3 };
+		}
+		else {
+			static_assert(false);
 		}
 	}
 
