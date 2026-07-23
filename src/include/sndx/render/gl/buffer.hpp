@@ -113,11 +113,11 @@ namespace sndx::render::gl {
 		[[nodiscard]]
 		std::span<void*> map(GLintptr offset, GLsizeiptr length, GLenum access) {
 			if constexpr (useDSA) {
-				return std::span{ glMapNamedBufferRange(id, offset, length, access), length };
+				return std::span<void*>{ glMapNamedBufferRange(id, offset, length, access), length };
 			}
 			else {
 				bind();
-				return std::span{ glMapBufferRange(type, offset, length, access), length };
+				return std::span<void*>{ glMapBufferRange(type, offset, length, access), length };
 			}
 		}
 

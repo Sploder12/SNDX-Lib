@@ -14,6 +14,22 @@
 
 #include <windows.h>
 
+#include <string>
+#include <string_view>
+[[nodiscard]]
+inline std::wstring toWinStr(std::string_view str) {
+	auto len = MultiByteToWideChar(CP_UTF8, 0, str.data(), int(str.size()), NULL, 0);
+
+	std::wstring out{};
+	if (len == 0) {
+		return out;
+	}
+
+	out.resize(len);
+	MultiByteToWideChar(CP_UTF8, 0, str.data(), int(str.size()), out.data(), len);
+	return out;
+};
+
 #ifdef UNDEF_MINMAX
 #undef NOMINMAX
 #undef UNDEF_MINMAX

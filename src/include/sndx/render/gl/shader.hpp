@@ -131,9 +131,9 @@ namespace sndx::render {
 		}
 
 		ShaderProgram(ShaderProgram&& other) noexcept :
-			m_id(std::exchange(other.m_id, 0)),
 			uniformCache(std::exchange(other.uniformCache, {})),
-			ssboSlots(std::exchange(other.ssboSlots, {})) {
+			ssboSlots(std::exchange(other.ssboSlots, {})),
+			m_id(std::exchange(other.m_id, 0)) {
 		}
 
 		ShaderProgram& operator=(ShaderProgram&& other) noexcept {

@@ -123,7 +123,7 @@ namespace sndx::render::gl {
 		}
 
 		template <class ArrT>
-		void bindVBO(const Buffer<useDSA>& vbo, const ArrT& entries) requires !useDSA{
+		void bindVBO(const Buffer<useDSA>& vbo, const ArrT& entries) requires (!useDSA) {
 			assert(vbo.type == GL_ARRAY_BUFFER);
 
 			bind();
@@ -161,9 +161,9 @@ namespace sndx::render::gl {
 			++curBufs;
 		}
 
-		template <Layout layout, bool instanced = false>
+		template <class Layout, bool instanced = false>
 		void bindVBO(const Buffer<useDSA>& vbo) {
-			bindVBO(vbo, Layout::value<instanced>);
+			bindVBO(vbo, Layout::template value<instanced>);
 		}
 
 		void resetLayout() {

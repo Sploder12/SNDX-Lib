@@ -18,27 +18,14 @@ namespace sndx::platform {
 	namespace detail {
 	#ifdef _WIN32
 		[[nodiscard]]
-		std::wstring toWStr(const std::string& str) {
-			auto len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), int(str.size()), NULL, 0);
-			if (len == 0) {
-				return std::wstring{};
-			}
-
-			std::wstring out{};
-			out.resize(len);
-			MultiByteToWideChar(CP_UTF8, 0, str.c_str(), int(str.size()), out.data(), len);
-			return out;
-		};
-
-		[[nodiscard]]
-		std::vector<std::pair<std::wstring, std::wstring>> assembleFilters(std::span<const DialogFilter> filters) {
+		inline auto assembleFilters(std::span<const DialogFilter> filters) {
 			std::vector<std::pair<std::wstring, std::wstring>> out{};
 			out.reserve(filters.size());
 			for (const auto& [n, f] : filters) {
 				std::wstring filter{};
 
 				for (const auto& ext : f) {
-					filter += toWStr(ext) + L";";
+					filter += toWinStr(ext) + L";";
 				}
 
 				if (filter.empty()) {
@@ -49,7 +36,7 @@ namespace sndx::platform {
 					filter.pop_back();
 				}
 
-				out.emplace_back(toWStr(n), filter);
+				out.emplace_back(toWinStr(n), filter);
 			}
 			return out;
 		}
@@ -128,7 +115,7 @@ namespace sndx::platform {
 		}
 		return out;
 	#else
-		assert("unimplemented", false);
+		assert(("unimplemented", false));
 		return std::nullopt;
 	#endif
 	}
@@ -220,7 +207,7 @@ namespace sndx::platform {
 		}
 		return out;
 	#else
-		assert("unimplemented", false);
+		assert(("unimplemented", false));
 		return std::nullopt;
 	#endif
 	}
