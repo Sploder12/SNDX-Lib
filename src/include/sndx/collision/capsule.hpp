@@ -203,7 +203,7 @@ namespace sndx::collision {
 
 		struct RaycastResult {
 			const Capsule<VectorT>* capsule = nullptr;
-			Precision near = std::numeric_limits<Precision>::min();
+			Precision near = std::numeric_limits<Precision>::max();
 			VectorT norm;
 
 			[[nodiscard]]
