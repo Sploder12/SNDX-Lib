@@ -15,6 +15,51 @@
 #include "../../data/serialize.hpp"
 
 namespace sndx::render {
+	class FloatImageData {
+	private:
+		std::vector<float> m_data{};
+		size_t m_width{}, m_height{};
+		uint8_t m_channels{};
+
+	public:
+		FloatImageData(size_t width, size_t height, uint8_t channels, decltype(m_data)&& data):
+			m_data(std::move(data)), m_width(width), m_height(height), m_channels(channels) {}
+
+		FloatImageData(size_t width, size_t height, uint8_t channels, std::span<const float> data):
+			m_width(width), m_height(height), m_channels(channels) {
+
+			if (channels <= 0 || channels > 4)
+				throw std::invalid_argument("Channels must be between 1 and 4.");
+
+			auto size = width * height * channels;
+			if (size != data.size())
+				throw std::domain_error("Data size mismatch");
+
+			m_data.resize(size);
+			std::copy_n(data.begin(), size, m_data.begin());
+		}
+
+		[[nodiscard]] auto width() const noexcept {
+			return m_width;
+		}
+
+		[[nodiscard]] auto height() const noexcept {
+			return m_height;
+		}
+
+		[[nodiscard]] auto channels() const noexcept {
+			return m_channels;
+		}
+
+		[[nodiscard]] auto pixels() const noexcept {
+			return width() * height();
+		}
+
+		[[nodiscard]] auto data() const noexcept {
+			return m_data.data();
+		}
+	};
+
 	class ImageData {
 	private:
 		std::vector<std::byte> m_data{};
