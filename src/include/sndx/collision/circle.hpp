@@ -159,7 +159,7 @@ namespace sndx::collision {
 
 		// get the center point of the Circle
 		[[nodiscard]]
-		constexpr Vec getCenter() const noexcept {
+		constexpr const Vec& getCenter() const noexcept {
 			return getPosition();
 		}
 

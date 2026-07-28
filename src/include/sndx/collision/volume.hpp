@@ -10,11 +10,11 @@ namespace sndx {
 	concept Vector = requires(const T& vector) {
 		{ vector.length() } -> std::convertible_to<size_t>;
 		{ vector[0] } -> std::convertible_to<float>;
-	} && T::length() > 0;
+	} && std::decay_t<T>::length() > 0;
 
 	template <class T, size_t n>
 	concept VectorN = Vector<T> && requires() {
-		T::length() == n;
+		std::decay_t<T>::length() == n;
 	};
 
 	template <class T>

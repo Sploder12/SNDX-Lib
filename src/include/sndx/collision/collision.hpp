@@ -245,18 +245,25 @@ namespace sndx::collision {
 	constexpr std::optional<Collision<VectorT>> getCollision(const Circle<VectorT>& a, const Circle<VectorT>& b) {
 		using Precision = typename Circle<VectorT>::Precision;
 
-		auto ab = b.getCenter() - a.getCenter();
-		auto l = glm::length(ab);
+		const auto& centerA = a.getCenter();
+		const auto& centerB = b.getCenter();
+		const auto& radA = a.getRadius();
+		const auto& radB = b.getRadius();
 
-		if (l > a.getRadius() + b.getRadius()) {
+		auto ab = centerB - centerA;
+		auto l2 = glm::length2(ab);
+		auto radAB = radA + radB;
+
+		if (l2 > radAB * radAB) {
 			return std::nullopt;
 		}
-
+		
+		auto l = std::sqrt(l2);
 		Collision<VectorT> out{};
 		out.normal = (l > Precision(0.00001)) ? ab / l : getFallbackNormal<VectorT>();
-		out.depth = a.getRadius() + b.getRadius() - l;
-		out.a = a.getCenter() + out.normal * a.getRadius();
-		out.b = b.getCenter() - out.normal * b.getRadius();
+		out.depth = radAB - l;
+		out.a = centerA + out.normal * radA;
+		out.b = centerB - out.normal * radB;
 		return out;
 	}
 

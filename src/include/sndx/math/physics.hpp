@@ -36,16 +36,16 @@ namespace sndx::math {
 	}
 
 	template <class T> [[nodiscard]]
-	constexpr T rigidbodyImpulse(const T& relativeVelocity, const T& collisionNormal, float restitution, float invMassA, float invMassB = 0.0f) {
+	constexpr float rigidbodyImpulse(const T& relativeVelocity, const T& collisionNormal, float restitution, float invMassA, float invMassB = 0.0f) {
 		auto alignment = glm::dot(relativeVelocity, collisionNormal);
 		if (alignment >= 0.0f) {
-			return T{};
+			return 0.0f;
 		}
 
 		auto denom = invMassA + invMassB;
 		auto j = -(1.0f + restitution) * alignment;
 
-		return collisionNormal * j / denom;
+		return j / denom;
 	}
 
 	template <class T> [[nodiscard]]

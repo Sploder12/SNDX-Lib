@@ -203,9 +203,29 @@ namespace sndx::collision {
 		// returns true if there exists a point which is contained by both Rects
 		[[nodiscard]]
 		constexpr bool overlaps(const Rect& other) const noexcept {
-			auto comparisons = glm::lessThanEqual(getP1(), other.getP2()) && glm::greaterThanEqual(getP2(), other.getP1());
+			const auto& A1 = getP1();
+			const auto& A2 = getP2();
+			const auto& B1 = other.getP1();
+			const auto& B2 = other.getP2();
+			static constexpr auto dims = dimensionality();
+			if constexpr (dims >= 1) {
+				if (A1.x > B2.x || A2.x < B1.x) return false;
+			}
+			if constexpr (dims >= 2) {
+				if (A1.y > B2.y || A2.y < B1.y) return false;
+			}
+			if constexpr (dims >= 3) {
+				if (A1.z > B2.z || A2.z < B1.z) return false;
+			}
+			if constexpr (dims >= 4) {
+				// I would use this for everything BUT glm's vec[] operator
+				// internally uses a switch... and this code is in the hottest path...
+				for (uint16_t i = 3; i < dims; ++i) {
+					if (A1[i] > B2[i] || A2[i] < B1[i]) return false;
+				}
+			}
 
-			return glm::all(comparisons);
+			return true;
 		}
 
 		// returns true if the other Rect is fully contained by this Rect
