@@ -97,7 +97,7 @@ namespace sndx::math {
 	}
 
 	template <std::floating_point T, class... Ts>
-	constexpr auto bezier(T t, const Ts&&... ts) noexcept {
+	constexpr auto bezier(T t, Ts&&... ts) noexcept {
 		
 		constexpr size_t n = sizeof...(ts);
 		static_assert(n > 1);
