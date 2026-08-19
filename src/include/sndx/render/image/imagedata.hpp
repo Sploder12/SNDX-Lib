@@ -15,67 +15,25 @@
 #include "../../data/serialize.hpp"
 
 namespace sndx::render {
-	class FloatImageData {
+	template <class T = std::byte>
+	class ImageDat {
 	private:
-		std::vector<float> m_data{};
-		size_t m_width{}, m_height{};
-		uint8_t m_channels{};
+		using value_type = T;
 
-	public:
-		FloatImageData(size_t width, size_t height, uint8_t channels, decltype(m_data)&& data):
-			m_data(std::move(data)), m_width(width), m_height(height), m_channels(channels) {}
-
-		FloatImageData(size_t width, size_t height, uint8_t channels, std::span<const float> data):
-			m_width(width), m_height(height), m_channels(channels) {
-
-			if (channels <= 0 || channels > 4)
-				throw std::invalid_argument("Channels must be between 1 and 4.");
-
-			auto size = width * height * channels;
-			if (size != data.size())
-				throw std::domain_error("Data size mismatch");
-
-			m_data.resize(size);
-			std::copy_n(data.begin(), size, m_data.begin());
-		}
-
-		[[nodiscard]] auto width() const noexcept {
-			return m_width;
-		}
-
-		[[nodiscard]] auto height() const noexcept {
-			return m_height;
-		}
-
-		[[nodiscard]] auto channels() const noexcept {
-			return m_channels;
-		}
-
-		[[nodiscard]] auto pixels() const noexcept {
-			return width() * height();
-		}
-
-		[[nodiscard]] auto data() const noexcept {
-			return m_data.data();
-		}
-	};
-
-	class ImageData {
-	private:
-		std::vector<std::byte> m_data{};
+		std::vector<value_type> m_data{};
 		size_t m_width{}, m_height{};
 		uint8_t m_channels{};
 
 		template <glm::length_t n, glm::length_t c, std::floating_point T, class Fn> [[nodiscard]]
-		ImageData transformStub(Fn&& func) const {
-			using oldVec = glm::vec<c, std::byte>;
-			using newVec = glm::vec<n, std::byte>;
+		ImageDat transformStub(Fn&& func) const {
+			using oldVec = glm::vec<c, value_type>;
+			using newVec = glm::vec<n, value_type>;
 
 			size_t pixels = m_width * m_height;
-			std::vector<std::byte> data(pixels * n);
+			std::vector<value_type> data(pixels * n);
 
-			static_assert(sizeof(oldVec) == c * sizeof(std::byte));
-			static_assert(sizeof(newVec) == n * sizeof(std::byte));
+			static_assert(sizeof(oldVec) == c * sizeof(value_type));
+			static_assert(sizeof(newVec) == n * sizeof(value_type));
 
 			auto asVecs = reinterpret_cast<const oldVec*>(m_data.data());
 			auto newVecs = reinterpret_cast<newVec*>(data.data());
@@ -86,13 +44,13 @@ namespace sndx::render {
 			std::transform(asVecs, asVecs + pixels, newVecs, std::forward<Fn>(func));
 #endif
 
-			return ImageData{ m_width, m_height, n, std::move(data) };
+			return ImageDat{ m_width, m_height, n, std::move(data) };
 		}
 	public:
-		ImageData(size_t width, size_t height, uint8_t channels, decltype(m_data)&& data) :
+		ImageDat(size_t width, size_t height, uint8_t channels, decltype(m_data)&& data) :
 			m_data(std::move(data)), m_width(width), m_height(height), m_channels(channels) {}
 
-		ImageData(size_t width, size_t height, uint8_t channels, std::span<const std::byte> data) :
+		ImageDat(size_t width, size_t height, uint8_t channels, std::span<const T> data) :
 			m_width(width), m_height(height), m_channels(channels) {
 
 			if (channels <= 0 || channels > 4)
@@ -123,7 +81,7 @@ namespace sndx::render {
 		}
 
 		[[nodiscard]] auto bytes() const noexcept {
-			return pixels() * channels();
+			return pixels() * channels() * sizeof(T);
 		}
 
 		[[nodiscard]] auto data() const noexcept {
@@ -147,27 +105,27 @@ namespace sndx::render {
 		}
 
 		template <glm::length_t n> [[nodiscard]]
-		glm::vec<n, std::byte> at(size_t x, size_t y) const {
+		glm::vec<n, value_type> at(size_t x, size_t y) const {
 			if (n != channels())
 				throw std::invalid_argument("n must be equal to channels");
 
 			if (x >= width() || y >= height())
 				throw std::domain_error("Out of bounds access detected");
 
-			using Vec = glm::vec<n, std::byte>;
+			using Vec = glm::vec<n, value_type>;
 			const Vec* asVecs = reinterpret_cast<const Vec*>(m_data.data());
 
 			return asVecs[y * width() + x];
 		}
 
 		template <glm::length_t n, glm::length_t c, std::floating_point T = float> [[nodiscard]]
-		ImageData transform(const glm::mat<n, c, T>& matrix) const {
+		ImageDat transform(const glm::mat<n, c, T>& matrix) const {
 			if (c != m_channels)
 				throw std::invalid_argument("Transform matrix must have 'channels' rows");
 
-			using Vec = glm::vec<c, std::byte>;
+			using Vec = glm::vec<c, value_type>;
 			using fVec = glm::vec<c, T>;
-			using newVec = glm::vec<n, std::byte>;
+			using newVec = glm::vec<n, value_type>;
 
 			return transformStub<n, c, T>([&matrix](const Vec& vec) {
 				auto out = fVec{ vec } * matrix;
@@ -176,22 +134,22 @@ namespace sndx::render {
 		}
 
 		template <glm::length_t c, std::floating_point T = float> [[nodiscard]]
-		ImageData transform(const glm::vec<c, T>& matrix) const {
+		ImageDat transform(const glm::vec<c, T>& matrix) const {
 			if (c != m_channels)
 				throw std::invalid_argument("Transform matrix must have 'channels' rows");
 
-			using Vec = glm::vec<c, std::byte>;
+			using Vec = glm::vec<c, value_type>;
 			using fVec = glm::vec<c, T>;
-			using newVec = glm::vec<1, std::byte>;
+			using newVec = glm::vec<1, value_type>;
 
 			return transformStub<1, c, T>([&matrix](const Vec& vec) {
 				auto out = glm::dot(matrix, fVec{ vec });
-				return newVec(std::byte(out));
+				return newVec(value_type(out));
 			});
 		}
 
 		[[nodiscard]]
-		ImageData asGrayscale() const {
+		ImageDat asGrayscale() const {
 			auto colors = std::min(uint8_t(3), m_channels);
 			float c = 1.0f / colors;
 
@@ -244,6 +202,9 @@ namespace sndx::render {
 		return loader.loadFromFile(path, channels);
 	}
 
+	using ImageData = ImageDat<std::byte>;
+	using FloatImageData = ImageDat<float>;
+
 	template <class Saver>
 	bool saveImageFile(const std::filesystem::path& path, const ImageData& image, const Saver& saver) {
 		return saver.save(path, image);
@@ -252,18 +213,18 @@ namespace sndx::render {
 
 
 namespace sndx {
-	template<>
-		struct Serializer<render::ImageData> {
+	template<class T>
+	struct Serializer<render::ImageDat<T>> {
 		template <class SerializeIt>
-		constexpr void serialize(const render::ImageData& v, SerializeIt& it) const {
+		constexpr void serialize(const render::ImageDat<T>& v, SerializeIt& it) const {
 			v.serialize(it);
 		}
 	};
 
-	template<>
-		struct Deserializer<render::ImageData> {
+	template<class T>
+	struct Deserializer<render::ImageDat<T>> {
 		template <class DeserializeIt>
-		constexpr void deserialize(render::ImageData& to, DeserializeIt& in, DeserializeIt end) const {
+		constexpr void deserialize(render::ImageDat<T>& to, DeserializeIt& in, DeserializeIt end) const {
 			to.deserialize(in, end);
 		}
 	};
