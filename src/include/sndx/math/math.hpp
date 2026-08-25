@@ -191,4 +191,55 @@ namespace sndx::math {
 
 		return O(remapBalanced((long double)(value), (long double)(oldCenterpoint), (long double)(newCenterpoint), oldMin, oldMax, newMin, newMax));
 	}
+
+	// f stands for fast and floor
+	// negative values and 0 return -1
+	template <std::integral I> [[nodiscard]]
+	constexpr I fLog10(I value) noexcept {
+		if (value <= I(0)) {
+			return static_cast<I>(-1);
+		}
+
+		using Unsigned = std::make_unsigned_t<I>;
+		Unsigned v = static_cast<Unsigned>(value);
+
+		auto log2 = (sizeof(Unsigned) * 8 - 1) - std::countl_zero(v);
+
+		// rough approximation of the change of base formula
+		Unsigned approx = (log2 * 1233) / 4096;
+
+		constexpr auto poTs = [](){
+			std::array<Unsigned, std::numeric_limits<Unsigned>::digits10 + 1> out{};
+			out[0] = 1;
+			for (size_t i = 1; i < out.size(); ++i) {
+				out[i] = out[i - 1] * static_cast<Unsigned>(10);
+			}
+			return out;
+		}();
+
+		return static_cast<I>(approx + (v >= poTs[approx + 1]));
+	}
+
+	template <std::integral I> [[nodiscard]]
+	constexpr I fPow10(I exp) noexcept {
+		if constexpr (std::is_signed_v<I>) {
+			if (exp < static_cast<I>(0)) {
+				return static_cast<I>(0);
+			}
+		}
+
+		constexpr auto poTs = []() {
+			std::array<I, std::numeric_limits<I>::digits10 + 1> out{};
+			out[0] = 1;
+			for (size_t i = 1; i < out.size(); ++i) {
+				out[i] = out[i - 1] * static_cast<I>(10);
+			}
+			return out;
+		}();
+
+		if (exp >= poTs.size()) {
+			return poTs.back();
+		}
+		return poTs[exp];
+	}
 }

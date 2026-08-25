@@ -178,3 +178,23 @@ TEST(Math, RemapBalanced) {
 	EXPECT_EQ(remapBalanced<unsigned char>(char(127), '\0', 128), 255);
 	EXPECT_EQ(remapBalanced<char>((unsigned char)(255), (unsigned char)(128), 0), 127);
 }
+
+TEST(Math, fLog10) {
+	EXPECT_EQ(fLog10(-123459687), -1);
+	EXPECT_EQ(fLog10(-1), -1);
+	EXPECT_EQ(fLog10(0), -1);
+
+	uint64_t poT = 1;
+	for (size_t i = 0; i <= std::numeric_limits<uint64_t>::digits10; ++i) {
+		EXPECT_EQ(fLog10(poT), i);
+		poT *= 10ULL;
+	}
+
+	poT = 10;
+	for (size_t i = 1; i <= std::numeric_limits<uint64_t>::digits10; ++i) {
+		EXPECT_EQ(fLog10(poT - 1), i - 1);
+		poT *= 10ULL;
+	}
+
+	EXPECT_EQ(fLog10(std::numeric_limits<uint64_t>::max()), std::numeric_limits<uint64_t>::digits10);
+}
