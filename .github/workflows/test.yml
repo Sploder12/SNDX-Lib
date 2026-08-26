@@ -39,7 +39,7 @@ jobs:
 
 
             - name: Run vcpkg
-              uses: lukka/run-vcpkg@v11.5
+              uses: lukka/run-vcpkg@v11.6
               with:
                 runVcpkgInstall: true
             

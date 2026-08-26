@@ -16,7 +16,7 @@ namespace {
 		}
 
 		if (chr >= 'a' && chr <= 'z') {
-			return chr - 'a';
+			return static_cast<uint8_t>(chr - 'a');
 		}
 		return -1;
 	}

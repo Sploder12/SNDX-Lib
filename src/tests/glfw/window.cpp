@@ -35,11 +35,13 @@ public:
     }
 
     static void verifyBuiltWindow(const Window& window, const WindowBuilder& builder) {
-        if (auto x = builder.getX())
+        if (auto x = builder.getX()) {
             EXPECT_EQ(*x, window.getPosition().x);
+        }
 
-        if (auto y = builder.getY())
+        if (auto y = builder.getY()) {
             EXPECT_EQ(*y, window.getPosition().y);
+        }
 
         EXPECT_EQ(builder.getWidth(), window.getSize().x);
         EXPECT_EQ(builder.getHeight(), window.getSize().y);

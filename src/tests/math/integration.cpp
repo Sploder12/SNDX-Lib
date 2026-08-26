@@ -38,7 +38,7 @@ TEST(Integration, verlet) {
 	float pp = truth(-dt);
 
 	for (size_t i = 0; i < 10; ++i) {
-		auto exact = truth(i * dt);
+		auto exact = truth(float(i) * dt);
 		auto error = std::abs(exact - p);
 		EXPECT_FLOAT_EQ(error, 0.0);
 
