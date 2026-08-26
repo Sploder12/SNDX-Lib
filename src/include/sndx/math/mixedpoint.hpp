@@ -98,7 +98,7 @@ namespace sndx::math {
 
 			static_assert(sizeof(T) <= sizeof(ValueT));
 			if constexpr (sizeof(T) == sizeof(ValueT)) {
-				if (value > std::numeric_limits<ValueT>::max()) {
+				if (value > static_cast<T>(std::numeric_limits<ValueT>::max())) {
 					this->value = value / 10;
 					this->exponent = 1;
 				}
@@ -231,6 +231,7 @@ namespace sndx::math {
 			return *this;
 		}
 
+		// evil long division :(
 		constexpr MixedPoint& operator/=(const MixedPoint& other) noexcept {
 			if (value == 0 || other.value == 0) {
 				value = 0;
@@ -265,16 +266,16 @@ namespace sndx::math {
 			// if b > a then a / b == 0 so = a
 
 			auto order = other <=> *this;
-			if ((order > 0) ^ (this->sign() != other.sign())) {
-				return *this;
-			}
 			if (order == 0) {
 				value = 0;
 				exponent = 0;
 				return *this;
 			}
+			if ((order > 0) ^ (this->sign() != other.sign())) {
+				return *this;
+			}
 
-			*this -= other * (*this / other).floor();;
+			*this -= other * (*this / other).floor();
 			return *this;
 		}
 
@@ -554,6 +555,21 @@ namespace sndx::math {
 		constexpr MixedPoint sqrt() const noexcept {
 			constexpr MixedPoint half{5, -1};
 			return pow(half);
+		}
+
+		[[nodiscard]]
+		static constexpr MixedPoint maxValue() noexcept {
+			return MixedPoint{ 
+				highThreshold - 1,
+				std::numeric_limits<std::decay_t<decltype(exponent)>>::max() 
+			};
+		}
+
+		static constexpr MixedPoint minValue() noexcept {
+			return MixedPoint{
+				-(highThreshold - 1),
+				std::numeric_limits<std::decay_t<decltype(exponent)>>::max()
+			};
 		}
 	};
 }
