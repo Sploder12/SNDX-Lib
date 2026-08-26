@@ -207,7 +207,7 @@ namespace sndx::collision {
 			const auto& A2 = getP2();
 			const auto& B1 = other.getP1();
 			const auto& B2 = other.getP2();
-			static constexpr auto dims = dimensionality();
+			constexpr auto dims = dimensionality();
 			if constexpr (dims >= 1) {
 				if (A1.x > B2.x || A2.x < B1.x) return false;
 			}

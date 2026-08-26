@@ -385,7 +385,7 @@ namespace sndx::math {
 				MixedPoint{10},
 			};
 
-			constexpr auto invRangeTable = []() {
+			constexpr auto invRangeTable = [&rangeTable]() {
 				std::decay_t<decltype(rangeTable)> out{};
 				for (size_t i = 0; i < rangeTable.size(); ++i) {
 					out[i] = MixedPoint{ 1 } / rangeTable[i];
@@ -448,8 +448,10 @@ namespace sndx::math {
 
 		template <std::integral V> [[nodiscard]]
 		constexpr MixedPoint pow(V exp) const noexcept {
-			if (exp < 0) {
-				return (MixedPoint{ 1 } / *this).pow(-exp);
+			if constexpr (std::is_signed_v<V>) {
+				if (exp < 0) {
+					return (MixedPoint{ 1 } / *this).pow(-exp);
+				}
 			}
 			if (exp == 0) {
 				return 1;
@@ -473,6 +475,9 @@ namespace sndx::math {
 
 		[[nodiscard]] // returns 0 when base is negative and exp is not an integer
 		constexpr MixedPoint pow(MixedPoint exp) const noexcept {
+			if (*this == 1) return *this;
+			if (*this == 0 && exp != 0) return *this;
+
 			auto calcWholeNum = [](MixedPoint base, MixedPoint whole) {
 				if (whole == 0) {
 					return MixedPoint{ 1 };
@@ -543,6 +548,12 @@ namespace sndx::math {
 			}
 			result *= wholePart;
 			return result;
+		}
+
+		[[nodiscard]] // this relies on pow so is fairly slow.
+		constexpr MixedPoint sqrt() const noexcept {
+			constexpr MixedPoint half{5, -1};
+			return pow(half);
 		}
 	};
 }

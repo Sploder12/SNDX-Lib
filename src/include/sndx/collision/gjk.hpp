@@ -564,7 +564,8 @@ namespace sndx::collision {
 				}
 			}
 
-			if (abs(sDistance - minDistance) > 0.0001f) {
+			// reminder: forgetting std:: means C stdlib.h can give you `abs(int)` without warning :)
+			if (std::abs(sDistance - minDistance) > 0.0001f) {
 				std::vector<std::pair<size_t, size_t>> uniqueEdges;
 
 				for (size_t i = 0; i < normals.size(); i++) {
@@ -575,14 +576,16 @@ namespace sndx::collision {
 						AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
 						AddIfUniqueEdge(uniqueEdges, faces, f + 2, f);
 
-						faces[f + 2] = faces.back(); faces.pop_back();
-						faces[f + 1] = faces.back(); faces.pop_back();
-						faces[f] = faces.back(); faces.pop_back();
+						auto last = faces.size() - 3;
+						faces[f] = faces[last];
+						faces[f + 1] = faces[last + 1];
+						faces[f + 2] = faces[last + 2];
+						faces.resize(last);
 
 						normals[i] = normals.back(); // pop-erase
 						normals.pop_back();
 
-						i--;
+						--i;
 					}
 				}
 

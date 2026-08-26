@@ -24,7 +24,7 @@ namespace sndx::render {
 		size_t m_width{}, m_height{};
 		uint8_t m_channels{};
 
-		template <glm::length_t n, glm::length_t c, std::floating_point T, class Fn> [[nodiscard]]
+		template <glm::length_t n, glm::length_t c, std::floating_point F, class Fn> [[nodiscard]]
 		ImageDat transformStub(Fn&& func) const {
 			using oldVec = glm::vec<c, value_type>;
 			using newVec = glm::vec<n, value_type>;
@@ -118,31 +118,31 @@ namespace sndx::render {
 			return asVecs[y * width() + x];
 		}
 
-		template <glm::length_t n, glm::length_t c, std::floating_point T = float> [[nodiscard]]
-		ImageDat transform(const glm::mat<n, c, T>& matrix) const {
+		template <glm::length_t n, glm::length_t c, std::floating_point F = float> [[nodiscard]]
+		ImageDat transform(const glm::mat<n, c, F>& matrix) const {
 			if (c != m_channels)
 				throw std::invalid_argument("Transform matrix must have 'channels' rows");
 
 			using Vec = glm::vec<c, value_type>;
-			using fVec = glm::vec<c, T>;
+			using fVec = glm::vec<c, F>;
 			using newVec = glm::vec<n, value_type>;
 
-			return transformStub<n, c, T>([&matrix](const Vec& vec) {
+			return transformStub<n, c, F>([&matrix](const Vec& vec) {
 				auto out = fVec{ vec } * matrix;
 				return newVec(out);
 			});
 		}
 
-		template <glm::length_t c, std::floating_point T = float> [[nodiscard]]
-		ImageDat transform(const glm::vec<c, T>& matrix) const {
+		template <glm::length_t c, std::floating_point F = float> [[nodiscard]]
+		ImageDat transform(const glm::vec<c, F>& matrix) const {
 			if (c != m_channels)
 				throw std::invalid_argument("Transform matrix must have 'channels' rows");
 
 			using Vec = glm::vec<c, value_type>;
-			using fVec = glm::vec<c, T>;
+			using fVec = glm::vec<c, F>;
 			using newVec = glm::vec<1, value_type>;
 
-			return transformStub<1, c, T>([&matrix](const Vec& vec) {
+			return transformStub<1, c, F>([&matrix](const Vec& vec) {
 				auto out = glm::dot(matrix, fVec{ vec });
 				return newVec(value_type(out));
 			});
