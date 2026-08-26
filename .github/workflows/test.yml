@@ -31,6 +31,10 @@ jobs:
                   sudo apt install libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config
                   sudo apt install libxrandr-dev
 
+            - name: Install Linux vcpkg deps
+              if: runner.os == 'Linux'
+              run: sudo apt install autoconf autoconf-archive automake libtool
+
             - uses: ilammy/msvc-dev-cmd@v1.13.0
 
             - uses: lukka/get-cmake@latest
