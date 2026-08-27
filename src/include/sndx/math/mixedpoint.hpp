@@ -187,7 +187,7 @@ namespace sndx::math {
 				return *this;
 			}
 
-			if (other.exponent < exponent) {
+			if (other.exponent <= exponent) {
 				value += other.increaseExponent(exponent).value;
 			}
 			else {
@@ -360,8 +360,7 @@ namespace sndx::math {
 
 		[[nodiscard]] // negative numbers work as if they were positive (0 always returns 0)
 		constexpr auto ilog10() const noexcept {
-			if (value == 0) return exponent;
-			return exponent + digits - 1;
+			return value == 0 ? 0 : exponent + digits - 1;
 		}
 
 		[[nodiscard]] // negative numbers work as if they were positive (0 always returns 0)
@@ -397,6 +396,13 @@ namespace sndx::math {
 			auto exp = exponent + digits - 1;
 			auto x = MixedPoint{ value >= 0 ? value : -value, 1 - digits };
 
+			uint32_t r = 0;
+			for (; r + 1 < rangeTable.size(); ++r) {
+				if (x < rangeTable[r + 1]) break;
+			}
+			x *= invRangeTable[r];
+			auto remapFactor = MixedPoint{ r, -1 };
+
 			// Remez algorithm [1, 10^1/10] to approximate mantissa
 			// generated with Maple using `minimax(log10(x), x = 1 .. 10^1/10, 10, 1, 'maxerror')` (18 digits)
 			// theoretical max error is around 1.821e-15, may be slightly larger in practice
@@ -413,22 +419,12 @@ namespace sndx::math {
 				MixedPoint{167096745973453202, -18},
 				MixedPoint{-133229763806028993, -19},
 			};
-
-			uint32_t r = 0;
-			for (; r + 1 < rangeTable.size(); ++r) {
-				if (x < rangeTable[r + 1]) break;
-			}
-			x *= invRangeTable[r];
-
 			auto result = coefficients.back();
 			for (size_t i = 1; i < coefficients.size(); ++i) {
 				const auto& c = coefficients[coefficients.size() - 1 - i];
 				result = c + result * x;
 			}
 			result += exp;
-
-			auto remapFactor = MixedPoint{ r };
-			remapFactor.exponent -= 1;
 			result += remapFactor;
 			return result;
 		}
