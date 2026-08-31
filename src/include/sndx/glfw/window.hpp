@@ -15,9 +15,8 @@
 #include <unordered_map>
 #include <utility>
 
-
 namespace sndx::glfw {
-	class Window final : public sndx::Window {
+	class Window : public sndx::Window {
 		friend class WindowBuilder;
 
 		GLFWwindow* m_window = nullptr;
@@ -52,7 +51,7 @@ namespace sndx::glfw {
 			return *this;
 		}
 
-		~Window() noexcept {
+		virtual ~Window() noexcept {
 			if (m_window) {
 				glfwDestroyWindow(m_window);
 				m_window = nullptr;

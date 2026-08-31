@@ -6,11 +6,14 @@
 #include <imgui_impl_opengl3.h>
 #endif
 
+#ifndef SNDX_NO_GLFW
 #ifdef GLFW_VERSION_MAJOR
 #include <imgui_impl_glfw.h>
 #endif
+#endif
 
 namespace sndx::imgui {
+	#ifndef SNDX_NO_GLFW
 	#ifdef GLFW_VERSION_MAJOR
 	template <class RenderBackend>
 	struct glfwBackend {
@@ -34,6 +37,7 @@ namespace sndx::imgui {
 		}
 	};
 	#endif
+	#endif
 
 	#ifdef GL_VERSION
 	struct glBackend {
@@ -45,12 +49,14 @@ namespace sndx::imgui {
 			ImGui_ImplOpenGL3_Shutdown();
 		}
 
+		#ifndef SNDX_NO_GLFW
 		#ifdef GLFW_VERSION_MAJOR
 		template <class... Args>
 		static void initGLFW(GLFWwindow* window, bool setupCallbacks, const char* glslVersion) {
 			ImGui_ImplGlfw_InitForOpenGL(window, setupCallbacks);
 			init(glslVersion);
 		}
+		#endif
 		#endif
 
 		static void newFrame() {
@@ -63,9 +69,11 @@ namespace sndx::imgui {
 	};
 	#endif
 
+#ifndef SNDX_NO_GLFW
 #ifdef GLFW_VERSION_MAJOR 
 #ifdef GL_VERSION
 	using glfw_gl_Backend = glfwBackend<glBackend>;
+#endif
 #endif
 #endif
 }

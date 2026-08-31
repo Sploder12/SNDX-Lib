@@ -99,6 +99,15 @@ namespace sndx::collision {
 				return out;
 			}
 
+			[[nodiscard]]
+			Transform interpolate(const Transform& other, float t) const {
+				Transform out{};
+				out.pos = sndx::math::lerp(pos, other.pos, t);
+				out.scale = sndx::math::lerp(scale, other.scale, t);
+				out.rot = glm::slerp(rot, other.rot, t);
+				return out;
+			}
+
 			explicit Transform(glm::vec3 pos = {}, const glm::quat& rot = {}, ScaleT scale = ScaleT{ 1.0f }):
 				pos(pos), rot(rot), scale(scale) {
 			}
