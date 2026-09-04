@@ -67,6 +67,18 @@ namespace sndx {
 		}
 	};
 
+	template <>
+	struct Serializer<std::string> {
+		template <class SerializeIt>
+		constexpr void serialize(const std::string& str, SerializeIt& it) const {
+			uint32_t size = static_cast<uint32_t>(str.size());
+			serializeToAdjust(it, size);
+			for (const auto& v : str) {
+				serializeToAdjust(it, v);
+			}
+		}
+	};
+
 	template<class T>
 		requires 
 			std::is_same_v<T, int16_t> ||
@@ -164,6 +176,19 @@ namespace sndx {
 	struct Deserializer<std::array<T, N>> {
 		template <class DeserializeIt>
 		constexpr void deserialize(std::array<T, N>& to, DeserializeIt& in, DeserializeIt end) const {
+			for (auto& v : to) {
+				deserializeFromAdjust(v, in, end);
+			}
+		}
+	};
+
+	template <>
+	struct Deserializer<std::string> {
+		template <class DeserializeIt>
+		constexpr void deserialize(std::string& to, DeserializeIt& in, DeserializeIt end) const {
+			uint32_t size;
+			deserializeFromAdjust(size, in, end);
+			to.resize(size);
 			for (auto& v : to) {
 				deserializeFromAdjust(v, in, end);
 			}

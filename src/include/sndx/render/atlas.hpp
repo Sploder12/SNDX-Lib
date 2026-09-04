@@ -19,10 +19,12 @@ namespace sndx::render {
 		};
 
 		std::unordered_map<IdT, Entry> m_entries{};
-		ImageData m_image;
+		ImageData m_image{};
 
 		template <class>
 		friend class AtlasBuilder;
+
+		explicit ImageAtlas() = default;
 
 		ImageAtlas(decltype(m_entries)&& entries, ImageData&& image) :
 			m_entries(std::move(entries)), m_image(std::move(image)) {}
@@ -35,7 +37,7 @@ namespace sndx::render {
 
 		const glm::vec2 scaling = 1.0f / size;
 		for (const auto& [id, entry] : entries) {
-			out.emplace(id, std::pair{ entry.pos * scaling, entry.dims * scaling });
+			out.emplace(id, std::pair{ glm::vec2(entry.pos) * scaling, glm::vec2(entry.dims) * scaling });
 		}
 
 		return out;

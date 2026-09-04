@@ -47,6 +47,8 @@ namespace sndx::render {
 			return ImageDat{ m_width, m_height, n, std::move(data) };
 		}
 	public:
+		explicit ImageDat() = default;
+
 		ImageDat(size_t width, size_t height, uint8_t channels, decltype(m_data)&& data) :
 			m_data(std::move(data)), m_width(width), m_height(height), m_channels(channels) {}
 
