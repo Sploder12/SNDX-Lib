@@ -24,13 +24,15 @@ namespace sndx::render {
 	template <class AtlasT = TextureAtlas<FT_ULong>> 
 	class Font {
 	public:
-		AtlasT m_atlas;
+		AtlasT m_atlas{};
 		std::unordered_map<FT_ULong, GlyphMetric> m_metrics{};
 
 		int m_maxBearingY = 0;
 		bool m_sdf{};
 
 		friend class FontBuilder;
+
+		explicit Font() = default;
 
 		Font(AtlasT&& atlas, const std::unordered_map<FT_ULong, GlyphMetric>& metrics, int maxBearingY, bool sdf) :
 			m_atlas(std::move(atlas)), m_metrics(metrics), m_maxBearingY(maxBearingY), m_sdf(sdf) {}
