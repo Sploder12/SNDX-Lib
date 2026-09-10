@@ -67,11 +67,18 @@ namespace sndx {
 			container.pop_back();
 		}
 
-		void erase(const KeyT& key) {
+		size_t erase(const KeyT& key) {
 			if (auto it = mapping.find(key); it != mapping.end()) {
 				container.erase(it->second);
 				mapping.erase(it);
+				return 1;
 			}
+			return 0;
+		}
+
+		ContainerIt erase(ContainerIt it) {
+			mapping.erase(*it->first);
+			return container.erase(it);
 		}
 
 		void clear() {
@@ -115,12 +122,28 @@ namespace sndx {
 			return container.begin();
 		}
 
+		[[nodiscard]] decltype(auto) rbegin() {
+			return container.rbegin();
+		}
+
+		[[nodiscard]] decltype(auto) rbegin() const {
+			return container.rbegin();
+		}
+
 		[[nodiscard]] decltype(auto) end() {
 			return container.end();
 		}
 
 		[[nodiscard]] decltype(auto) end() const {
 			return container.end();
+		}
+
+		[[nodiscard]] decltype(auto) rend() {
+			return container.rend();
+		}
+
+		[[nodiscard]] decltype(auto) rend() const {
+			return container.rend();
 		}
 	};
 
@@ -140,6 +163,11 @@ namespace sndx {
 	public:
 		TimeAwareRecencyMap(std::function<TimeT()> timeProvider):
 			timeProvider(timeProvider) {}
+
+		[[nodiscard]]
+		TimeT getNow() {
+			return timeProvider();
+		}
 
 		[[nodiscard]]
 		ItemT* get(const KeyT& key) {
@@ -185,6 +213,28 @@ namespace sndx {
 			return count;
 		}
 
+		// inclusive
+		template <class DurationT, class Pred>
+		size_t erase_older_than_and(const DurationT& duration, Pred pred) {
+			size_t old = size();
+			auto now = timeProvider();
+			// takes advantage of being sorted by age
+			for (auto it = end(); it != begin();) {
+				--it;
+
+				auto delta = now - it->second.first;
+				if (delta >= duration) {
+					if (pred(*it)) {
+						it = underlying.erase(it);
+					}
+				}
+				else {
+					break;
+				}
+			}
+			return old - size();
+		}
+
 		// exclusive
 		template <class DurationT>
 		size_t erase_newer_than(const DurationT& duration) {
@@ -203,8 +253,22 @@ namespace sndx {
 			return count;
 		}
 
-		void erase(const KeyT& key) {
-			underlying.erase(key);
+		template <class Pred>
+		size_t erase_if(Pred pred) {
+			size_t old = size();
+			for (auto it = begin(), last = end(); it != last;) {
+				if (pred(*it)) {
+					it = underlying.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+			return old - size();
+		}
+
+		auto erase(const KeyT& key) {
+			return underlying.erase(key);
 		}
 
 		void clear() {
@@ -247,12 +311,28 @@ namespace sndx {
 			return underlying.begin();
 		}
 
+		[[nodiscard]] decltype(auto) rbegin() {
+			return underlying.rbegin();
+		}
+
+		[[nodiscard]] decltype(auto) rbegin() const {
+			return underlying.rbegin();
+		}
+
 		[[nodiscard]] decltype(auto) end() {
 			return underlying.end();
 		}
 
 		[[nodiscard]] decltype(auto) end() const {
 			return underlying.end();
+		}
+
+		[[nodiscard]] decltype(auto) rend() {
+			return underlying.rend();
+		}
+
+		[[nodiscard]] decltype(auto) rend() const {
+			return underlying.rend();
 		}
 	};
 }
