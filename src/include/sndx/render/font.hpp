@@ -149,7 +149,7 @@ namespace sndx::render {
 			FT_Set_Pixel_Sizes(face, 0, size);
 
 			FT_ULong count = face->num_glyphs;
-			unsigned int columns = (unsigned int)(ceil(sqrt(count)));
+			//unsigned int columns = (unsigned int)(ceil(sqrt(count)));
 
 			std::unordered_map<FT_ULong, GlyphMetric> metrics{};
 			metrics.reserve(count);

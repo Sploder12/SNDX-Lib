@@ -310,7 +310,9 @@ namespace sndx::collision {
 		constexpr RaycastResult raycast(const Vec& from, const Vec& dir, bool = false) const noexcept {
 			RaycastResult out{};
 
-			for (typename Vec::length_type i = 0; i < dimensionality(); ++i) {
+			using Vt = typename Vec::length_type;
+
+			for (Vt i = 0; i < static_cast<Vt>(dimensionality()); ++i) {
 				auto inv = Precision(1.0) / dir[i];
 				auto near = (getP1()[i] - from[i]) * inv;
 				auto far = (getP2()[i] - from[i]) * inv;

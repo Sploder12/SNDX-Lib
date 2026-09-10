@@ -209,7 +209,7 @@ namespace sndx::utility {
 
 			Codepoint cur = 0;
 
-			auto len = 0;
+			uint16_t len = 0;
 			if ((chr & 0b11100000) == 0b11000000) {
 				len = 2;
 				cur = chr & 0b00011111;
@@ -244,13 +244,13 @@ namespace sndx::utility {
 
 				cur |= b & 0b00111111;
 
-				if (j != len - 1) {
+				if (j != len - 1u) {
 					cur <<= 6;
 				}
 			}
 
 			out.push_back(cur);
-			i += len - 1;
+			i += len - 1u;
 		}
 
 		return out;
