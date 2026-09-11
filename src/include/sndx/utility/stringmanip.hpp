@@ -1,12 +1,13 @@
 #pragma once
 
+#include <array>
+#include <bit>
+#include <cassert>
+#include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <optional>
-#include <array>
-#include <cassert>
-#include <cstdint>
 
 namespace sndx::utility {
 	template <typename CharT = char>
@@ -303,5 +304,58 @@ namespace sndx::utility {
 		}
 
 		return out;
+	}
+
+	template <std::unsigned_integral T> [[nodiscard]]
+	std::string bytesToString(T bytes, bool fullSuffix = false, uint8_t minDigits = 3) {
+		constexpr std::array<std::string_view, 8> smSuffix{
+			"B",
+			"KiB",
+			"MiB",
+			"GiB",
+			"TiB",
+			"PiB",
+			"EiB",
+			"ZiB",
+		};
+		constexpr std::array<std::string_view, 8> lgSuffix{
+			"Bytes",
+			"Kibibytes",
+			"Mebibytes",
+			"Gibibytes",
+			"Tebibytes",
+			"Pebibytes",
+			"Exbibytes",
+			"Zebibytes",
+		};
+		static_assert(smSuffix.size() == lgSuffix.size());
+
+		auto l2 = (sizeof(T) * 8 - 1) - std::countl_zero(bytes);
+
+		auto index = l2 / 10;
+		index = index >= smSuffix.size() ? smSuffix.size() - 1 : index;
+
+		const auto& suffix = fullSuffix ? lgSuffix[index] : smSuffix[index];
+
+		auto divisor = 1u << (index * 10);
+		auto value = bytes / divisor;
+		auto remain = bytes % divisor;
+
+		auto currentDigits = static_cast<int>(std::floor(std::log10(value))) + 1;
+		auto delta = static_cast<int>(minDigits) - currentDigits;
+
+		if (remain != 0 && delta > 0) {
+			double scaling = 10.0;
+			for (uint16_t i = 1; i < static_cast<uint16_t>(delta); ++i) {
+				scaling *= 10.0;
+			}
+
+			double fract = remain / (static_cast<double>(divisor) / scaling);
+			T f = static_cast<T>(fract);
+			std::string vformat = "{}.{:0" + std::to_string(delta) + "} {}";
+			return std::vformat(vformat, std::make_format_args(value, f, suffix));
+		}
+
+		return std::format("{} {}", value, suffix);
 	}
 }
