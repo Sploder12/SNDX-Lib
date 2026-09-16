@@ -3,7 +3,9 @@
 #include <array>
 #include <bit>
 #include <cassert>
+#include <cmath>
 #include <cstdint>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>

@@ -6,3 +6,4 @@
 
 #include "./utility/logging.hpp"
 #include "./utility/stringmanip.hpp"
+#include "./utility/timer.hpp"

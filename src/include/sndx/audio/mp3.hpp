@@ -91,8 +91,8 @@ namespace sndx::audio {
 		}
 
 		size_t seek(size_t pos) noexcept {
-			if (pos >= m_dec.samples * getChannels())
-				pos = m_dec.samples * getChannels();
+			if (pos >= m_dec.samples)
+				pos = m_dec.samples;
 			
 			m_dirty = true;
 
@@ -106,7 +106,7 @@ namespace sndx::audio {
 
 		[[nodiscard]]
 		bool done() const {
-			if (m_pos >= m_dec.samples * getChannels())
+			if (m_pos >= m_dec.samples)
 				return true;
 
 			return false;
@@ -114,8 +114,7 @@ namespace sndx::audio {
 
 		[[nodiscard]]
 		AudioData<mp3d_sample_t> readSamples(size_t count) {
-	
-			auto realCount = std::min(count, size_t(m_dec.samples * getChannels() - m_pos));
+			auto realCount = std::min(count, size_t(m_dec.samples - m_pos));
 			if (realCount == 0)
 				return AudioData<mp3d_sample_t>{getChannels(), getSampleRate()};
 
@@ -128,11 +127,11 @@ namespace sndx::audio {
 				m_dirty = false;
 			}
 
-			size_t read = mp3dec_ex_read(&m_dec, out.data(), count / getChannels());
-			if (read != count / getChannels() && m_dec.last_error)
+			size_t read = mp3dec_ex_read(&m_dec, out.data(), out.size());
+			if (read != out.size() && m_dec.last_error)
 				throw deserialize_error("minimp3 returned read error " + std::to_string(m_dec.last_error));
 
-			out.resize(read * getChannels());
+			out.resize(read);
 			m_pos += out.size();
 
 			return AudioData<mp3d_sample_t>{getChannels(), getSampleRate(), std::move(out)};
