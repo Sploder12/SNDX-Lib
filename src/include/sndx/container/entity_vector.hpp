@@ -43,7 +43,7 @@ namespace sndx::container {
 				target = std::addressof(entities[idx]);
 			}
 
-			target->value.emplace<1>(std::forward<Args>(args)...);
+			target->value.template emplace<1>(std::forward<Args>(args)...);
 			return EntityHandle{ idx, target->generation };
 		}
 
@@ -55,7 +55,7 @@ namespace sndx::container {
 			if (e.generation == 0) [[unlikely]] {
 				e.generation = 1; // hopefully no super old handles are in use...
 			}
-			e.value.emplace<0>(std::exchange(freeHead, handle.id));
+			e.value.template emplace<0>(std::exchange(freeHead, handle.id));
 			return true;
 		}
 
