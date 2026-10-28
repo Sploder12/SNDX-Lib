@@ -10,9 +10,9 @@ namespace sndx::utility {
 	}
 
 	// Runtime IDs are stable and unique for the duration of the program.
-	template <size_t category = rid::category::Generic>
+	template <size_t category = rid::category::Generic, bool lowP = false>
 	class RID {
-		using underlying = uint64_t;
+		using underlying = std::conditional_t<lowP, uint32_t, uint64_t>;
 
 		static inline std::atomic<underlying> counter{1};
 		underlying m_id;
@@ -63,9 +63,9 @@ namespace sndx::utility {
 	}
 }
 
-template<size_t category>
-struct std::hash<sndx::utility::RID<category>> {
-	constexpr size_t operator()(const sndx::utility::RID<category>& rid) const noexcept {
+template<size_t category, bool lowP>
+struct std::hash<sndx::utility::RID<category, lowP>> {
+	constexpr size_t operator()(const sndx::utility::RID<category, lowP>& rid) const noexcept {
 		auto v = rid.id();
 		return std::hash<decltype(v)>{}(v);
 	}
