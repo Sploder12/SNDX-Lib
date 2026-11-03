@@ -117,8 +117,8 @@ namespace sndx::glfw {
 			glfwSetWindowTitle(m_window, newTitle.c_str());
 		}
 
-		void signalClose() override {
-			glfwSetWindowShouldClose(m_window, GLFW_TRUE);
+		void signalClose(bool close = true) override {
+			glfwSetWindowShouldClose(m_window, close ? GLFW_TRUE : GLFW_FALSE);
 		}
 
 		[[nodiscard]]

@@ -35,7 +35,7 @@ namespace sndx {
 
 		[[nodiscard]]
 		virtual bool shouldClose() const = 0;
-		virtual void signalClose() = 0;
+		virtual void signalClose(bool close = true) = 0;
 
 		virtual void bind() = 0;
 		virtual void unbind() {};
